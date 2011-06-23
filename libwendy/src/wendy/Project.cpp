@@ -1,29 +1,35 @@
 #include <wendy/Project.hpp>
+
+#include <wendy/LocalStream.hpp>
 #include <wendy/ProjectListener.hpp>
 
 namespace wendy {
 
-Project::Project(const std::string &name)
+Project::Project(ProjectListener *listener)
 {
-	this->name = name;
+	this->listener = listener;
+	this->stream = NULL;
+}
+
+Project::~Project()
+{
+	delete this->stream;
 }
 
 void Project::connect()
 {
+	this->stream = new LocalStream(46288);
 }
 
 void Project::disconnect()
 {
+	delete this->stream;
+	this->stream = NULL;
 }
 
-void Project::addListener(ProjectListener *listener)
+bool Project::isConnected()
 {
-	this->listeners.push_back(listener);
-}
-
-void Project::removeListener(ProjectListener *listener)
-{
-	this->listeners.remove(listener);
+	return this->stream && this->stream->isConnected();
 }
 
 } // wendy namespace

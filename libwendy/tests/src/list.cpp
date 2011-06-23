@@ -15,14 +15,18 @@ class TestPlop: public wendy::ProjectListener
 
 int main()
 {
-	wendy::Project *project = new wendy::Project("plop");
 	TestPlop *listener = new TestPlop;
-	project->addListener(listener);
+	wendy::Project *project = new wendy::Project(listener);
 	
 	project->connect();
+	
+	while (project->isConnected())
+	{
+		//project->wait();
+	}
+	
 	project->disconnect();
 	
-	project->removeListener(listener);
 	delete listener;
 	delete project;
 }

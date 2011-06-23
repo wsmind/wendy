@@ -15,6 +15,7 @@
 	#include <netinet/in.h>
 	#include <arpa/inet.h>
 	#include <signal.h>
+	#include <unistd.h>
 	#define SOCKET_DATA_TYPE void *
 	#define SOCKET_OBJECT_TYPE int
 #endif
@@ -34,6 +35,8 @@ class WENDYAPI LocalStream
 		LocalStream(unsigned short port);
 		~LocalStream();
 		
+		bool isConnected();
+		
 		bool read(char *buffer, unsigned int size);
 		bool write(char *buffer, unsigned int size);
 		
@@ -41,8 +44,10 @@ class WENDYAPI LocalStream
 		void connect();
 		void disconnect();
 		
+		bool connected;
+		
 		sockaddr_in serverAddress;
-		SOCKET_OBJECT_TYPE socket;
+		SOCKET_OBJECT_TYPE socketId;
 };
 
 } // wendy namespace

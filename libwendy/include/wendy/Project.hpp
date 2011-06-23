@@ -8,6 +8,7 @@
 
 namespace wendy {
 
+class LocalStream;
 class ProjectListener;
 
 /**
@@ -16,17 +17,16 @@ class ProjectListener;
 class WENDYAPI Project
 {
 	public:
-		Project(const std::string &name);
+		Project(ProjectListener *listener);
+		~Project();
 		
 		void connect();
 		void disconnect();
-		
-		void addListener(ProjectListener *listener);
-		void removeListener(ProjectListener *listener);
+		bool isConnected();
 		
 	private:
-		std::string name;
-		std::list<ProjectListener *> listeners;
+		ProjectListener *listener;
+		LocalStream *stream;
 };
 
 } // wendy namespace

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-import engine
 import sys
+
+import engine
+import service
 
 if __name__ == "__main__":
 	# check required arguments
@@ -10,3 +12,6 @@ if __name__ == "__main__":
 		sys.exit(0)
 	
 	e = engine.Engine(sys.argv[1], sys.argv[2])
+	s = service.Server(e)
+	s.waitConnections()
+

@@ -60,7 +60,8 @@ class MetadataDownloader:
 		while True:
 			assetId = self.idQueue.get()
 			try:
-				self.listener.assetChanged(assetId, self.db[assetId])
+				asset = self.db[assetId]
+				self.listener.assetChanged(assetId, asset)
 			except:
 				self.listener.assetRemoved(assetId)
 	

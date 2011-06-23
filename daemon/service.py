@@ -20,5 +20,12 @@ class ClientHandler:
 	def __init__(self, socket):
 		self.socket = socket
 		self.socket.send("HELLOOOO\n")
-		#print(self.socket.recv())
+		self.thread = threading.Thread(target = self)
+		self.thread.start()
+	
+	def __call__(self):
+		buf = self.socket.recv(100)
+		while buf:
+			print(buf)
+			buf = self.socket.recv(100)
 
