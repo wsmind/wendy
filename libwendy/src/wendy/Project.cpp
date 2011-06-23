@@ -1,5 +1,6 @@
 #include <wendy/Project.hpp>
 
+#include <iostream>
 #include <wendy/LocalStream.hpp>
 #include <wendy/ProjectListener.hpp>
 
@@ -30,6 +31,15 @@ void Project::disconnect()
 bool Project::isConnected()
 {
 	return this->stream && this->stream->isConnected();
+}
+
+void Project::plop()
+{
+	std::string line;
+	while (this->stream->readLine(&line))
+	{
+		std::cout << "line: " << line << std::endl;
+	}
 }
 
 } // wendy namespace

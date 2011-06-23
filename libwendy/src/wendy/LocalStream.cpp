@@ -1,6 +1,7 @@
 #include <wendy/LocalStream.hpp>
 
 #include <cstring>
+#include <string>
 
 namespace wendy {
 
@@ -35,12 +36,28 @@ bool LocalStream::isConnected()
 	return this->connected;
 }
 
-bool LocalStream::read(char *buffer, unsigned int size)
+bool LocalStream::readLine(std::string *line)
 {
-	return false;
+	*line = "";
+	
+	char chr = 0;
+	while (chr != '\n')
+	{
+		if (recv(this->socketId, &chr, 1, 0) <= 0)
+			return false;
+		
+		// ignore '\r' for cross-platform line endings
+		if (chr == '\r')
+			continue;
+		
+		if (chr != '\n')
+			*line += chr;
+	}
+	
+	return true;
 }
 
-bool LocalStream::write(char *buffer, unsigned int size)
+bool LocalStream::writeLine(const std::string &line)
 {
 	return false;
 }

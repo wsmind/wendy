@@ -2,6 +2,7 @@
 #define __WENDY_LOCALSTREAM_HPP__
 
 #include <wendy/common.hpp>
+#include <string>
 
 // cross-platform socket definitions
 #ifdef _WIN32
@@ -37,8 +38,8 @@ class WENDYAPI LocalStream
 		
 		bool isConnected();
 		
-		bool read(char *buffer, unsigned int size);
-		bool write(char *buffer, unsigned int size);
+		bool readLine(std::string *line);
+		bool writeLine(const std::string &line);
 		
 	private:
 		void connect();

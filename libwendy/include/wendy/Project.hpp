@@ -24,6 +24,8 @@ class WENDYAPI Project
 		void disconnect();
 		bool isConnected();
 		
+		void plop();
+		
 	private:
 		ProjectListener *listener;
 		LocalStream *stream;

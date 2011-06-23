@@ -1,3 +1,4 @@
+#include <iostream>
 #include <wendy/Project.hpp>
 #include <wendy/ProjectListener.hpp>
 
@@ -20,9 +21,12 @@ int main()
 	
 	project->connect();
 	
+	if (!project->isConnected())
+		std::cout << "Connection failed!" << std::endl;
+	
 	while (project->isConnected())
 	{
-		//project->wait();
+		project->plop();
 	}
 	
 	project->disconnect();
