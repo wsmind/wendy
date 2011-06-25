@@ -74,7 +74,14 @@ class Engine(MetadataListener):
 		self.db = self.couch[project]
 		self.metadataDownloader = MetadataDownloader(self.db, self)
 		self.watcher = Watcher(self.db, self.metadataDownloader)
-		self.assets = {} # dictionary of couchdb.Document
+		self.assets = {} # dictionary of couchdb.Document; TODO: no, add local info
+		self.listeners = []
+	
+	def addListener(self, listener):
+		self.listeners.append(listener)
+	
+	def removeListener(self, listener):
+		self.listeners.remove(listener)
 	
 	def assetChanged(self, assetId, asset):
 		# check for duplicate notification
@@ -82,12 +89,24 @@ class Engine(MetadataListener):
 			if self.assets[assetId].rev == asset.rev:
 				return
 		
+		# TODO: translate to local asset information (+ download info, local rev, etc.)
 		self.assets[asset.id] = asset
 		print("plotch")
 		print(asset)
-		# TODO: notify api clients
+		
+		for listener in self.listeners:
+			listener.assetChanged(assetId, asset)
 	
 	def assetRemoved(self, assetId):
 		if assetId in self.assets:
 			del(self.assets[assetId])
-			# TODO: notify api clients
+			
+			for listener in self.listeners:
+				listener.assetRemoved(assetId)
+
+class EngineListener:
+	def assetChanged(self, assetId, asset):
+		pass
+	
+	def assetRemoved(self, assetId):
+		pass
