@@ -7,6 +7,11 @@ namespace wendy {
 
 LocalStream::LocalStream(unsigned short port)
 {
+#	ifdef _WIN32
+		WSAData wsaData;
+		WSAStartup(MAKEWORD(2, 2), &wsaData);
+#	endif
+	
 	this->serverAddress.sin_family = AF_INET;
 	this->serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
 	this->serverAddress.sin_port = htons(port);
@@ -70,7 +75,12 @@ void LocalStream::connect()
 
 void LocalStream::disconnect()
 {
-	shutdown(this->socketId, SHUT_RDWR);
+#	ifdef _WIN32
+		shutdown(this->socketId, SD_BOTH);
+#	else
+		shutdown(this->socketId, SHUT_RDWR);
+#	endif
+	
 	this->connected = false;
 }
 

@@ -6,7 +6,7 @@
 
 // cross-platform socket definitions
 #ifdef _WIN32
-	#include <winsock.h>
+	#include <winsock2.h>
 	#define socklen_t int
 	#define SOCKET_DATA_TYPE char *
 	#define SOCKET_OBJECT_TYPE SOCKET

@@ -5,6 +5,7 @@ libEnv.Append(CPPPATH = ["libwendy/include"])
 libEnv.Append(CPPDEFINES = ["BUILDING_WENDY"])
 if libEnv["CC"] == "cl":
 	libEnv.Append(CPPFLAGS = ["/Z7", "/W2", "/wd4251", "/EHsc"])
+	libEnv.Append(LIBS = ["ws2_32"])
 else:
 	libEnv.Append(CPPFLAGS = ["-O2", "-Wall"])
 libEnv.SharedLibrary("libwendy/lib/wendy", libEnv.Glob("libwendy/src/wendy/*.cpp"))
