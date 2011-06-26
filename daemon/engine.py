@@ -1,3 +1,29 @@
+###############################################################################
+# 
+# Wendy asset manager
+# Copyright (c) 2011 Remi Papillie
+# 
+# This software is provided 'as-is', without any express or implied
+# warranty. In no event will the authors be held liable for any damages
+# arising from the use of this software.
+# 
+# Permission is granted to anyone to use this software for any purpose,
+# including commercial applications, and to alter it and redistribute it
+# freely, subject to the following restrictions:
+# 
+#    1. The origin of this software must not be misrepresented; you must not
+#    claim that you wrote the original software. If you use this software
+#    in a product, an acknowledgment in the product documentation would be
+#    appreciated but is not required.
+# 
+#    2. Altered source versions must be plainly marked as such, and must not be
+#    misrepresented as being the original software.
+# 
+#    3. This notice may not be removed or altered from any source
+#    distribution.
+# 
+###############################################################################
+
 import couchdb
 import threading
 import Queue
@@ -68,13 +94,22 @@ class MetadataDownloader:
 	def fetchAssetInfo(self, assetId):
 		self.idQueue.put(assetId)
 
+class LocalAsset:
+	def __init__(self):
+		self.id = "0"
+		self.path = ""
+		self.lock = None
+		self.lastRevision = ""
+		self.localRevision = ""
+
 class Engine(MetadataListener):
 	def __init__(self, server, project):
 		self.couch = couchdb.Server(server)
 		self.db = self.couch[project]
 		self.metadataDownloader = MetadataDownloader(self.db, self)
 		self.watcher = Watcher(self.db, self.metadataDownloader)
-		self.assets = {} # dictionary of couchdb.Document; TODO: no, add local info
+		self.remoteAssets = {} # dictionary of couchdb.Document
+		self.localAssets = {} # dictionary of LocalAsset
 		self.listeners = []
 	
 	def addListener(self, listener):
@@ -85,12 +120,12 @@ class Engine(MetadataListener):
 	
 	def assetChanged(self, assetId, asset):
 		# check for duplicate notification
-		if assetId in self.assets:
-			if self.assets[assetId].rev == asset.rev:
+		if assetId in self.remoteAssets:
+			if self.remoteAssets[assetId].rev == asset.rev:
 				return
 		
 		# TODO: translate to local asset information (+ download info, local rev, etc.)
-		self.assets[asset.id] = asset
+		self.remoteAssets[asset.id] = asset
 		print("plotch")
 		print(asset)
 		
@@ -98,8 +133,8 @@ class Engine(MetadataListener):
 			listener.assetChanged(assetId, asset)
 	
 	def assetRemoved(self, assetId):
-		if assetId in self.assets:
-			del(self.assets[assetId])
+		if assetId in self.remoteAssets:
+			del(self.remoteAssets[assetId])
 			
 			for listener in self.listeners:
 				listener.assetRemoved(assetId)
