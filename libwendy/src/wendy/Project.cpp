@@ -39,6 +39,8 @@ void Project::plop()
 	while (this->stream->readLine(&line))
 	{
 		std::cout << "line: " << line << std::endl;
+		std::cin >> line;
+		this->stream->writeLine(line);
 	}
 }
 

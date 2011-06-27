@@ -64,6 +64,12 @@ bool LocalStream::readLine(std::string *line)
 
 bool LocalStream::writeLine(const std::string &line)
 {
+	for (unsigned int i = 0; i < line.size(); ++i)
+	{
+		if (send(this->socketId, &line[i], 1, 0) <= 0)
+			return false;
+	}
+	
 	return false;
 }
 
