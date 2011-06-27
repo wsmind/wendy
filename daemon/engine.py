@@ -94,6 +94,32 @@ class MetadataDownloader:
 	def fetchAssetInfo(self, assetId):
 		self.idQueue.put(assetId)
 
+class Downloader:
+	"""
+	Fetch asset content upon request.
+	"""
+	
+	def __init__(self, db, listener):
+		self.db = db
+		self.idQueue = Queue.Queue()
+		self.listener = listener
+		self.thread = threading.Thread(target = self)
+		self.thread.start()
+	
+	def __call__(self):
+		while True:
+			assetId, revision = self.idQueue.get()
+			try:
+				pass
+				#asset = self.db[assetId]
+				#self.listener.assetChanged(assetId, asset)
+			except:
+				pass
+				#self.listener.assetRemoved(assetId)
+	
+	def download(self, assetId, revision):
+		self.idQueue.put(assetId, revision)
+
 class LocalAsset:
 	def __init__(self):
 		self.id = "0"
