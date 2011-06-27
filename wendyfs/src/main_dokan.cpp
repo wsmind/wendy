@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include <windows.h>
 #include <winbase.h>
 #include <stdio.h>
@@ -91,9 +93,12 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 	operations.Cleanup = PlopCleanup;
 	operations.FindFiles = PlopFindFiles;
 	
-	char projectName[500];
-	WideCharToMultiByte(CP_UTF8, 0, argv[2], -1, projectName, 500, NULL, NULL);
-	proxy = new ProjectProxy(projectName);
+	//char projectName[500];
+	//WideCharToMultiByte(CP_UTF8, 0, argv[2], -1, projectName, 500, NULL, NULL);
+	proxy = new ProjectProxy();
 	
 	return DokanMain(&options, &operations);
 }
+
+#endif // _WIN32
+

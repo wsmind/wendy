@@ -9,7 +9,8 @@
 class ProjectProxy: public wendy::ProjectListener
 {
 	public:
-		ProjectProxy(const std::string name);
+		ProjectProxy();
+		~ProjectProxy();
 		
 		std::vector<std::string> listDirectory(std::string name);
 	

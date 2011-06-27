@@ -2,10 +2,15 @@
 
 #include <wendy/Project.hpp>
 
-ProjectProxy::ProjectProxy(const std::string name)
+ProjectProxy::ProjectProxy()
 {
-	this->project = new wendy::Project(name);
-	this->project->addListener(this);
+	this->project = new wendy::Project(this);
+	this->project->connect();
+}
+
+ProjectProxy::~ProjectProxy()
+{
+	this->project->disconnect();
 }
 
 std::vector<std::string> ProjectProxy::listDirectory(std::string name)
