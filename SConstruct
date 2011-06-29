@@ -17,13 +17,7 @@ testEnv.Append(LIBS = ["wendy"])
 if testEnv["CC"] == "cl":
 	testEnv.Append(CPPFLAGS = ["/EHsc"])
 testEnv.Program("libwendy/tests/bin/list", "libwendy/tests/src/list.cpp")
-
-#dmdBuilder = Builder(action = "dmd -of$TARGET $DMDFLAGS $SOURCES", suffix = ".exe", src_suffix = ".d")
-
-#daemonEnv = Environment(tools = ["default", "dmd"], ENV = {"PATH": os.environ["PATH"]})
-#daemonEnv.Append(BUILDERS = {"Dmd": dmdBuilder})
-#daemonEnv.Append(DMDFLAGS = ["-Idaemon", "-w", "-g", "-unittest"])
-#daemonEnv.Dmd("daemon/bin/wendy", daemonEnv.Glob("daemon/wendy/*.d") + daemonEnv.Glob("daemon/wendy/*/*.d"))
+testEnv.Program("libwendy/tests/bin/threading", "libwendy/tests/src/threading.cpp")
 
 fsEnv = Environment(tools = ["default"], ENV = os.environ)
 fsEnv.Append(CPPPATH = ["libwendy/include"])
