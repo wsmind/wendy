@@ -8,6 +8,9 @@ if libEnv["CC"] == "cl":
 	libEnv.Append(LIBS = ["ws2_32"])
 else:
 	libEnv.Append(CPPFLAGS = ["-O2", "-Wall"])
+
+if os.name == "posix":
+	libEnv.Append(LIBS = ["pthread"])
 libEnv.SharedLibrary("libwendy/lib/wendy", libEnv.Glob("libwendy/src/wendy/*.cpp"))
 
 testEnv = Environment(tools = ["default"], ENV = os.environ)

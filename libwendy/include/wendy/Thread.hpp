@@ -5,6 +5,9 @@
 
 #ifdef _WIN32
 #	include <windows.h>
+#else
+#	include <unistd.h>
+#	include <pthread.h>
 #endif
 
 namespace wendy {
@@ -32,13 +35,21 @@ class WENDYAPI Thread
 		 */
 		~Thread();
 		
+		/**
+		 * \brief Put the current thread to sleep temporarily
+		 */
+		static void sleepSeconds(unsigned int seconds);
+		
 	private:
 #		ifdef _WIN32
 			/// windows-specific wrapper function
-			static DWORD WINAPI threadRunner(LPVOID lpParameter);
+			static DWORD WINAPI winThreadRunner(LPVOID lpParameter);
 			
 			/// windows-specific thread handle
-			HANDLE handle;
+			HANDLE winHandle;
+#		else
+			static void *posixThreadRunner(void *data);
+			pthread_t posixThread;
 #		endif
 };
 

@@ -17,7 +17,7 @@ class DualDumb: public wendy::Runnable
 			this->thread = new wendy::Thread(this);
 			
 			// wait
-			Sleep(200);
+			wendy::Thread::sleepSeconds(2);
 			
 			// ask something
 			{
@@ -27,7 +27,7 @@ class DualDumb: public wendy::Runnable
 				std::cin >> plop;
 			}
 			
-			Sleep(200);
+			wendy::Thread::sleepSeconds(2);
 			
 			this->running = false;
 		}
@@ -50,7 +50,7 @@ class DualDumb: public wendy::Runnable
 					
 					std::cout << "i'm talking to u :p" << std::endl;
 				}
-				Sleep(50);
+				wendy::Thread::sleepSeconds(1);
 			}
 		}
 		
