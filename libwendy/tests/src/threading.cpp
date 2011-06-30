@@ -10,22 +10,26 @@ class DualDumb: public wendy::Runnable
 	public:
 		DualDumb()
 		{
+			this->running = true;
 			this->mutex = new wendy::Mutex;
 			
 			// start dumb printer thread
 			this->thread = new wendy::Thread(this);
 			
 			// wait
-			Sleep(1000);
+			Sleep(200);
 			
 			// ask something
 			{
 				std::string plop;
-				wendy::ScopeLock(this->mutex);
+				wendy::ScopeLock lock(this->mutex);
+				std::cout << "question: ";
 				std::cin >> plop;
 			}
 			
-			Sleep(1000);
+			Sleep(200);
+			
+			this->running = false;
 		}
 		
 		~DualDumb()
@@ -36,14 +40,21 @@ class DualDumb: public wendy::Runnable
 			delete this->mutex;
 		}
 		
-		void run()
+		virtual void run()
 		{
-			// take lock for user
-			wendy::ScopeLock(this->mutex);
-			
-			std::cout << "i'm talking to u :p" << std::endl;
+			while (this->running)
+			{
+				{
+					// take lock for user
+					wendy::ScopeLock lock(this->mutex);
+					
+					std::cout << "i'm talking to u :p" << std::endl;
+				}
+				Sleep(50);
+			}
 		}
 		
+		bool running;
 		wendy::Mutex *mutex;
 		wendy::Thread *thread;
 };

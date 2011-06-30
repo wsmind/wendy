@@ -20,7 +20,7 @@ class WENDYAPI Runnable
 		/**
 		 * \brief Processing method
 		 */
-		void run() {}
+		virtual void run() {}
 };
 
 } // wendy namespace
