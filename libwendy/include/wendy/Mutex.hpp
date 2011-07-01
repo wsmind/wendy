@@ -5,6 +5,8 @@
 
 #ifdef _WIN32
 #	include <windows.h>
+#else
+#	include <pthread.h>
 #endif
 
 namespace wendy {
@@ -21,6 +23,8 @@ class WENDYAPI Mutex
 	private:
 #		ifdef _WIN32
 			CRITICAL_SECTION criticalSection;
+#		else
+			pthread_mutex_t posixMutex;
 #		endif
 };
 

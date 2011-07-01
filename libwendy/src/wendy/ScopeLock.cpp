@@ -2,6 +2,8 @@
 
 #include <wendy/Mutex.hpp>
 
+#include <iostream>
+
 namespace wendy {
 
 ScopeLock::ScopeLock(Mutex *mutex)
