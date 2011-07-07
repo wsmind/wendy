@@ -20,6 +20,7 @@ testEnv.Append(LIBS = ["wendy"])
 if testEnv["CC"] == "cl":
 	testEnv.Append(CPPFLAGS = ["/EHsc"])
 testEnv.Program("libwendy/tests/bin/list", "libwendy/tests/src/list.cpp")
+testEnv.Program("libwendy/tests/bin/queue", "libwendy/tests/src/queue.cpp")
 testEnv.Program("libwendy/tests/bin/threading", "libwendy/tests/src/threading.cpp")
 
 fsEnv = Environment(tools = ["default"], ENV = os.environ)

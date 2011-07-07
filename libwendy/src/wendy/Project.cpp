@@ -33,6 +33,10 @@ bool Project::isConnected()
 	return this->stream && this->stream->isConnected();
 }
 
+void Project::waitChanges()
+{
+}
+
 void Project::plop()
 {
 	std::string line;

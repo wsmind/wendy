@@ -33,7 +33,7 @@ void Thread::sleepSeconds(unsigned int seconds)
 }
 
 #ifdef _WIN32
-DWORD WINAPI Thread::threadRunner(LPVOID lpParameter)
+DWORD WINAPI Thread::winThreadRunner(LPVOID lpParameter)
 {
 	Runnable *runnable = (Runnable *)lpParameter;
 	runnable->run();

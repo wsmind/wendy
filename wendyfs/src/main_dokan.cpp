@@ -11,13 +11,13 @@
 
 static ProjectProxy *proxy = NULL;
 
-static int DOKAN_CALLBACK PlopCreateFile(LPCWSTR filename, DWORD accessMode, DWORD shareMode, DWORD creationDisposition, DWORD flagsAndAttributes, PDOKAN_FILE_INFO info)
+static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DWORD shareMode, DWORD creationDisposition, DWORD flagsAndAttributes, PDOKAN_FILE_INFO info)
 {
 	wprintf(L"CreateFile: %s\n", filename);
 	return 0;
 }
 
-static int DOKAN_CALLBACK PlopOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
+static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
 	wprintf(L"OpenDir %s\n", filename);
 	
@@ -29,14 +29,14 @@ static int DOKAN_CALLBACK PlopOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO i
 	return -ERROR_PATH_NOT_FOUND;
 }
 
-static int DOKAN_CALLBACK PlopCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
+static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
 	wprintf(L"Cleanup %s\n", filename);
 	
 	return 0;
 }
 
-static int DOKAN_CALLBACK PlopFindFiles(LPCWSTR filename, PFillFindData	fillFindData, PDOKAN_FILE_INFO info)
+static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData	fillFindData, PDOKAN_FILE_INFO info)
 {
 	WIN32_FIND_DATAW entry;
 	
@@ -88,10 +88,10 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 	options.Options = DOKAN_OPTION_KEEP_ALIVE;
 	
 	ZeroMemory(&operations, sizeof(DOKAN_OPERATIONS));
-	operations.CreateFile = PlopCreateFile;
-	operations.OpenDirectory = PlopOpenDirectory;
-	operations.Cleanup = PlopCleanup;
-	operations.FindFiles = PlopFindFiles;
+	operations.CreateFile = WendyCreateFile;
+	operations.OpenDirectory = WendyOpenDirectory;
+	operations.Cleanup = WendyCleanup;
+	operations.FindFiles = WendyFindFiles;
 	
 	//char projectName[500];
 	//WideCharToMultiByte(CP_UTF8, 0, argv[2], -1, projectName, 500, NULL, NULL);
