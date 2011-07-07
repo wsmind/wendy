@@ -1,5 +1,7 @@
 #include <wendy/Mutex.hpp>
 
+#include <wendy/ConditionVariable.hpp>
+
 namespace wendy {
 
 Mutex::Mutex()
@@ -36,6 +38,20 @@ void Mutex::release()
 #	else
 		pthread_mutex_unlock(&this->posixMutex);
 #	endif
+}
+
+ConditionVariable *Mutex::createConditionVariable()
+{
+#	ifdef _WIN32
+		return new ConditionVariable(&this->criticalSection);
+#	else
+		return new ConditionVariable(&this->posixMutex);
+#	endif
+}
+
+void Mutex::destroyConditionVariable(ConditionVariable *variable)
+{
+	delete variable;
 }
 
 } // wendy namespace

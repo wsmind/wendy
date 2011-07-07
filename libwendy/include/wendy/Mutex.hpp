@@ -11,6 +11,8 @@
 
 namespace wendy {
 
+class ConditionVariable;
+
 class WENDYAPI Mutex
 {
 	public:
@@ -19,6 +21,13 @@ class WENDYAPI Mutex
 		
 		void acquire();
 		void release();
+		
+		/**
+		 * \brief Create a condition variable associated with this mutex
+		 */
+		ConditionVariable *createConditionVariable();
+		
+		void destroyConditionVariable(ConditionVariable *variable);
 		
 	private:
 #		ifdef _WIN32
