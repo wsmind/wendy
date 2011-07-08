@@ -21,7 +21,7 @@ ConditionVariable::~ConditionVariable()
 #	ifdef WIN32
 		CloseHandle(this->event);
 #	else
-		pthread_cond_destroy(&this->positionCondition);
+		pthread_cond_destroy(&this->posixCondition);
 #	endif
 }
 
