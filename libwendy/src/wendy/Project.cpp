@@ -1,6 +1,7 @@
 #include <wendy/Project.hpp>
 
 #include <iostream>
+#include <wendy/AssetReader.hpp>
 #include <wendy/LocalStream.hpp>
 #include <wendy/ProjectListener.hpp>
 
@@ -10,6 +11,7 @@ Project::Project(ProjectListener *listener)
 {
 	this->listener = listener;
 	this->stream = NULL;
+	this->reader = NULL;
 }
 
 Project::~Project()
@@ -20,10 +22,14 @@ Project::~Project()
 void Project::connect()
 {
 	this->stream = new LocalStream(46288);
+	this->reader = new AssetReader(this->stream);
 }
 
 void Project::disconnect()
 {
+	delete this->reader;
+	this->reader = NULL;
+	
 	delete this->stream;
 	this->stream = NULL;
 }
@@ -34,6 +40,10 @@ bool Project::isConnected()
 }
 
 void Project::waitChanges()
+{
+}
+
+void Project::checkChanges()
 {
 }
 

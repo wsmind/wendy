@@ -8,6 +8,7 @@
 
 namespace wendy {
 
+class AssetReader;
 class LocalStream;
 class ProjectListener;
 
@@ -28,7 +29,8 @@ class WENDYAPI Project
 		 * \brief Block current thread until new information about asset arrives
 		 *
 		 * Will block until at least one new information packet about an asset is
-		 * received.
+		 * received. When something is received, changes will be processed and
+		 * listeners will be called in the current thread.
 		 */
 		void waitChanges();
 		
@@ -37,12 +39,16 @@ class WENDYAPI Project
 		 *
 		 * This method is non-blocking. If no changes were received,
 		 * nothing happens and the function returns instantly.
+		 *
+		 * When some changes were received, listeners will be called in the
+		 * current thread.
 		 */
-		void processChanges();
+		void checkChanges();
 		
 		void plop();
 		
 	private:
+		AssetReader *reader;
 		ProjectListener *listener;
 		LocalStream *stream;
 };

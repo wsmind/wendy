@@ -40,7 +40,8 @@ class Queue
 		/**
 		 * \brief Pops the first element available and return it
 		 *
-		 * Blocks until at least one element is available.
+		 * Blocks until at least one element is available. If isEmpty() returned false,
+		 * the next call to this method is guaranteed not to blocK.
 		 */
 		PayloadType receive();
 		
