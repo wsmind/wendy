@@ -6,6 +6,7 @@
 
 namespace wendy {
 
+class ConditionVariable;
 class Mutex;
 
 /**
@@ -27,6 +28,11 @@ class Queue
 		~Queue();
 		
 		/**
+		 * \brief Test if elements are present in the queue (non-blocking)
+		 */
+		bool isEmpty();
+		
+		/**
 		 * \brief Send an element through the queue
 		 */
 		void send(const PayloadType &element);
@@ -41,6 +47,7 @@ class Queue
 	private:
 		std::list<PayloadType> internalQueue;
 		wendy::Mutex *mutex;
+		wendy::ConditionVariable *conditionVariable;
 };
 
 } // wendy namespace
