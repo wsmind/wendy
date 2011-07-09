@@ -26,7 +26,7 @@ int main()
 	
 	while (project->isConnected())
 	{
-		project->plop();
+		project->waitChanges();
 	}
 	
 	project->disconnect();

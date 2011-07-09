@@ -9,6 +9,7 @@
 namespace wendy {
 
 class AssetReader;
+struct AssetNotification;
 class LocalStream;
 class ProjectListener;
 
@@ -48,6 +49,8 @@ class WENDYAPI Project
 		void plop();
 		
 	private:
+		void processNotification(const AssetNotification& notification);
+		
 		AssetReader *reader;
 		ProjectListener *listener;
 		LocalStream *stream;

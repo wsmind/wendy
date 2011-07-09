@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <wendy/AssetReader.hpp>
+#include <wendy/AssetNotification.hpp>
 #include <wendy/LocalStream.hpp>
 #include <wendy/ProjectListener.hpp>
 
@@ -41,10 +42,18 @@ bool Project::isConnected()
 
 void Project::waitChanges()
 {
+	AssetNotification notification = this->reader->getNextNotification();
+	this->processNotification(notification);
 }
 
 void Project::checkChanges()
 {
+	// process only available notifications, in order not to block
+	while (this->reader->hasNotification())
+	{
+		AssetNotification notification = this->reader->getNextNotification();
+		this->processNotification(notification);
+	}
 }
 
 void Project::plop()
@@ -56,6 +65,11 @@ void Project::plop()
 		std::cin >> line;
 		this->stream->writeLine(line);
 	}
+}
+
+void Project::processNotification(const AssetNotification& notification)
+{
+	std::cout << "asset " << notification.asset.id << " got notification!!" << std::endl;
 }
 
 } // wendy namespace
