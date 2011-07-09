@@ -2,3 +2,5 @@
 *.os
 *.obj
 *.pyc
+.sconsign.dblite
+

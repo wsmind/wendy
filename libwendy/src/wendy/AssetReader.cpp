@@ -14,5 +14,20 @@ AssetReader::~AssetReader()
 {
 }
 
+void AssetReader::run()
+{
+}
+
+bool AssetReader::hasNotification()
+{
+	return !this->queue->isEmpty();
+}
+
+AssetNotification AssetReader::getNextNotification()
+{
+	AssetNotification notification = this->queue->receive();
+	return notification;
+}
+
 } // wendy namespace
 
