@@ -26,7 +26,7 @@ bool Queue<PayloadType>::isEmpty()
 {
 	ScopeLock(this->mutex);
 	
-	return (this->internalQueue.size() > 0);
+	return (this->internalQueue.size() == 0);
 }
 
 template <class PayloadType>

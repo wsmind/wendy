@@ -5,6 +5,9 @@
 
 #include <string>
 #include <list>
+#include <map>
+
+#include <wendy/Asset.hpp>
 
 namespace wendy {
 
@@ -46,7 +49,7 @@ class WENDYAPI Project
 		 */
 		void checkChanges();
 		
-		void plop();
+		const Asset getAsset(const std::string &id);
 		
 	private:
 		void processNotification(const AssetNotification& notification);
@@ -54,6 +57,9 @@ class WENDYAPI Project
 		AssetReader *reader;
 		ProjectListener *listener;
 		LocalStream *stream;
+		
+		typedef std::map<std::string, Asset> AssetMap;
+		AssetMap assets;
 };
 
 } // wendy namespace

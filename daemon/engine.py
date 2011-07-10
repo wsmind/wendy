@@ -144,6 +144,14 @@ class Engine(MetadataListener):
 	def removeListener(self, listener):
 		self.listeners.remove(listener)
 	
+	def dumpAssets(self, listener):
+		"Dump all assets to a given listener, as if they were all just updated"
+		
+		# TODO: use local assets instead
+		# TODO: add locking on localAssets
+		for asset in self.remoteAssets.values():
+			listener.assetChanged(asset.id, asset)
+	
 	def assetChanged(self, assetId, asset):
 		# check for duplicate notification
 		if assetId in self.remoteAssets:
@@ -152,8 +160,6 @@ class Engine(MetadataListener):
 		
 		# TODO: translate to local asset information (+ download info, local rev, etc.)
 		self.remoteAssets[asset.id] = asset
-		print("plotch")
-		print(asset)
 		
 		for listener in self.listeners:
 			listener.assetChanged(assetId, asset)

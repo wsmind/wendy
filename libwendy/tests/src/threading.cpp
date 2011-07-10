@@ -39,6 +39,15 @@ class DualDumb: public wendy::Runnable
 				std::cout << "third dumb message printed!" << std::endl;
 			}
 			
+			// wait for the fourth talking message
+			{
+				wendy::ScopeLock lock(this->mutex);
+				while (this->counter < 4)
+					this->cond->wait();
+				
+				std::cout << "fourth dumb message printed!" << std::endl;
+			}
+			
 			wendy::Thread::sleepSeconds(2);
 			
 			this->running = false;

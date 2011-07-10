@@ -40,6 +40,8 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData	fillFin
 {
 	WIN32_FIND_DATAW entry;
 	
+	wprintf(L"FindFiles %s\n", filename);
+	
 	if (wcscmp(filename, L"\\") != 0)
 		return -ERROR_PATH_NOT_FOUND;
 	

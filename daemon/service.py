@@ -36,30 +36,34 @@ class Server(engine.EngineListener):
 		self.socket.listen(10)
 		self.engine = engine
 		self.clients = []
-		
-		self.engine.addListener(self)
 	
 	def waitConnections(self):
 		while True:
 			(clientSocket, clientAddress) = self.socket.accept()
-			self.clients.append(ClientHandler(clientSocket))
-	
-	def assetChanged(self, assetId, asset):
-		print("Asset " + assetId + " changed !!!")
-	
-	def assetRemoved(self, assetId):
-		print("Asset " + assetId + " removed !!!")
+			self.clients.append(ClientHandler(clientSocket, self.engine))
 
 class ClientHandler:
-	def __init__(self, socket):
+	def __init__(self, socket, engine):
 		self.socket = socket
-		self.socket.send("HELLOOOO\n")
+		self.engine = engine
+		self.engine.addListener(self)
 		self.thread = threading.Thread(target = self)
 		self.thread.start()
+		
+		# initial dump
+		self.engine.dumpAssets(self)
 	
 	def __call__(self):
 		buf = self.socket.recv(100)
 		while buf:
 			print(buf)
 			buf = self.socket.recv(100)
-
+	
+	def assetChanged(self, assetId, asset):
+		self.socket.send("UPDATED " + str(assetId) + "\n")
+		self.socket.send("path " + asset["path"] + "\n")
+		self.socket.send("END\n")
+	
+	def assetRemoved(self, assetId):
+		self.socket.send("REMOVED " + str(assetId) + "\n")
+		self.socket.send("END\n")

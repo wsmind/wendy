@@ -5,11 +5,15 @@
 class TestPlop: public wendy::ProjectListener
 {
 	public:
-		virtual void assetAdded(wendy::Project *project, wendy::Asset *asset)
+		virtual void assetAdded(wendy::Project *project, const wendy::Asset &asset)
 		{
 		}
 		
-		virtual void assetRemoved(wendy::Project *project, wendy::Asset *asset)
+		virtual void assetUpdated(wendy::Project *project, const wendy::Asset &asset)
+		{
+		}
+		
+		virtual void assetRemoved(wendy::Project *project, const wendy::Asset &asset)
 		{
 		}
 };

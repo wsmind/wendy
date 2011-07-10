@@ -23,7 +23,9 @@ class Processor: public wendy::Runnable
 			this->queue->send("exit");
 			
 			// join thread
+			std::cout << "joining" << std::endl;
 			delete this->thread;
+			std::cout << "joined" << std::endl;
 			
 			delete this->queue;
 		}
@@ -38,6 +40,7 @@ class Processor: public wendy::Runnable
 			bool running = true;
 			while (running)
 			{
+				wendy::Thread::sleepSeconds(1);
 				std::string thing = this->queue->receive();
 				
 				if (thing == "exit")
@@ -62,6 +65,7 @@ int main()
 	
 	proc.process("aladdin");
 	proc.process("mickey");
+	wendy::Thread::sleepSeconds(5);
 	proc.process("goofy");
 	
 	return 0;

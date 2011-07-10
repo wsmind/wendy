@@ -15,7 +15,7 @@ struct WENDYAPI AssetNotification
 	enum NotificationType
 	{
 		UPDATED,
-		DELETED
+		REMOVED
 	};
 	
 	/// what happened to this asset

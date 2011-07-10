@@ -5,7 +5,7 @@
 
 namespace wendy {
 
-class Asset;
+struct Asset;
 class Project;
 
 /**
@@ -14,8 +14,9 @@ class Project;
 class WENDYAPI ProjectListener
 {
 	public:
-		virtual void assetAdded(Project *project, Asset *asset) {}
-		virtual void assetRemoved(Project *project, Asset *asset) {}
+		virtual void assetAdded(Project *project, const Asset &asset) {}
+		virtual void assetUpdated(Project *project, const Asset &asset) {}
+		virtual void assetRemoved(Project *project, const Asset &asset) {}
 };
 
 } // wendy namespace

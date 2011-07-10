@@ -56,20 +56,46 @@ void Project::checkChanges()
 	}
 }
 
-void Project::plop()
+const Asset Project::getAsset(const std::string &id)
 {
-	std::string line;
-	while (this->stream->readLine(&line))
-	{
-		std::cout << "line: " << line << std::endl;
-		std::cin >> line;
-		this->stream->writeLine(line);
-	}
+	AssetMap::iterator it = this->assets.find(id);
+	if (it != this->assets.end())
+		return it->second;
+	
+	return Asset();
 }
 
 void Project::processNotification(const AssetNotification& notification)
 {
-	std::cout << "asset " << notification.asset.id << " got notification!!" << std::endl;
+	std::cout << "asset " << notification.asset.id << " got notification " << notification.type << std::endl;
+	
+	std::string id = notification.asset.id;
+	bool existing = (this->assets.find(id) != this->assets.end());
+	
+	switch (notification.type)
+	{
+		case AssetNotification::UPDATED:
+		{
+			this->assets[id] = notification.asset;
+			
+			if (!existing)
+				this->listener->assetAdded(this, notification.asset);
+			else
+				this->listener->assetUpdated(this, notification.asset);
+			
+			break;
+		}
+		
+		case AssetNotification::REMOVED:
+		{
+			if (!existing)
+				break;
+			
+			this->listener->assetRemoved(this, this->assets[id]);
+			this->assets.erase(id);
+			break;
+		}
+	}
 }
 
 } // wendy namespace
