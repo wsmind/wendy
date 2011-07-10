@@ -99,7 +99,11 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 	//WideCharToMultiByte(CP_UTF8, 0, argv[2], -1, projectName, 500, NULL, NULL);
 	proxy = new ProjectProxy();
 	
-	return DokanMain(&options, &operations);
+	int result = DokanMain(&options, &operations);
+	
+	delete proxy;
+	
+	return result;
 }
 
 #endif // _WIN32
