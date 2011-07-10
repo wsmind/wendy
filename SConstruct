@@ -33,9 +33,13 @@ else:
 	fsEnv.Append(CPPFLAGS = ["-O2", "-Wall"])
 
 if os.name == "nt":
+	# TODO: remove hard-coded dokan path
 	fsEnv.Append(CPPPATH = ["C:\\Program Files (x86)\\Dokan\\DokanLibrary"])
 	fsEnv.Append(LIBPATH = ["C:\\Program Files (x86)\\Dokan\\DokanLibrary"])
 	fsEnv.Append(CPPDEFINES = ["UNICODE", "_UNICODE"])
 	fsEnv.Append(LIBS = ["dokan"])
+else:
+	fsEnv.ParseConfig("pkg-config --cflags --libs fuse")
+	fsEnv.Append(CPPDEFINES = "FUSE_USE_VERSION=28")
 
 fsEnv.Program("wendyfs/bin/wendyfs", fsEnv.Glob("wendyfs/src/*.cpp"))
