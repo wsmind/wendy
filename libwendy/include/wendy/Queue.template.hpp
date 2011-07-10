@@ -24,7 +24,7 @@ Queue<PayloadType>::~Queue()
 template <class PayloadType>
 bool Queue<PayloadType>::isEmpty()
 {
-	ScopeLock(this->mutex);
+	ScopeLock lock(this->mutex);
 	
 	return (this->internalQueue.size() == 0);
 }
@@ -32,7 +32,7 @@ bool Queue<PayloadType>::isEmpty()
 template <class PayloadType>
 void Queue<PayloadType>::send(const PayloadType &element)
 {
-	ScopeLock(this->mutex);
+	ScopeLock lock(this->mutex);
 	
 	this->internalQueue.push_back(element);
 	this->conditionVariable->signal();
@@ -41,7 +41,7 @@ void Queue<PayloadType>::send(const PayloadType &element)
 template <class PayloadType>
 PayloadType Queue<PayloadType>::receive()
 {
-	ScopeLock(this->mutex);
+	ScopeLock lock(this->mutex);
 	
 	// wait for at least an element
 	while (this->internalQueue.size() == 0)
