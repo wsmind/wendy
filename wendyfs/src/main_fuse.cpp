@@ -39,9 +39,15 @@ static ProjectProxy *proxy = NULL;
 
 static int wendy_getattr(const char *path, struct stat *stbuf)
 {
+	std::string filename = path;
+	ProjectProxy::FileAttributes attributes;
+	
+	if (!proxy->getFileAttributes(filename.substr(1), &attributes))
+		return -ENOENT;
+	
 	memset(stbuf, 0, sizeof(struct stat));
 	
-	if (!strcmp(path, "/"))
+	if (attributes.folder)
 	{
 		stbuf->st_mode = S_IFDIR | 0750;
 		stbuf->st_nlink = 2;
@@ -88,7 +94,7 @@ static int wendy_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
 	filler(buf, "..", NULL, 0);
 	
 	std::string dirname = path;
-	std::vector<std::string> files = proxy->listDirectory(dirname.substr(1));
+	std::vector<std::string> files = proxy->listFolder(dirname.substr(1));
 	for (unsigned int i = 0; i < files.size(); ++i)
 	{
 		std::cout << "found: " << files[i] << std::endl;

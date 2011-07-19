@@ -60,11 +60,22 @@ void ProjectProxy::assetRemoved(wendy::Project *project, const wendy::Asset &ass
 	this->root->remove(asset.path);
 }
 
-std::vector<std::string> ProjectProxy::listDirectory(std::string name)
+bool ProjectProxy::getFileAttributes(const std::string &path, FileAttributes *attributes)
+{
+	Node *node = this->root->find(path);
+	if (!node)
+		return false;
+	
+	attributes->folder = (node->getId() == "");
+	
+	return true;
+}
+
+std::vector<std::string> ProjectProxy::listFolder(const std::string &path)
 {
 	// update local asset list
 	this->project->checkChanges();
 	
-	Node *node = this->root->find(name);
+	Node *node = this->root->find(path);
 	return node->list();
 }

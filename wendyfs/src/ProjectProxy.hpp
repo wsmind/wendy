@@ -45,7 +45,15 @@ class ProjectProxy: public wendy::ProjectListener
 		virtual void assetUpdated(wendy::Project *project, const wendy::Asset &asset);
 		virtual void assetRemoved(wendy::Project *project, const wendy::Asset &asset);
 		
-		std::vector<std::string> listDirectory(std::string name);
+		struct FileAttributes
+		{
+			bool folder;
+		};
+		
+		// return false if not found
+		bool getFileAttributes(const std::string &path, FileAttributes *attributes);
+		
+		std::vector<std::string> listFolder(const std::string &path);
 	
 	private:
 		wendy::Project *project;
