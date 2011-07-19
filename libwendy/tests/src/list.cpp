@@ -35,7 +35,7 @@ class TestPlop: public wendy::ProjectListener
 		{
 		}
 		
-		virtual void assetUpdated(wendy::Project *project, const wendy::Asset &asset)
+		virtual void assetUpdated(wendy::Project *project, const wendy::Asset &oldAsset, const wendy::Asset &newAsset)
 		{
 		}
 		

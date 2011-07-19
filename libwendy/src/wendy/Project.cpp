@@ -102,12 +102,13 @@ void Project::processNotification(const AssetNotification& notification)
 	{
 		case AssetNotification::UPDATED:
 		{
+			Asset old = this->assets[id];
 			this->assets[id] = notification.asset;
 			
 			if (!existing)
 				this->listener->assetAdded(this, notification.asset);
 			else
-				this->listener->assetUpdated(this, notification.asset);
+				this->listener->assetUpdated(this, old, notification.asset);
 			
 			break;
 		}

@@ -49,10 +49,10 @@ void ProjectProxy::assetAdded(wendy::Project *project, const wendy::Asset &asset
 	this->root->insert(asset.path, asset.id);
 }
 
-void ProjectProxy::assetUpdated(wendy::Project *project, const wendy::Asset &asset)
+void ProjectProxy::assetUpdated(wendy::Project *project, const wendy::Asset &oldAsset, const wendy::Asset &newAsset)
 {
-	this->root->remove(asset.path);
-	this->root->insert(asset.path, asset.id);
+	this->root->remove(oldAsset.path);
+	this->root->insert(newAsset.path, newAsset.id);
 }
 
 void ProjectProxy::assetRemoved(wendy::Project *project, const wendy::Asset &asset)

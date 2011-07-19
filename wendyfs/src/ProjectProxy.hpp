@@ -42,7 +42,7 @@ class ProjectProxy: public wendy::ProjectListener
 		~ProjectProxy();
 		
 		virtual void assetAdded(wendy::Project *project, const wendy::Asset &asset);
-		virtual void assetUpdated(wendy::Project *project, const wendy::Asset &asset);
+		virtual void assetUpdated(wendy::Project *project, const wendy::Asset &oldAsset, const wendy::Asset &newAsset);
 		virtual void assetRemoved(wendy::Project *project, const wendy::Asset &asset);
 		
 		struct FileAttributes
