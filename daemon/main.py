@@ -25,6 +25,7 @@
 ###############################################################################
 
 import sys
+import os
 
 import engine
 import service
@@ -37,5 +38,10 @@ if __name__ == "__main__":
 	
 	e = engine.Engine(sys.argv[1], sys.argv[2])
 	s = service.Server(e)
-	s.waitConnections()
+	
+	# terminate the whole process if SIGTERM is received
+	try:
+		s.waitConnections()
+	except KeyboardInterrupt:
+		os._exit(1)
 

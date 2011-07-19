@@ -33,6 +33,8 @@
 #include <wendy/Project.hpp>
 #include <wendy/ProjectListener.hpp>
 
+class Node;
+
 class ProjectProxy: public wendy::ProjectListener
 {
 	public:
@@ -48,8 +50,8 @@ class ProjectProxy: public wendy::ProjectListener
 	private:
 		wendy::Project *project;
 		
-		// cross-reference assets by path
-		std::map<std::string, wendy::Asset> assets;
+		// cross-reference asset IDs by path
+		Node *root;
 };
 
 #endif //  __PROJECTPROXY_HPP__

@@ -33,6 +33,8 @@
 
 #include "ProjectProxy.hpp"
 
+#include <iostream>
+
 static ProjectProxy *proxy = NULL;
 
 static int wendy_getattr(const char *path, struct stat *stbuf)
@@ -53,14 +55,45 @@ static int wendy_getattr(const char *path, struct stat *stbuf)
 	return 0;
 }
 
+static int wendy_readlink(const char *path, char *target, size_t targetSize)
+{
+	// no support for symlinks
+	strcpy(target, "");
+	return 0;
+}
+
+static int wendy_mknod(const char *path, mode_t mode, dev_t dev)
+{
+	return 0;
+}
+
+static int wendy_mkdir(const char *path, mode_t mode)
+{
+	return 0;
+}
+
+static int wendy_unlink(const char *path)
+{
+	return 0;
+}
+
+static int wendy_rmdir(const char *path)
+{
+	return 0;
+}
+
 static int wendy_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
 {
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0);
 	
-	std::vector<std::string> files = proxy->listDirectory("");
+	std::string dirname = path;
+	std::vector<std::string> files = proxy->listDirectory(dirname.substr(1));
 	for (unsigned int i = 0; i < files.size(); ++i)
+	{
+		std::cout << "found: " << files[i] << std::endl;
 		filler(buf, files[i].c_str(), NULL, 0);
+	}
 	
 	return 0;
 }
@@ -70,6 +103,11 @@ int main(int argc, char **argv)
 	fuse_operations operations;
 	memset(&operations, 0, sizeof(operations));
 	operations.getattr = wendy_getattr;
+	/*operations.readlink = wendy_readlink;
+	operations.mknod = wendy_mknod;
+	operations.mkdir = wendy_mkdir;
+	operations.unlink = wendy_unlink;
+	operations.rmdir = wendy_rmdir;*/
 	operations.readdir = wendy_readdir;
 	
 	proxy = new ProjectProxy();
