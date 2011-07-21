@@ -79,3 +79,14 @@ std::vector<std::string> ProjectProxy::listFolder(const std::string &path)
 	Node *node = this->root->find(path);
 	return node->list();
 }
+
+void ProjectProxy::createFolder(const std::string &path)
+{
+	this->root->insert(path, "");
+}
+
+void ProjectProxy::removeFolder(const std::string &path)
+{
+	this->root->remove(path);
+}
+

@@ -37,12 +37,18 @@
 
 static ProjectProxy *proxy = NULL;
 
-static int wendy_getattr(const char *path, struct stat *stbuf)
+// remove leading slash
+static std::string makePathStandard(const char *filename)
 {
-	std::string filename = path;
+	return std::string(filename).substr(1);
+}
+
+static int wendy_getattr(const char *filename, struct stat *stbuf)
+{
+	std::string path = makePathStandard(filename);
 	ProjectProxy::FileAttributes attributes;
 	
-	if (!proxy->getFileAttributes(filename.substr(1), &attributes))
+	if (!proxy->getFileAttributes(path, &attributes))
 		return -ENOENT;
 	
 	memset(stbuf, 0, sizeof(struct stat));
@@ -61,40 +67,46 @@ static int wendy_getattr(const char *path, struct stat *stbuf)
 	return 0;
 }
 
-static int wendy_readlink(const char *path, char *target, size_t targetSize)
+static int wendy_readlink(const char *filename, char *target, size_t targetSize)
 {
 	// no support for symlinks
 	strcpy(target, "");
 	return 0;
 }
 
-static int wendy_mknod(const char *path, mode_t mode, dev_t dev)
+static int wendy_mknod(const char *filename, mode_t mode, dev_t dev)
 {
 	return 0;
 }
 
-static int wendy_mkdir(const char *path, mode_t mode)
+static int wendy_mkdir(const char *filename, mode_t mode)
+{
+	std::string path = makePathStandard(filename);
+	proxy->createFolder(path);
+	return 0;
+}
+
+static int wendy_unlink(const char *filename)
 {
 	return 0;
 }
 
-static int wendy_unlink(const char *path)
+static int wendy_rmdir(const char *filename)
 {
+	std::string path = makePathStandard(filename);
+	proxy->removeFolder(path);
 	return 0;
 }
 
-static int wendy_rmdir(const char *path)
+static int wendy_readdir(const char *filename, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
 {
-	return 0;
-}
-
-static int wendy_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
-{
+	std::string path = makePathStandard(filename);
+	
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0);
 	
 	std::string dirname = path;
-	std::vector<std::string> files = proxy->listFolder(dirname.substr(1));
+	std::vector<std::string> files = proxy->listFolder(path);
 	for (unsigned int i = 0; i < files.size(); ++i)
 	{
 		std::cout << "found: " << files[i] << std::endl;
@@ -109,11 +121,11 @@ int main(int argc, char **argv)
 	fuse_operations operations;
 	memset(&operations, 0, sizeof(operations));
 	operations.getattr = wendy_getattr;
-	/*operations.readlink = wendy_readlink;
-	operations.mknod = wendy_mknod;
+	//operations.readlink = wendy_readlink;
+	//operations.mknod = wendy_mknod;
 	operations.mkdir = wendy_mkdir;
-	operations.unlink = wendy_unlink;
-	operations.rmdir = wendy_rmdir;*/
+	//operations.unlink = wendy_unlink;
+	operations.rmdir = wendy_rmdir;
 	operations.readdir = wendy_readdir;
 	
 	proxy = new ProjectProxy();

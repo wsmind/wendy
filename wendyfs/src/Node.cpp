@@ -107,7 +107,7 @@ void Node::remove(const std::string &path)
 		// remove path in subfolders
 		NodeMap::iterator it = this->subNodes.find(childName);
 		if (it != this->subNodes.end())
-			this->subNodes[childName]->remove(path);
+			this->subNodes[childName]->remove(childPath);
 	}
 }
 
@@ -123,5 +123,9 @@ void Node::extractPathComponents(const std::string &path, std::string *childName
 		else
 			*childPath = "";
 	}
+	
+	std::cout << "extracting from '" << path << "'" << std::endl;
+	std::cout << "slash pos: " << slashPos << std::endl;
+	std::cout << "extracted: '" << *childName << "' / '" << *childPath << "'" << std::endl;
 }
 

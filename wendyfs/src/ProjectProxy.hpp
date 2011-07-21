@@ -54,6 +54,9 @@ class ProjectProxy: public wendy::ProjectListener
 		bool getFileAttributes(const std::string &path, FileAttributes *attributes);
 		
 		std::vector<std::string> listFolder(const std::string &path);
+		
+		void createFolder(const std::string &path);
+		void removeFolder(const std::string &path);
 	
 	private:
 		wendy::Project *project;
