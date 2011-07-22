@@ -91,13 +91,23 @@ static std::string makePathStandard(LPCWSTR path)
 
 static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DWORD shareMode, DWORD creationDisposition, DWORD flagsAndAttributes, PDOKAN_FILE_INFO info)
 {
-	//wprintf(L"CreateFile: %s\n", filename);
+	wprintf(L"CreateFile: %s\n", filename);
+	
+	std::string path = makePathStandard(filename);
+	
+	ProjectProxy::FileAttributes attributes;
+	if (!proxy->getFileAttributes(path, &attributes))
+		return -ERROR_PATH_NOT_FOUND;
+	
+	if (attributes.folder)
+		info->IsDirectory = TRUE;
+	
 	return 0;
 }
 
 static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	//wprintf(L"OpenDir %s\n", filename);
+	wprintf(L"OpenDir %s\n", filename);
 	//std::cout << "OpenDir: " << makePathStandard(filename) << std::endl;
 	
 	std::string path = makePathStandard(filename);
@@ -119,19 +129,39 @@ static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO 
 	return -ERROR_PATH_NOT_FOUND;*/
 }
 
+static int DOKAN_CALLBACK WendyCreateDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
+{
+	std::string path = makePathStandard(filename);
+	
+	ProjectProxy::FileAttributes attributes;
+	if (proxy->getFileAttributes(path, &attributes))
+		return -ERROR_ALREADY_EXISTS;
+	
+	proxy->createFolder(path);
+	
+	return 0;
+}
+
 static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	//wprintf(L"Cleanup %s\n", filename);
+	wprintf(L"Cleanup %s\n", filename);
 	
 	return 0;
 }
 
 static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFindData, PDOKAN_FILE_INFO info)
 {
-	//wprintf(L"FindFiles %s\n", filename);
+	wprintf(L"FindFiles %s\n", filename);
 	
 	WIN32_FIND_DATAW entry;
 	ZeroMemory(&entry, sizeof(WIN32_FIND_DATAW));
+	
+	// insert special dirs '.' and '..'
+	entry.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+	wcscpy(entry.cFileName, L".");
+	fillFindData(&entry, info);
+	wcscpy(entry.cFileName, L"..");
+	fillFindData(&entry, info);
 	
 	std::string path = makePathStandard(filename);
 	
@@ -158,11 +188,22 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 	return 0;
 }
 
+static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
+{
+	std::string path = makePathStandard(filename);
+	
+	ProjectProxy::FileAttributes attributes;
+	if (!proxy->getFileAttributes(path, &attributes))
+		return -ERROR_PATH_NOT_FOUND;
+	
+	return 0;
+}
+
 int __cdecl wmain(ULONG argc, PWCHAR argv[])
 {
-	if (argc < 3)
+	if (argc < 2)
 	{
-		wprintf(L"Usage: %s <drive letter> <project name>\n", argv[0]);
+		wprintf(L"Usage: %s <drive letter>\n", argv[0]);
 		return 0;
 	}
 	
@@ -181,8 +222,6 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 	operations.Cleanup = WendyCleanup;
 	operations.FindFiles = WendyFindFiles;
 	
-	//char projectName[500];
-	//WideCharToMultiByte(CP_UTF8, 0, argv[2], -1, projectName, 500, NULL, NULL);
 	proxy = new ProjectProxy();
 	
 	int result = DokanMain(&options, &operations);
