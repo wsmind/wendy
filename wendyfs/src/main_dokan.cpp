@@ -91,14 +91,14 @@ static std::string makePathStandard(LPCWSTR path)
 
 static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DWORD shareMode, DWORD creationDisposition, DWORD flagsAndAttributes, PDOKAN_FILE_INFO info)
 {
-	wprintf(L"CreateFile: %s\n", filename);
+	//wprintf(L"CreateFile: %s\n", filename);
 	return 0;
 }
 
 static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	wprintf(L"OpenDir %s\n", filename);
-	std::cout << "OpenDir: " << makePathStandard(filename) << std::endl;
+	//wprintf(L"OpenDir %s\n", filename);
+	//std::cout << "OpenDir: " << makePathStandard(filename) << std::endl;
 	
 	std::string path = makePathStandard(filename);
 	
@@ -121,14 +121,14 @@ static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO 
 
 static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	wprintf(L"Cleanup %s\n", filename);
+	//wprintf(L"Cleanup %s\n", filename);
 	
 	return 0;
 }
 
 static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFindData, PDOKAN_FILE_INFO info)
 {
-	wprintf(L"FindFiles %s\n", filename);
+	//wprintf(L"FindFiles %s\n", filename);
 	
 	WIN32_FIND_DATAW entry;
 	ZeroMemory(&entry, sizeof(WIN32_FIND_DATAW));
@@ -145,7 +145,10 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		
 		// other attributes
 		ProjectProxy::FileAttributes attributes;
-		proxy->getFileAttributes(files[i], &attributes);
+		std::string fullChildPath = files[i];
+		if (path.size() > 0)
+			fullChildPath = path + "/" + files[i];
+		proxy->getFileAttributes(fullChildPath, &attributes);
 		entry.dwFileAttributes = attributes.folder ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
 		
 		// send item back to caller
