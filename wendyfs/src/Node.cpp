@@ -123,9 +123,5 @@ void Node::extractPathComponents(const std::string &path, std::string *childName
 		else
 			*childPath = "";
 	}
-	
-	std::cout << "extracting from '" << path << "'" << std::endl;
-	std::cout << "slash pos: " << slashPos << std::endl;
-	std::cout << "extracted: '" << *childName << "' / '" << *childPath << "'" << std::endl;
 }
 

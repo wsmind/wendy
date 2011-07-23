@@ -33,11 +33,14 @@
 #include <dokan.h>
 #include <iostream>
 
+#include <wendy/Mutex.hpp>
 #include <wendy/Project.hpp>
+#include <wendy/ScopeLock.hpp>
 
 #include "ProjectProxy.hpp"
 
 static ProjectProxy *proxy = NULL;
+static wendy::Mutex mutex;
 
 static std::string wideToUtf8(std::wstring wide)
 {
@@ -91,6 +94,7 @@ static std::string makePathStandard(LPCWSTR path)
 
 static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DWORD shareMode, DWORD creationDisposition, DWORD flagsAndAttributes, PDOKAN_FILE_INFO info)
 {
+	wendy::ScopeLock lock(&mutex);
 	wprintf(L"CreateFile: %s\n", filename);
 	
 	std::string path = makePathStandard(filename);
@@ -107,8 +111,9 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 
 static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
+	wendy::ScopeLock lock(&mutex);
 	wprintf(L"OpenDir %s\n", filename);
-	//std::cout << "OpenDir: " << makePathStandard(filename) << std::endl;
+	std::cout << "OpenDir: " << makePathStandard(filename) << std::endl;
 	
 	std::string path = makePathStandard(filename);
 	
@@ -131,6 +136,7 @@ static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO 
 
 static int DOKAN_CALLBACK WendyCreateDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
+	wendy::ScopeLock lock(&mutex);
 	std::string path = makePathStandard(filename);
 	
 	ProjectProxy::FileAttributes attributes;
@@ -144,13 +150,34 @@ static int DOKAN_CALLBACK WendyCreateDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 
 static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
+	wendy::ScopeLock lock(&mutex);
 	wprintf(L"Cleanup %s\n", filename);
+	
+	return 0;
+}
+
+static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_FILE_INFORMATION buffer, PDOKAN_FILE_INFO info)
+{
+	wendy::ScopeLock lock(&mutex);
+	wprintf(L"GetFileInformation %s\n", filename);
+	
+	std::string path = makePathStandard(filename);
+	
+	ProjectProxy::FileAttributes attributes;
+	if (!proxy->getFileAttributes(path, &attributes))
+		return -ERROR_PATH_NOT_FOUND;
+	
+	if (attributes.folder)
+		buffer->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+	else
+		buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
 	
 	return 0;
 }
 
 static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFindData, PDOKAN_FILE_INFO info)
 {
+	wendy::ScopeLock lock(&mutex);
 	wprintf(L"FindFiles %s\n", filename);
 	
 	WIN32_FIND_DATAW entry;
@@ -190,11 +217,35 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 
 static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
+	wendy::ScopeLock lock(&mutex);
 	std::string path = makePathStandard(filename);
 	
 	ProjectProxy::FileAttributes attributes;
 	if (!proxy->getFileAttributes(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
+	
+	return 0;
+}
+
+static int DOKAN_CALLBACK WendyGetDiskFreeSpace(PULONGLONG freeBytesAvailable, PULONGLONG totalNumberOfBytes, PULONGLONG totalNumberOfFreeBytes, PDOKAN_FILE_INFO info)
+{
+	wendy::ScopeLock lock(&mutex);
+	
+	*freeBytesAvailable = 16106127360UL; // specific to the calling user, if quotas are used
+	*totalNumberOfBytes = 21474836480UL;
+	*totalNumberOfFreeBytes = 16106127360UL;
+	return 0;
+}
+
+static int DOKAN_CALLBACK WendyGetVolumeInformation(LPWSTR volumeNameBuffer, DWORD volumeNameSize, LPDWORD volumeSerialNumber, LPDWORD maximumComponentLength, LPDWORD fileSystemFlags, LPWSTR fileSystemNameBuffer, DWORD fileSystemNameSize, PDOKAN_FILE_INFO info)
+{
+	wendy::ScopeLock lock(&mutex);
+	
+	wcscpy_s(volumeNameBuffer, volumeNameSize / sizeof(WCHAR), L"Wendy");
+	*volumeSerialNumber = 42;
+	*maximumComponentLength = 255;
+	*fileSystemFlags = FILE_CASE_PRESERVED_NAMES | FILE_CASE_SENSITIVE_SEARCH | FILE_UNICODE_ON_DISK;
+	wcscpy_s(fileSystemNameBuffer, fileSystemNameSize / sizeof(WCHAR), L"wendyfs");
 	
 	return 0;
 }
@@ -214,13 +265,18 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 	options.Version = DOKAN_VERSION;
 	options.ThreadCount = 0; // use default
 	options.MountPoint = argv[1];
-	options.Options = DOKAN_OPTION_KEEP_ALIVE;
+	options.Options = /*DOKAN_OPTION_DEBUG | DOKAN_OPTION_STDERR |*/ DOKAN_OPTION_KEEP_ALIVE;
 	
 	ZeroMemory(&operations, sizeof(DOKAN_OPERATIONS));
 	operations.CreateFile = WendyCreateFile;
 	operations.OpenDirectory = WendyOpenDirectory;
+	operations.CreateDirectory = WendyCreateDirectory;
 	operations.Cleanup = WendyCleanup;
+	operations.GetFileInformation = WendyGetFileInformation;
 	operations.FindFiles = WendyFindFiles;
+	operations.DeleteDirectory = WendyDeleteDirectory;
+	operations.GetDiskFreeSpace = WendyGetDiskFreeSpace;
+	operations.GetVolumeInformation = WendyGetVolumeInformation;
 	
 	proxy = new ProjectProxy();
 	
