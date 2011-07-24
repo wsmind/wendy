@@ -113,7 +113,6 @@ static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO 
 {
 	wendy::ScopeLock lock(&mutex);
 	wprintf(L"OpenDir %s\n", filename);
-	std::cout << "OpenDir: " << makePathStandard(filename) << std::endl;
 	
 	std::string path = makePathStandard(filename);
 	
@@ -125,18 +124,12 @@ static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO 
 		return -ERROR_PATH_NOT_FOUND; // TODO: find the right error code for this
 	
 	return 0;
-	
-	/*if (wcscmp(filename, L"\\") == 0)
-		return 0;
-	else if (wcscmp(filename, L"\\plop") == 0)
-		return 0;
-	
-	return -ERROR_PATH_NOT_FOUND;*/
 }
 
 static int DOKAN_CALLBACK WendyCreateDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
 	wendy::ScopeLock lock(&mutex);
+	wprintf(L"CreateDirectory %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
 	ProjectProxy::FileAttributes attributes;
@@ -156,6 +149,37 @@ static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 	return 0;
 }
 
+int DOKAN_CALLBACK WendyCloseFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
+{
+	wendy::ScopeLock lock(&mutex);
+	wprintf(L"CloseFile %s\n", filename);
+	
+	return 0;
+}
+
+int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOfBytesToRead, LPDWORD numberOfBytesRead, LONGLONG offset, PDOKAN_FILE_INFO info)
+{
+	wendy::ScopeLock lock(&mutex);
+	wprintf(L"ReadFile %s\n", filename);
+	
+	char *content = "Hi from Wendy!\r\n";
+	DWORD remaining = (DWORD)((LONGLONG)strlen(content) - offset);
+	*numberOfBytesRead = (remaining < numberOfBytesToRead) ? remaining : numberOfBytesToRead;
+	
+	wprintf(L"returning %d bytes\n", *numberOfBytesRead);
+	memcpy(buffer, content, *numberOfBytesRead);
+	
+	return 0;
+}
+
+int DOKAN_CALLBACK WendyWriteFile(LPCWSTR filename, LPCVOID buffer, DWORD numberOfBytesToWrite, LPDWORD numberOfBytesWritten, LONGLONG offset, PDOKAN_FILE_INFO info)
+{
+	wendy::ScopeLock lock(&mutex);
+	wprintf(L"WriteFile %s\n", filename);
+	
+	return 0;
+}
+
 static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_FILE_INFORMATION buffer, PDOKAN_FILE_INFO info)
 {
 	wendy::ScopeLock lock(&mutex);
@@ -167,10 +191,17 @@ static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_
 	if (!proxy->getFileAttributes(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
+	ZeroMemory(buffer, sizeof(BY_HANDLE_FILE_INFORMATION));
+	
 	if (attributes.folder)
-		buffer->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+	{
+		buffer->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM; // system enables Desktop.ini customization
+	}
 	else
+	{
 		buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+		buffer->nFileSizeLow = strlen("Hi from Wendy!\r\n");
+	}
 	
 	return 0;
 }
@@ -207,6 +238,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 			fullChildPath = path + "/" + files[i];
 		proxy->getFileAttributes(fullChildPath, &attributes);
 		entry.dwFileAttributes = attributes.folder ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+		entry.nFileSizeLow = strlen("Hi from Wendy!\r\n");
 		
 		// send item back to caller
 		fillFindData(&entry, info);
@@ -218,11 +250,14 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
 	wendy::ScopeLock lock(&mutex);
+	wprintf(L"DeleteDirectory %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
 	ProjectProxy::FileAttributes attributes;
 	if (!proxy->getFileAttributes(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
+	
+	proxy->removeFolder(path);
 	
 	return 0;
 }
@@ -242,7 +277,7 @@ static int DOKAN_CALLBACK WendyGetVolumeInformation(LPWSTR volumeNameBuffer, DWO
 	wendy::ScopeLock lock(&mutex);
 	
 	wcscpy_s(volumeNameBuffer, volumeNameSize / sizeof(WCHAR), L"Wendy");
-	*volumeSerialNumber = 42;
+	*volumeSerialNumber = 0x42;
 	*maximumComponentLength = 255;
 	*fileSystemFlags = FILE_CASE_PRESERVED_NAMES | FILE_CASE_SENSITIVE_SEARCH | FILE_UNICODE_ON_DISK;
 	wcscpy_s(fileSystemNameBuffer, fileSystemNameSize / sizeof(WCHAR), L"wendyfs");
@@ -272,6 +307,9 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 	operations.OpenDirectory = WendyOpenDirectory;
 	operations.CreateDirectory = WendyCreateDirectory;
 	operations.Cleanup = WendyCleanup;
+	operations.CloseFile = WendyCloseFile;
+	operations.ReadFile = WendyReadFile;
+	operations.WriteFile = WendyWriteFile;
 	operations.GetFileInformation = WendyGetFileInformation;
 	operations.FindFiles = WendyFindFiles;
 	operations.DeleteDirectory = WendyDeleteDirectory;
