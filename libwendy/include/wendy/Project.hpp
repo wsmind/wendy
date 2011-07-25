@@ -77,6 +77,10 @@ class WENDYAPI Project
 		
 		const Asset getAsset(const std::string &id);
 		
+		void addAsset(const std::string &path);
+		
+		void removeAsset(const std::string &id);
+		
 	private:
 		void processNotification(const AssetNotification& notification);
 		

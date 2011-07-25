@@ -91,6 +91,16 @@ const Asset Project::getAsset(const std::string &id)
 	return Asset();
 }
 
+void Project::addAsset(const std::string &path)
+{
+	this->stream->writeLine("ADD " + path + "\n");
+}
+
+void Project::removeAsset(const std::string &id)
+{
+	this->stream->writeLine("REMOVE " + id + "\n");
+}
+
 void Project::processNotification(const AssetNotification& notification)
 {
 	std::cout << "asset " << notification.asset.id << " got notification " << notification.type << std::endl;

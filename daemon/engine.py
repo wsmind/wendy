@@ -27,6 +27,7 @@
 import couchdb
 import threading
 import Queue
+import uuid
 
 class Watcher:
 	"""
@@ -170,6 +171,10 @@ class Engine(MetadataListener):
 			
 			for listener in self.listeners:
 				listener.assetRemoved(assetId)
+	
+	def addAsset(self, path):
+		newId = uuid.uuid4().hex
+		self.db[newId] = {"path": path}
 
 class EngineListener:
 	def assetChanged(self, assetId, asset):

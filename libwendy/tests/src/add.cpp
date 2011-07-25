@@ -57,6 +57,10 @@ int main()
 	if (!project->isConnected())
 		std::cout << "Connection failed!" << std::endl;
 	
+	project->addAsset("test/newassets/plop.txt");
+	project->addAsset("test/fake/otherasset.txt");
+	project->addAsset("test/dafyduck.pdf");
+	
 	while (project->isConnected())
 	{
 		project->waitChanges();

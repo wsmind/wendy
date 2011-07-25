@@ -40,11 +40,12 @@ class Server(engine.EngineListener):
 	def waitConnections(self):
 		while True:
 			(clientSocket, clientAddress) = self.socket.accept()
-			self.clients.append(ClientHandler(clientSocket, self.engine))
+			socketFile = clientSocket.makefile()
+			self.clients.append(ClientHandler(socketFile, self.engine))
 
 class ClientHandler:
-	def __init__(self, socket, engine):
-		self.socket = socket
+	def __init__(self, socketFile, engine):
+		self.socketFile = socketFile
 		self.engine = engine
 		self.engine.addListener(self)
 		self.thread = threading.Thread(target = self)
@@ -54,16 +55,29 @@ class ClientHandler:
 		self.engine.dumpAssets(self)
 	
 	def __call__(self):
-		buf = self.socket.recv(100)
+		buf = self.socketFile.readline()
 		while buf:
 			print(buf)
-			buf = self.socket.recv(100)
+			spacePos = buf.find(" ")
+			if spacePos != -1:
+				command = buf[0:spacePos]
+				arg = buf[spacePos:].strip()
+				print("command = " + command)
+				print("arg = " + arg)
+				
+				if command == "ADD":
+					self.engine.addAsset(arg)
+				
+			buf = self.socketFile.readline()
 	
 	def assetChanged(self, assetId, asset):
-		self.socket.send("UPDATED " + str(assetId) + "\n")
-		self.socket.send("path " + asset["path"] + "\n")
-		self.socket.send("END\n")
+		self.socketFile.write("UPDATED " + str(assetId) + "\n")
+		self.socketFile.write("path " + asset["path"] + "\n")
+		self.socketFile.write("END\n")
+		self.socketFile.flush() # send this now
 	
 	def assetRemoved(self, assetId):
-		self.socket.send("REMOVED " + str(assetId) + "\n")
-		self.socket.send("END\n")
+		self.socketFile.write("REMOVED " + str(assetId) + "\n")
+		self.socketFile.write("END\n")
+		self.socketFile.flush() # send this now
+
