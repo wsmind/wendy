@@ -29,6 +29,21 @@ import threading
 import Queue
 import uuid
 
+class Storage:
+	# blocking generator
+	def pollChanges(self):
+		pass
+	
+	# blocking
+	# return True on success, False on failure
+	def download(self, assetId, revision, filename):
+		pass
+	
+	# blocking
+	# return True on success, False on failure
+	def upload(self, assetId, revision, filename):
+		pass
+
 class Watcher:
 	"""
 	Follow the _changes feed of the database, and notifies the

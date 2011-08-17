@@ -29,6 +29,7 @@ import os
 
 import engine
 import service
+import couchstorage
 
 if __name__ == "__main__":
 	# check required arguments
@@ -36,6 +37,7 @@ if __name__ == "__main__":
 		print("Usage: " + sys.argv[0] + " <server> <project>")
 		sys.exit(0)
 	
+	storage = couchstorage.CouchDBStorage(sys.argv[1], sys.argv[2])
 	e = engine.Engine(sys.argv[1], sys.argv[2])
 	s = service.Server(e)
 	
