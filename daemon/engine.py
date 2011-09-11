@@ -24,117 +24,22 @@
 # 
 ###############################################################################
 
-import couchdb
 import threading
-import Queue
+import zmq
 import uuid
 
-class Storage:
-	# blocking generator
-	def pollChanges(self):
-		pass
-	
-	# blocking
-	# return True on success, False on failure
-	def download(self, assetId, revision, filename):
-		pass
-	
-	# blocking
-	# return True on success, False on failure
-	def upload(self, assetId, revision, filename):
-		pass
-
-class Watcher:
-	"""
-	Follow the _changes feed of the database, and notifies the
-	metadata downloader whenever an asset has changed.
-	"""
-	
-	def __init__(self, db, metadataDownloader):
-		self.db = db
-		self.metadataDownloader = metadataDownloader
+class StorageWatcher:
+	def __init__(self, storage, context):
+		self.storage = storage
+		self.socket = context.socket(zmq.PUB)
+		self.socket.bind("inproc://storage-changes")
 		self.thread = threading.Thread(target = self)
+		self.thread.daemon = True
 		self.thread.start()
 	
 	def __call__(self):
-		# initial asset list traversal
-		for row in self.db.view("_all_docs"):
-			self.metadataDownloader.fetchAssetInfo(row.id)
-			self.metadataDownloader.fetchAssetInfo(row.id)
-		
-		# _changes feed
-		changes = self.db.changes(feed = "continuous")
-		last_seq = 0
-		while True:
-			for change in changes:
-				if "id" in change:
-					self.metadataDownloader.fetchAssetInfo(change["id"])
-				elif "last_seq" in change:
-					last_seq = change["last_seq"]
-			
-			# when the stream ends, start again
-			changes = self.db.changes(feed = "continuous", since = last_seq)
-
-class MetadataListener:
-	"""
-	Asset notification interface
-	"""
-	
-	def assetChanged(self, assetId, asset):
-		pass
-	
-	def assetRemoved(self, assetId):
-		pass
-
-class MetadataDownloader:
-	"""
-	Fetch asset metadata on demand.
-	"""
-	
-	def __init__(self, db, listener):
-		self.db = db
-		self.idQueue = Queue.Queue()
-		self.listener = listener
-		self.thread = threading.Thread(target = self)
-		self.thread.start()
-	
-	def __call__(self):
-		while True:
-			assetId = self.idQueue.get()
-			try:
-				asset = self.db[assetId]
-				self.listener.assetChanged(assetId, asset)
-			except:
-				self.listener.assetRemoved(assetId)
-	
-	def fetchAssetInfo(self, assetId):
-		self.idQueue.put(assetId)
-
-class Downloader:
-	"""
-	Fetch asset content upon request.
-	"""
-	
-	def __init__(self, db, listener):
-		self.db = db
-		self.idQueue = Queue.Queue()
-		self.listener = listener
-		self.thread = threading.Thread(target = self)
-		self.thread.start()
-	
-	def __call__(self):
-		while True:
-			assetId, revision = self.idQueue.get()
-			try:
-				pass
-				#asset = self.db[assetId]
-				#self.listener.assetChanged(assetId, asset)
-			except:
-				pass
-				#self.listener.assetRemoved(assetId)
-	
-	def download(self, assetId, revision):
-		self.idQueue.put(assetId, revision)
+		for metadata in self.storage.pollChanges():
+			self.socket.send(str(metadata))
 
 class LocalAsset:
 	def __init__(self):
@@ -144,15 +49,26 @@ class LocalAsset:
 		self.lastRevision = ""
 		self.localRevision = ""
 
-class Engine(MetadataListener):
-	def __init__(self, server, project):
-		self.couch = couchdb.Server(server)
-		self.db = self.couch[project]
-		self.metadataDownloader = MetadataDownloader(self.db, self)
-		self.watcher = Watcher(self.db, self.metadataDownloader)
+class Engine:
+	def __init__(self, storage):
+		self.storage = storage
+		self.context = zmq.Context()
 		self.remoteAssets = {} # dictionary of couchdb.Document
 		self.localAssets = {} # dictionary of LocalAsset
 		self.listeners = []
+	
+	def run(self):
+		"Start all action threads and engine main event loop"
+		watcher = StorageWatcher(self.storage, self.context)
+		
+		socket = self.context.socket(zmq.SUB)
+		socket.setsockopt(zmq.SUBSCRIBE, "")
+		socket.connect("inproc://storage-changes")
+		
+		# main event loop
+		while True:
+			msg = socket.recv()
+			print("received: " + msg)
 	
 	def addListener(self, listener):
 		self.listeners.append(listener)
@@ -197,3 +113,55 @@ class EngineListener:
 	
 	def assetRemoved(self, assetId):
 		pass
+
+if __name__ == "__main__":
+	
+	class PlopStorage:
+		"Fake storage implementation. Generates one change per second."
+		
+		# blocking generator
+		def pollChanges(self):
+			import time
+			import random
+			ids = [uuid.uuid4().hex for i in range(0, 4)]
+			while True:
+				time.sleep(1)
+				currentIndex = random.randint(0, 3)
+				doc = {
+					"id": ids[currentIndex],
+					"revisions": {
+						"1": {
+							"path": "plop" + ids[currentIndex],
+							"user": "mrducky"
+						}
+					}
+				}
+				yield doc
+		
+		# blocking
+		# return True on success, False on failure
+		def download(self, assetId, revision, filename):
+			pass
+		
+		# blocking
+		# return True on success, False on failure
+		def upload(self, assetId, revision, filename):
+			pass
+	
+	class FakeService:
+		"Emulate client actions"
+		def __init__(self, engine):
+			self.engine = engine
+			self.thread = threading.Thread(target = self)
+			self.thread.daemon = True
+			self.thread.start()
+		
+		def __call__(self):
+			import time
+			time.sleep(2)
+			#assetId = self.engine.createAsset()
+	
+	engine = Engine(PlopStorage())
+	service = FakeService(engine)
+	engine.run()
+
