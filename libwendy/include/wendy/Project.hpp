@@ -34,11 +34,12 @@
 #include <map>
 
 #include <wendy/Asset.hpp>
+#include <wendy/AssetFile.hpp>
 
 namespace wendy {
 
-class AssetReader;
 struct AssetNotification;
+class AssetReader;
 class LocalStream;
 class ProjectListener;
 
@@ -80,6 +81,14 @@ class WENDYAPI Project
 		void addAsset(const std::string &path);
 		
 		void removeAsset(const std::string &id);
+		
+		void lockAsset(const std::string &id);
+		
+		void unlockAsset(const std::string &id);
+		
+		AssetFile *openAsset(const std::string &id, AssetFile::OpenMode mode);
+		
+		void closeAsset(AssetFile *file);
 		
 	private:
 		void processNotification(const AssetNotification& notification);
