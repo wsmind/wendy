@@ -78,11 +78,11 @@ class WENDYAPI Project
 		
 		const Asset getAsset(const std::string &id);
 		
-		void addAsset(const std::string &path);
+		void createAsset(const std::string &path);
 		
-		void removeAsset(const std::string &id);
+		void deleteAsset(const std::string &id);
 		
-		void lockAsset(const std::string &id);
+		void lockAsset(const std::string &id, const std::string &applicationName);
 		
 		void unlockAsset(const std::string &id);
 		

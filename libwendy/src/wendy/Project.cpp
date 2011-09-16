@@ -91,14 +91,34 @@ const Asset Project::getAsset(const std::string &id)
 	return Asset();
 }
 
-void Project::addAsset(const std::string &path)
+void Project::createAsset(const std::string &path)
 {
-	this->stream->writeLine("ADD " + path + "\n");
+	this->stream->writeLine("CREATE " + path + "\n");
 }
 
-void Project::removeAsset(const std::string &id)
+void Project::deleteAsset(const std::string &id)
 {
-	this->stream->writeLine("REMOVE " + id + "\n");
+	this->stream->writeLine("DELETE " + id + "\n");
+}
+
+void Project::lockAsset(const std::string &id, const std::string &applicationName)
+{
+	// TODO: escape application name
+	this->stream->writeLine("LOCK " + id + " " + applicationName + "\n");
+}
+
+void Project::unlockAsset(const std::string &id)
+{
+	this->stream->writeLine("UNLOCK " + id + "\n");
+}
+
+AssetFile *Project::openAsset(const std::string &id, AssetFile::OpenMode mode)
+{
+	return NULL;
+}
+
+void Project::closeAsset(AssetFile *file)
+{
 }
 
 void Project::processNotification(const AssetNotification& notification)

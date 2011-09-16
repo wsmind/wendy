@@ -1,0 +1,58 @@
+This document describes the communication protocol used between Wendy local
+server and the client applications. This protocol is implemented in the
+daemon (server part) and in the libwendy (client part).
+
+All communications are done through a standard TCP socket on port 46288. The
+protocol is text-based, and intentionnaly *very simple*.
+
+The encoding UTF-8, and line endings are defined as any combination
+of CR and/or LF.
+
+== Client -> Server (actions) ==
+
+-------------------------------------------------------------------------------
+CREATE <path>
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+DELETE <id>
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+LOCK <id> <application name>
+-------------------------------------------------------------------------------
+The application name is any one-line string describing the application locking
+the asset, in a user-readable format.
+
+-------------------------------------------------------------------------------
+UNLOCK <id>
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+OPEN <id> <mode>
+-------------------------------------------------------------------------------
+<mode> must be either READING or WRITING
+
+-------------------------------------------------------------------------------
+CLOSE <id>
+-------------------------------------------------------------------------------
+
+== Server -> Client (notifications) ==
+
+When new asset metadata is available, or a client action impacted asset
+information:
+-------------------------------------------------------------------------------
+UPDATED <id>
+path <path>
+[file <filename>]
+END
+-------------------------------------------------------------------------------
+A filename is specified when the asset has been successfully opened. Otherwise,
+this field is not present.
+
+If an asset was removed (either by the connected client or another client
+elsewhere):
+-------------------------------------------------------------------------------
+REMOVED <id>
+-------------------------------------------------------------------------------
+
