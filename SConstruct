@@ -24,6 +24,17 @@ testEnv.Program("libwendy/tests/bin/list", "libwendy/tests/src/list.cpp")
 testEnv.Program("libwendy/tests/bin/queue", "libwendy/tests/src/queue.cpp")
 testEnv.Program("libwendy/tests/bin/threading", "libwendy/tests/src/threading.cpp")
 
+pylibEnv = Environment(tools = ["default"], ENV = os.environ)
+pylibEnv.Append(CPPPATH = ["libwendy/include"])
+pylibEnv.Append(LIBPATH = ["libwendy/lib"])
+pylibEnv.Append(LIBS = ["wendy"])
+if os.name == "posix":
+	# TODO: remove hard-coded python path
+	pylibEnv.Append(CPPPATH = ["/usr/include/python2.6"])
+pylibEnv.SharedLibrary("pywendy/lib/pywendy", libEnv.Glob("pywendy/src/*.cpp"))
+if os.name == "posix":
+	pylibEnv.Command("pywendy/lib/pywendy.so", "pywendy/lib/libpywendy.so", Copy("$TARGET", "$SOURCE"))
+
 fsEnv = Environment(tools = ["default"], ENV = os.environ)
 fsEnv.Append(CPPPATH = ["libwendy/include"])
 fsEnv.Append(LIBPATH = ["libwendy/lib"])
