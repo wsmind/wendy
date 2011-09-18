@@ -25,10 +25,8 @@
 ###############################################################################
 
 import couchdb
-import engine
 
-class CouchDBStorage(engine.Storage):
-	
+class Couch:
 	def __init__(self, server, project):
 		self.couch = couchdb.Server(server)
 		self.db = self.couch[project]
@@ -36,32 +34,31 @@ class CouchDBStorage(engine.Storage):
 	# blocking generator
 	def pollChanges(self):
 		# initial asset list traversal
-		for row in self.db.view("_all_docs"):
-			yield self.db[row.id]
+		for row in self.db.view("_all_docs", include_docs = True):
+			yield row.doc
 		
 		# _changes feed
-		changes = self.db.changes(feed = "continuous")
+		changes = self.db.changes(feed = "continuous", include_docs = True)
 		last_seq = 0
 		while True:
 			for change in changes:
-				if "id" in change:
-					assetId = change["id"]
-					yield self.db[assetId]
+				if "doc" in change:
+					yield change["doc"]
 				elif "last_seq" in change:
 					last_seq = change["last_seq"]
 			
 			# when the stream ends, start again
-			changes = self.db.changes(feed = "continuous", since = last_seq)
+			changes = self.db.changes(feed = "continuous", include_docs = True, since = last_seq)
 	
 	# blocking
 	# return True on success, False on failure
 	def download(self, assetId, revision, filename):
 		asset = self.db[assetId]
 		attachementFilename = asset["revisions"][str(revision)]["file"]
-		attachement = self.db.get_attachement(assetId, attachementFilename)
+		attachement = self.db.get_attachment(assetId, attachementFilename)
 		
-		output = open(filename)
-		output.write(attachement)
+		output = open(filename, "w")
+		output.write(attachement.read())
 		output.close()
 		
 		attachement.close()
@@ -75,9 +72,8 @@ class CouchDBStorage(engine.Storage):
 
 # this test requires the server assets.emp.fr.nf to host a wendy/couch database named "plop"
 if __name__ == "__main__":
-	storage = CouchDBStorage("http://assets.emp.fr.nf", "plop")
+	storage = Couch("http://assets.emp.fr.nf", "plop")
 	for asset in storage.pollChanges():
 		print(asset)
-	
-	storage.download("sesegseg", 1, "ploptest")
 
+	storage.download("59929c7dbe8c473ea6198e7835639767", 1, "ploptest")
