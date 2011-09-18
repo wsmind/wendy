@@ -26,6 +26,7 @@
 
 import sys
 import os
+import zmq
 
 import engine
 import service
@@ -37,8 +38,9 @@ if __name__ == "__main__":
 		print("Usage: " + sys.argv[0] + " <server> <project>")
 		sys.exit(0)
 	
+	context = zmq.Context()
 	storage = storage.couch.Couch(sys.argv[1], sys.argv[2])
-	e = engine.Engine(storage)
+	e = engine.Engine(context, storage)
 	s = service.Server(e)
 	
 	# terminate the whole process if SIGTERM is received

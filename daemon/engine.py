@@ -50,9 +50,9 @@ class LocalAsset:
 		self.localRevision = ""
 
 class Engine:
-	def __init__(self, storage):
+	def __init__(self, context, storage):
+		self.context = context
 		self.storage = storage
-		self.context = zmq.Context()
 		self.remoteAssets = {} # dictionary of couchdb.Document
 		self.localAssets = {} # dictionary of LocalAsset
 		self.listeners = []
@@ -159,9 +159,10 @@ if __name__ == "__main__":
 		def __call__(self):
 			import time
 			time.sleep(2)
+			# TODO: kick engine? zmq queue instead of direct object communication?
 			#assetId = self.engine.createAsset()
 	
-	engine = Engine(PlopStorage())
+	engine = Engine(zmq.Context(), PlopStorage())
 	service = FakeService(engine)
 	engine.run()
 
