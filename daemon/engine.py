@@ -64,6 +64,7 @@ class Engine:
 		socket = self.context.socket(zmq.SUB)
 		socket.setsockopt(zmq.SUBSCRIBE, "")
 		socket.connect("inproc://storage-changes")
+		socket.connect("inproc://service-actions")
 		
 		# main event loop
 		while True:
@@ -150,8 +151,9 @@ if __name__ == "__main__":
 	
 	class FakeService:
 		"Emulate client actions"
-		def __init__(self, engine):
-			self.engine = engine
+		def __init__(self, context):
+			self.socket = context.socket(zmq.PUB)
+			self.socket.bind("inproc://service-actions")
 			self.thread = threading.Thread(target = self)
 			self.thread.daemon = True
 			self.thread.start()
@@ -160,9 +162,10 @@ if __name__ == "__main__":
 			import time
 			time.sleep(2)
 			# TODO: kick engine? zmq queue instead of direct object communication?
-			#assetId = self.engine.createAsset()
+			self.socket.send("plop")
 	
-	engine = Engine(zmq.Context(), PlopStorage())
-	service = FakeService(engine)
+	context = zmq.Context()
+	engine = Engine(context, PlopStorage())
+	service = FakeService(context)
 	engine.run()
 
