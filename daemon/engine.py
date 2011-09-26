@@ -39,7 +39,8 @@ class StorageWatcher:
 	
 	def __call__(self):
 		for metadata in self.storage.pollChanges():
-			self.socket.send(str(metadata))
+			metadata["type"] = "metadata-update"
+			self.socket.send_pyobj(metadata)
 
 class LocalAsset:
 	def __init__(self):
@@ -68,8 +69,13 @@ class Engine:
 		
 		# main event loop
 		while True:
-			msg = socket.recv()
-			print("received: " + msg)
+			msg = socket.recv_pyobj()
+			if msg["type"] == "metadata-update":
+				print("NEW METADATA RECEIVED!!")
+			elif msg["type"] == "create-action":
+				print("CREATE ASSET")
+			elif msg["type"] == "delete-action":
+				print("DELETE ASSET")
 	
 	def addListener(self, listener):
 		self.listeners.append(listener)
@@ -162,7 +168,10 @@ if __name__ == "__main__":
 			import time
 			time.sleep(2)
 			# TODO: kick engine? zmq queue instead of direct object communication?
-			self.socket.send("plop")
+			self.socket.send_pyobj({
+				"type": "create-action",
+				"path": "ploppath"
+			})
 	
 	context = zmq.Context()
 	engine = Engine(context, PlopStorage())
