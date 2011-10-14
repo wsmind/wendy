@@ -46,21 +46,21 @@ class WENDYAPI AssetFile
 			READING,
 			WRITING,
 		};
-		AssetFile(const std::string &filename, OpenMode mode);
+		//AssetFile(const std::string &filename, OpenMode mode);
 		
-		~AssetFile();
+		//~AssetFile();
 		
 		/**
 		 * \brief Try to read the given size
 		 * \return the number of bytes actually read into the given buffer
 		 */
-		size_t read(void *buffer, size_t size);
+		//size_t read(void *buffer, size_t size);
 		
 		/**
 		 * \brief Try to write the given size
 		 * \return the number of bytes actually written into asset content
 		 */
-		size_t write(const void *buffer, size_t size);
+		//size_t write(const void *buffer, size_t size);
 		
 		enum SeekReference
 		{
@@ -72,12 +72,12 @@ class WENDYAPI AssetFile
 		/**
 		 * \brief Move the file pointer by offset bytes, relative to the given reference point
 		 */
-		int seek(SeekReference reference, int offset);
+		//int seek(SeekReference reference, int offset);
 		
 		/**
 		 * \brief Retrieve the current file pointer position
 		 */
-		long tell();
+		//long tell();
 };
 
 } // wendy namespace

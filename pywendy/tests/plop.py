@@ -1,4 +1,0 @@
-import pywendy
-
-pywendy.plop()
-
