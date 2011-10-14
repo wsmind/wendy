@@ -1,6 +1,7 @@
 *.o
 *.os
 *.obj
+*.cc
 *.pyc
 .sconsign.dblite
 
