@@ -33,9 +33,16 @@ pylibEnv.Append(SWIGFLAGS = ["-python"])
 pylibEnv.Append(SWIGFLAGS = ["-Ilibwendy/include"])
 pylibEnv.Append(SWIGFLAGS = ["-outdir", "pywendy/lib"])
 pylibEnv["SHLIBPREFIX"] = "" # remove the leading 'lib' from output library filename
+pylibEnv["SHLIBSUFFIX"] = ".pyd" # enforce .pyd instead of .so or .dll
 if os.name == "posix":
 	# TODO: remove hard-coded python path
 	pylibEnv.Append(CPPPATH = ["/usr/include/python2.6"])
+else:
+	# TODO: remove hard-coded python path
+	pylibEnv.Append(CPPPATH = ["C:/Python27/include"])
+	pylibEnv.Append(LIBPATH = ["C:/Python27/libs"])
+if pylibEnv["CC"] == "cl":
+	pylibEnv.Append(CPPFLAGS = ["/EHsc"])
 pylibEnv.SharedLibrary("pywendy/lib/_pywendy", libEnv.Glob("pywendy/src/*.i"))
 
 fsEnv = Environment(tools = ["default"], ENV = os.environ)
