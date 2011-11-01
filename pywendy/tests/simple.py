@@ -1,7 +1,7 @@
 import pywendy
 
 class TestListener(pywendy.ProjectListener):
-	def assetAdded(self, *args):
+	def assetAdded(self, project, asset):
 		print("added !!!")
 
 listener = TestListener()

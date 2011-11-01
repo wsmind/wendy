@@ -40,6 +40,8 @@ class Project;
 class WENDYAPI ProjectListener
 {
 	public:
+		virtual ~ProjectListener() {}
+		
 		virtual void assetAdded(Project *project, const Asset &asset) {}
 		virtual void assetUpdated(Project *project, const Asset &oldAsset, const Asset &newAsset) {}
 		virtual void assetRemoved(Project *project, const Asset &asset) {}

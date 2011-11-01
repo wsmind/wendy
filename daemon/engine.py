@@ -167,10 +167,15 @@ if __name__ == "__main__":
 		def __call__(self):
 			import time
 			time.sleep(2)
-			# TODO: kick engine? zmq queue instead of direct object communication?
 			self.socket.send_pyobj({
 				"type": "create-action",
-				"path": "ploppath"
+				"path": "/ploppath"
+			})
+			
+			time.sleep(1)
+			self.socket.send_pyobj({
+				"type": "delete-action",
+				"path": "/ploppath"
 			})
 	
 	context = zmq.Context()
