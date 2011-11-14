@@ -26,36 +26,39 @@
 
 import threading
 import socket
+import zmq
 
-import engine
-
-class Server(engine.EngineListener):
-	def __init__(self, engine):
+class Server():
+	def __init__(self, context):
+		self.context = context
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.socket.bind(("", 46288))
 		self.socket.listen(10)
-		self.engine = engine
 		self.clients = []
+		self.thread = threading.Thread(target = self)
+		self.thread.daemon = True
 	
-	def waitConnections(self):
+	def __call__(self):
 		while True:
 			(clientSocket, clientAddress) = self.socket.accept()
-			socketFile = clientSocket.makefile()
-			self.clients.append(ClientHandler(socketFile, self.engine))
+			self.clients.append(ClientHandler(clientSocket, self.context))
+	
+	def waitConnections(self):
+		self.thread.start()
 
 class ClientHandler:
-	def __init__(self, socketFile, engine):
-		self.socketFile = socketFile
-		self.engine = engine
-		self.engine.addListener(self)
+	def __init__(self, clientSocket, context):
+		self.clientStream = clientSocket.makefile()
+		self.actionSocket = self.socket = context.socket(zmq.PUB)
+		self.actionSocket.bind("inproc://service-actions")
 		self.thread = threading.Thread(target = self)
 		self.thread.start()
 		
 		# initial dump
-		self.engine.dumpAssets(self)
+		#self.engine.dumpAssets(self)
 	
 	def __call__(self):
-		buf = self.socketFile.readline()
+		buf = self.clientStream.readline()
 		while buf:
 			print(buf)
 			spacePos = buf.find(" ")
@@ -65,19 +68,22 @@ class ClientHandler:
 				print("command = " + command)
 				print("arg = " + arg)
 				
-				if command == "ADD":
-					self.engine.addAsset(arg)
+				if command == "CREATE":
+					self.actionSocket.send_pyobj({
+						"type": "create-action",
+						"path": arg
+					})
 				
-			buf = self.socketFile.readline()
+			buf = self.clientStream.readline()
 	
-	def assetChanged(self, assetId, asset):
-		self.socketFile.write("UPDATED " + str(assetId) + "\n")
-		self.socketFile.write("path " + asset["path"] + "\n")
-		self.socketFile.write("END\n")
-		self.socketFile.flush() # send this now
+	#def assetChanged(self, assetId, asset):
+	#	self.clientStream.write("UPDATED " + str(assetId) + "\n")
+	#	self.clientStream.write("path " + asset["path"] + "\n")
+	#	self.clientStream.write("END\n")
+	#	self.clientStream.flush() # send this now
 	
-	def assetRemoved(self, assetId):
-		self.socketFile.write("REMOVED " + str(assetId) + "\n")
-		self.socketFile.write("END\n")
-		self.socketFile.flush() # send this now
+	#def assetRemoved(self, assetId):
+	#	self.clientStream.write("REMOVED " + str(assetId) + "\n")
+	#	self.clientStream.write("END\n")
+	#	self.clientStream.flush() # send this now
 

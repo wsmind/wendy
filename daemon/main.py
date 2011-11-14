@@ -41,11 +41,12 @@ if __name__ == "__main__":
 	context = zmq.Context()
 	storage = storage.couch.Couch(sys.argv[1], sys.argv[2])
 	e = engine.Engine(context, storage)
-	s = service.Server(e)
+	s = service.Server(context)
+	s.waitConnections() # non blocking (start an internal thread)
 	
 	# terminate the whole process if SIGTERM is received
 	try:
-		s.waitConnections()
+		e.run()
 	except KeyboardInterrupt:
 		os._exit(1)
 

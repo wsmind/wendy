@@ -114,13 +114,6 @@ class Engine:
 		newId = uuid.uuid4().hex
 		self.db[newId] = {"path": path}
 
-class EngineListener:
-	def assetChanged(self, assetId, asset):
-		pass
-	
-	def assetRemoved(self, assetId):
-		pass
-
 if __name__ == "__main__":
 	
 	class PlopStorage:
