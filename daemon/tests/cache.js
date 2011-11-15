@@ -24,7 +24,7 @@
  * 
  *****************************************************************************/
 
-var cache = new (require("../cache.js").Cache)("./data")
+var cache = new (require("../cache.js").Cache)("cache")
 
 cache.open("plop", 42, "w", function(file)
 {
@@ -44,4 +44,25 @@ cache.open("plop", 42, "w", function(file)
 			})
 		})
 	})
+})
+
+cache.open("plop", 47, "w", function(file)
+{
+	file.write("yopyop", function(err, written, buffer)
+	{
+		file.close()
+	})
+})
+
+cache.open("noplop", 12, "w", function(file)
+{
+	file.write("wendy rules :p", function(err, written, buffer)
+	{
+		file.close()
+	})
+})
+
+cache.dump(function(id, blobs)
+{
+	console.log("blobs for " + id + ": " + blobs)
 })

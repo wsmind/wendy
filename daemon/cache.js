@@ -35,8 +35,44 @@ var assert = require("assert")
 function Cache(path)
 {
 	this.root = path
+	
+	// create root cache directory if it doesn't exist
+	this._recursiveMkdir(this.root)
 }
 exports.Cache = Cache
+
+// callback will be called with (id, blobs)
+Cache.prototype.dump = function(callback)
+{
+	fs.readdir(this.root, function(err, files)
+	{
+		if (err)
+		{
+			console.error("Failed to list files in cache directory (" + this.root + ")")
+		}
+		else
+		{
+			// build cross-reference id -> blob list
+			var blobs = {}
+			for (var i = 0; i < files.length; i++)
+			{
+				var parts = files[i].split("-")
+				var id = parts[0]
+				var blob = parts[1]
+				
+				if (id in blobs)
+					blobs[id].push(blob)
+				else
+					blobs[id] = [blob]
+			}
+			
+			for (id in blobs)
+			{
+				callback(id, blobs[id])
+			}
+		}
+	})
+}
 
 // mode must be "r" or "w"
 Cache.prototype.open = function(id, revision, mode, callback)
@@ -51,6 +87,20 @@ Cache.prototype.open = function(id, revision, mode, callback)
 		var file = new AssetFile(fd)
 		callback(file)
 	})
+}
+
+Cache.prototype._recursiveMkdir = function(directory)
+{
+	var fragments = path.normalize(directory).replace(/\\/g, "/").split("/")
+	
+	var currentPath = ""
+	for (var i = 0; i < fragments.length; i++)
+	{
+		currentPath += fragments[i] + "/"
+		
+		if (!path.existsSync(currentPath))
+			fs.mkdirSync(currentPath, 0777)
+	}
 }
 
 function AssetFile(fd)
@@ -76,5 +126,5 @@ AssetFile.prototype.write = function(buffer, callback)
 
 AssetFile.prototype.close = function()
 {
-	fs.close(this.fd)
+	fs.closeSync(this.fd)
 }
