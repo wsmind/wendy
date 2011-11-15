@@ -28,17 +28,18 @@ var cache = new (require("../cache.js").Cache)("cache")
 
 cache.open("plop", 42, "w", function(file)
 {
-	file.write("yeahha", function(err, written, buffer)
+	file.write(new Buffer("yeahha"), function(err, written, buffer)
 	{
 		file.close()
 		
+		// read back what was written
 		cache.open("plop", 42, "r", function(file2)
 		{
 			var buf = new Buffer(500)
 			file2.read(buf, function(err, bytesRead, buffer)
 			{
 				console.log("read " + bytesRead + " bytes:")
-				console.log(buf.toString("utf8"))
+				console.log(buf.slice(0, bytesRead).toString("utf8"))
 				
 				file2.close()
 			})

@@ -75,11 +75,11 @@ Cache.prototype.dump = function(callback)
 }
 
 // mode must be "r" or "w"
-Cache.prototype.open = function(id, revision, mode, callback)
+Cache.prototype.open = function(id, blob, mode, callback)
 {
 	assert((mode == "r") || (mode == "w"))
 	
-	fs.open(path.join(this.root, id + "-" + revision), mode, 0666, function(err, fd)
+	fs.open(path.join(this.root, id + "-" + blob), mode, 0666, function(err, fd)
 	{
 		// TODO: handle error
 		assert(!err)
@@ -112,6 +112,9 @@ AssetFile.prototype.read = function(buffer, callback)
 {
 	fs.read(this.fd, buffer, 0, buffer.length, null, function(err, bytesRead, buffer)
 	{
+		// TODO: handle error
+		assert(!err)
+		
 		callback(err, bytesRead, buffer)
 	})
 }
@@ -120,6 +123,9 @@ AssetFile.prototype.write = function(buffer, callback)
 {
 	fs.write(this.fd, buffer, 0, buffer.length, null, function(err, written, buffer)
 	{
+		// TODO: handle error
+		assert(!err)
+		
 		callback(err, written, buffer)
 	})
 }
