@@ -26,12 +26,12 @@
 
 var storage = new (require("../storage.js").CouchStorage)("localhost", 5984, "plop")
 
-storage.watchChanges(function(asset)
+storage.watchChanges(function(id, asset)
 {
 	for (var i in asset.revisions)
 	{
 		console.log("downloading rev " + i)
-		storage.download(asset.id, asset.revisions[i].blob, function()
+		storage.download(id, asset.revisions[i].blob, function()
 		{
 			console.log(asset.revisions[i].path + " downloaded!")
 		})

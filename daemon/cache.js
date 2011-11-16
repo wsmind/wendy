@@ -32,12 +32,15 @@ var assert = require("assert")
  * \brief Cache constructor
  * \param path cache root on the filesystem (must be a directory)
  */
-function Cache(path)
+function Cache(root)
 {
-	this.root = path
+	this.root = root
 	
-	// create root cache directory if it doesn't exist
+	// create root cache directory (+tmp) if it doesn't exist
 	this._recursiveMkdir(this.root)
+	this._recursiveMkdir(path.join(this.root, "tmp"))
+	
+	// TODO: flush tmp directory
 }
 exports.Cache = Cache
 
@@ -66,10 +69,7 @@ Cache.prototype.dump = function(callback)
 					blobs[id] = [blob]
 			}
 			
-			for (id in blobs)
-			{
-				callback(id, blobs[id])
-			}
+			callback(blobs)
 		}
 	})
 }

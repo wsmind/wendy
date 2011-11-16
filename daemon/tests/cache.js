@@ -63,7 +63,8 @@ cache.open("noplop", 12, "w", function(file)
 	})
 })
 
-cache.dump(function(id, blobs)
+cache.dump(function(blobs)
 {
-	console.log("blobs for " + id + ": " + blobs)
+	for (var id in blobs)
+		console.log("blobs for " + id + ": " + blobs[id])
 })

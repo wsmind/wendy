@@ -34,18 +34,40 @@ function Engine(storage, cache)
 	this.storage = storage
 	this.cache = cache
 	
+	// Asset structure
+	// {
+	//    lock: {user: <string>, application: <string>},
+	//    revisions: {<int>: {rev}, <int>: {rev2}, ...}
+	// }
+	//
+	// Revision structure
+	// (author and path will be null if the asset was deleted in this revision)
+	// {
+	//    author: <string>,
+	//    path: <string>,
+	//    blob: <int>
+	// }
+	//
+	// Blobs
+	// {<id>: [<int array>]}
 	this.assets = {}
+	this.blobs = {}
 	
 	var self = this
-	this.storage.watchChanges(function(asset)
+	this.cache.dump(function(blobs)
 	{
-		if (asset.deleted)
-			delete self.assets[asset.id]
-		else
-			self.assets[asset.id] = asset
+		self.blobs = blobs
 		
-		console.log(asset)
-		self.emit("changed", asset)
+		// start listening to storage changes
+		self.storage.watchChanges(function(id, asset)
+		{
+			self.assets[id] = asset
+			
+			self._checkAsset(id)
+			
+			console.log(asset)
+			self.emit("changed", asset)
+		})
 	})
 }
 util.inherits(Engine, events.EventEmitter)
@@ -57,4 +79,14 @@ Engine.prototype.dump = function(callback)
 	{
 		callback(this.assets[id])
 	}
+}
+
+Engine.prototype._checkAsset = function(id)
+{
+	// find last revision number
+	var revisions = this.assets[id].revisions
+	
+	// check associated blob
+	
+	// put into download queue
 }

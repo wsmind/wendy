@@ -40,6 +40,7 @@ CouchStorage.prototype.watchChanges = function(callback)
 		method: "GET",
 		host: this.host,
 		port: this.port,
+		// TODO: remove deleted docs from changes stream
 		path: "/" + this.database + "/_changes?feed=continuous&include_docs=true&since=0"
 	}
 	
@@ -49,13 +50,16 @@ CouchStorage.prototype.watchChanges = function(callback)
 		{
 			var data = JSON.parse(chunk)
 			
-			var asset = {
-				id: data.doc._id,
-				revisions: data.doc.revisions,
-				deleted: (data.deleted == true)
+			// TODO: remove when ignored at request level
+			if (data.deleted === undefined)
+			{
+				var asset = {
+					lock: data.doc.lock,
+					revisions: data.doc.revisions
+				}
+				
+				callback(data.doc._id, asset)
 			}
-			
-			callback(asset)
 		})
 	})
 	
