@@ -37,7 +37,8 @@ function Engine(storage, cache)
 	// Asset structure
 	// {
 	//    lock: {user: <string>, application: <string>},
-	//    revisions: {<int>: {rev}, <int>: {rev2}, ...}
+	//    revisions: {<int>: {rev}, <int>: {rev2}, ...},
+	//    state: "outofdate" | "downloading" | "uptodate"
 	// }
 	//
 	// Revision structure
@@ -53,6 +54,13 @@ function Engine(storage, cache)
 	this.assets = {}
 	this.blobs = {}
 	
+	// waiting (not started) downloads
+	this.downloadQueue = []
+	
+	// currently downloading
+	this.currentDownloads = []
+	this.MAX_DOWNLOADS = 4
+	
 	var self = this
 	this.cache.dump(function(blobs)
 	{
@@ -63,9 +71,8 @@ function Engine(storage, cache)
 		{
 			self.assets[id] = asset
 			
-			self._checkAsset(id)
+			self._checkAssetState(id)
 			
-			console.log(asset)
 			self.emit("changed", asset)
 		})
 	})
@@ -81,12 +88,69 @@ Engine.prototype.dump = function(callback)
 	}
 }
 
-Engine.prototype._checkAsset = function(id)
+// Determine asset state, and take necessary actions
+// to get it up to date
+Engine.prototype._checkAssetState = function(id)
 {
+	var asset = this.assets[id]
+	
+	asset.state = "outdated"
+	
 	// find last revision number
-	var revisions = this.assets[id].revisions
+	var revisions = asset.revisions
+	var lastRevision = Math.max.apply(Math, Object.keys(revisions))
 	
 	// check associated blob
+	var blob = revisions[lastRevision].blob
+	if (!(id in this.blobs) || (this.blobs[id].indexOf(blob) == -1))
+	{
+		// this blob must be dowloaded
+		asset.state = "downloading"
+		this._download(id, blob)
+	}
+	else
+	{
+		// the asset is up to date
+		asset.state = "uptodate"
+	}
 	
-	// put into download queue
+	console.log("STATE of " + id + " -> " + asset.state)
+}
+
+Engine.prototype._download = function(id, blob)
+{
+	debugger;
+	var download = {"id": id, "blob": blob}
+	
+	// TODO: check if already in this.downloadQueue or this.currentDownloads
+	
+	this.downloadQueue.push(download)
+	this._processDownloads()
+}
+
+Engine.prototype._processDownloads = function()
+{
+	while ((this.downloadQueue.length > 0) && (this.currentDownloads.length < this.MAX_DOWNLOADS))
+	{
+		var download = this.downloadQueue.shift()
+		this.currentDownloads.push(download)
+		
+		var self = this
+		this.storage.download(download.id, download.blob, function()
+		{
+			// flag new blob
+			if (!(download.id in self.blobs))
+				self.blobs[download.id] = []
+			self.blobs[download.id].push(download.blob)
+			
+			// remove from current downloads
+			self.currentDownloads.splice(self.currentDownloads.indexOf(download), 1)
+			
+			// determine new asset state
+			self._checkAssetState(download.id)
+			
+			// start next downloads (if any)
+			self._processDownloads()
+		})
+	}
 }

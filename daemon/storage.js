@@ -68,7 +68,8 @@ CouchStorage.prototype.watchChanges = function(callback)
 
 CouchStorage.prototype.download = function(id, blob, callback)
 {
-	var file = fs.createWriteStream("data/" + id + "-" + blob, {flags: "w", mode: 0666})
+	// TODO: change this hardcoded path to a cache.AssetFile
+	var file = fs.createWriteStream("tests/cache/" + id + "-" + blob, {flags: "w", mode: 0666})
 	
 	var options = {
 		method: "GET",
