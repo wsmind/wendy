@@ -136,21 +136,24 @@ Engine.prototype._processDownloads = function()
 		this.currentDownloads.push(download)
 		
 		var self = this
-		this.storage.download(download.id, download.blob, function()
+		this.cache.open(download.id, download.blob, "w", function(file)
 		{
-			// flag new blob
-			if (!(download.id in self.blobs))
-				self.blobs[download.id] = []
-			self.blobs[download.id].push(download.blob)
-			
-			// remove from current downloads
-			self.currentDownloads.splice(self.currentDownloads.indexOf(download), 1)
-			
-			// determine new asset state
-			self._checkAssetState(download.id)
-			
-			// start next downloads (if any)
-			self._processDownloads()
+			self.storage.download(download.id, download.blob, file, function()
+			{
+				// flag new blob
+				if (!(download.id in self.blobs))
+					self.blobs[download.id] = []
+				self.blobs[download.id].push(download.blob)
+				
+				// remove from current downloads
+				self.currentDownloads.splice(self.currentDownloads.indexOf(download), 1)
+				
+				// determine new asset state
+				self._checkAssetState(download.id)
+				
+				// start next downloads (if any)
+				self._processDownloads()
+			})
 		})
 	}
 }

@@ -25,15 +25,33 @@
  *****************************************************************************/
 
 var storage = new (require("../storage.js").CouchStorage)("localhost", 5984, "plop")
+var fs = require("fs")
 
 storage.watchChanges(function(id, asset)
 {
 	for (var i in asset.revisions)
 	{
 		console.log("downloading rev " + i)
-		storage.download(id, asset.revisions[i].blob, function()
+		
+		fs.open("cache/" + id + "-" + i, "w", 0666, function(err, fd)
 		{
-			console.log(asset.revisions[i].path + " downloaded!")
+			var file = {
+				write: function(buffer, callback)
+				{
+					fs.write(fd, buffer, 0, buffer.length, null, function(err, written, buffer)
+					{
+						callback(err, written, buffer)
+					})
+				},
+				close: function()
+				{
+				}
+			}
+			
+			storage.download(id, asset.revisions[i].blob, file, function()
+			{
+				console.log(asset.revisions[i].path + " downloaded!")
+			})
 		})
 	}
 })

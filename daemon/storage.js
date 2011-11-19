@@ -24,8 +24,9 @@
  * 
  *****************************************************************************/
 
-var http = require("http")
+var assert = require("assert")
 var fs = require("fs")
+var http = require("http")
 
 function CouchStorage(host, port, database)
 {
@@ -66,11 +67,8 @@ CouchStorage.prototype.watchChanges = function(callback)
 	request.end()
 }
 
-CouchStorage.prototype.download = function(id, blob, callback)
+CouchStorage.prototype.download = function(id, blob, file, callback)
 {
-	// TODO: change this hardcoded path to a cache.AssetFile
-	var file = fs.createWriteStream("tests/cache/" + id + "-" + blob, {flags: "w", mode: 0666})
-	
 	var options = {
 		method: "GET",
 		host: this.host,
@@ -80,13 +78,23 @@ CouchStorage.prototype.download = function(id, blob, callback)
 	
 	var request = http.request(options, function(response)
 	{
-		response.on("end", function()
+		assert(response.statusCode == 200)
+		
+		// stream data to asset file
+		response.on("data", function(chunk)
 		{
-			callback()
+			response.pause()
+			file.write(chunk, function()
+			{
+				response.resume()
+			})
 		})
 		
-		// transfer whole file
-		response.pipe(file)
+		response.on("end", function()
+		{
+			file.close()
+			callback()
+		})
 	})
 	
 	request.end()
