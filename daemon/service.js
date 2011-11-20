@@ -48,24 +48,41 @@ exports.Service = Service
 
 Service.prototype.handleClient = function(client)
 {
-	this.engine.on("changed", function(asset)
+	var self = this
+	
+	// engine notifications
+	this.engine.on("changed", function(id, asset)
 	{
-		if (asset.deleted)
-		{
-			client.write("REMOVED " + asset.id + "\n")
-		}
-		else
-		{
-			client.write("UPDATED " + asset.id + "\n")
-			client.write("END\n")
-		}
+		self.sendAsset(client, id, asset)
 	})
 	
+	// client actions
+	// TODO
+	
 	// initial dump
-	this.engine.dump(function(asset)
+	this.engine.dump(function(id, asset)
 	{
-		console.log("dumping " + asset)
-		client.write("UPDATED " + asset.id + "\n")
-		client.write("END\n")
+		self.sendAsset(client, id, asset)
 	})
+}
+
+Service.prototype.sendAsset = function(client, id, asset)
+{
+	console.log("sending " + id)
+	
+	// find last revision number
+	var lastRevision = Math.max.apply(Math, Object.keys(asset.revisions))
+	var revision = asset.revisions[lastRevision]
+	
+	if (revision.blob == null)
+	{
+		client.write("REMOVED " + id + "\n")
+	}
+	else
+	{
+		client.write("UPDATED " + id + "\n")
+		client.write("path " + revision.path + "\n")
+		client.write("author " + revision.author + "\n")
+		client.write("END\n")
+	}
 }

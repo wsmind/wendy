@@ -72,8 +72,6 @@ function Engine(storage, cache)
 			self.assets[id] = asset
 			
 			self._checkAssetState(id)
-			
-			self.emit("changed", asset)
 		})
 	})
 }
@@ -84,7 +82,7 @@ Engine.prototype.dump = function(callback)
 {
 	for (var id in this.assets)
 	{
-		callback(this.assets[id])
+		callback(id, this.assets[id])
 	}
 }
 
@@ -115,11 +113,11 @@ Engine.prototype._checkAssetState = function(id)
 	}
 	
 	console.log("STATE of " + id + " -> " + asset.state)
+	this.emit("changed", id, asset)
 }
 
 Engine.prototype._download = function(id, blob)
 {
-	debugger;
 	var download = {"id": id, "blob": blob}
 	
 	// TODO: check if already in this.downloadQueue or this.currentDownloads

@@ -85,10 +85,9 @@ void AssetReader::run()
 				std::string attribute = attributeLine.substr(0, separatorPos);
 				std::string value = attributeLine.substr(separatorPos + 1);
 				
-				if (attribute == "path")
-				{
-					notification.asset.path = value;
-				}
+				if (attribute == "path") notification.asset.path = value;
+				else if (attribute == "author") notification.asset.author = value;
+				
 			}
 		}
 	}

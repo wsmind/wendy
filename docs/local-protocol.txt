@@ -5,8 +5,7 @@ daemon (server part) and in the libwendy (client part).
 All communications are done through a standard TCP socket on port 46288. The
 protocol is text-based, and intentionnaly *very simple*.
 
-The encoding UTF-8, and line endings are defined as any combination
-of CR and/or LF.
+The encoding UTF-8, and line endings are always LF.
 
 == Client -> Server (actions) ==
 
@@ -44,7 +43,7 @@ information:
 -------------------------------------------------------------------------------
 UPDATED <id>
 path <path>
-[file <filename>]
+author <name>
 END
 -------------------------------------------------------------------------------
 A filename is specified when the asset has been successfully opened. Otherwise,

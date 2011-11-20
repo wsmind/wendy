@@ -47,6 +47,9 @@ struct WENDYAPI Asset
 	/// relative path to repository root (contains forward slashes only)
 	std::string path;
 	
+	/// user who uploaded the current revision
+	std::string author;
+	
 	/// user locking this asset ("" if not locked)
 	//std::string lockingUser;
 };
