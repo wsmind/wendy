@@ -33,6 +33,7 @@ function CouchStorage(host, port, database)
 	this.host = host
 	this.port = port
 	this.database = database
+	this.sequence = 0 // passed to 'since' parameter of _changes requests
 }
 
 CouchStorage.prototype.watchChanges = function(callback)
@@ -41,26 +42,52 @@ CouchStorage.prototype.watchChanges = function(callback)
 		method: "GET",
 		host: this.host,
 		port: this.port,
-		// TODO: remove deleted docs from changes stream
-		path: "/" + this.database + "/_changes?feed=continuous&include_docs=true&since=0"
+		// TODO: remove deleted docs from changes stream w/ couch filters
+		path: "/" + this.database + "/_changes?feed=continuous&include_docs=true&since=" + this.sequence
 	}
 	
+	var self = this
 	var request = http.request(options, function(response)
 	{
 		response.on("data", function(chunk)
 		{
-			var data = JSON.parse(chunk)
-			
-			// TODO: remove when ignored at request level
-			if (data.deleted === undefined)
+			var data
+			try
 			{
-				var asset = {
-					lock: data.doc.lock,
-					revisions: data.doc.revisions
-				}
-				
-				callback(data.doc._id, asset)
+				data = JSON.parse(chunk)
 			}
+			catch (e)
+			{
+				// ignore invalid chunks (such as a single new line)
+				return
+			}
+			
+			// last_seq is sent by couch before closing the connection
+			// we must keep the sequence number to avoid getting more changes
+			// than necessary from the next connection.
+			if (data.last_seq !== undefined)
+			{
+				self.sequence = data.last_seq
+			}
+			else
+			{
+				// TODO: remove when ignored at request level
+				if (data.deleted === undefined)
+				{
+					var asset = {
+						lock: data.doc.lock,
+						revisions: data.doc.revisions
+					}
+					
+					callback(data.doc._id, asset)
+				}
+			}
+		})
+		
+		response.on("end", function()
+		{
+			// restart change watching
+			self.watchChanges(callback)
 		})
 	})
 	
