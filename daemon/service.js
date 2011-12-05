@@ -49,21 +49,33 @@ exports.Service = Service
 Service.prototype.handleClient = function(client)
 {
 	var self = this
+	var connected = true
+	
+	console.log("client connected")
+	
+	var assetCallback = function(id, asset)
+	{
+		if (connected)
+			self.sendAsset(client, id, asset)
+	}
 	
 	// engine notifications
-	this.engine.on("changed", function(id, asset)
+	this.engine.on("changed", assetCallback)
+	
+	// disconnection
+	client.on("close", function()
 	{
-		self.sendAsset(client, id, asset)
+		console.log("client disconnected")
+		
+		connected = false
+		self.engine.removeListener("changed", assetCallback)
 	})
 	
 	// client actions
 	// TODO
 	
 	// initial dump
-	this.engine.dump(function(id, asset)
-	{
-		self.sendAsset(client, id, asset)
-	})
+	this.engine.dump(assetCallback)
 }
 
 Service.prototype.sendAsset = function(client, id, asset)
