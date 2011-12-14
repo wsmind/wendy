@@ -7,6 +7,9 @@ protocol is text-based, and intentionnaly *very simple*.
 
 The encoding UTF-8, and line endings are always LF.
 
+All paths are always relative to project root (no leading slash), the separator
+is '/' on all platforms.
+
 == Client -> Server (actions) ==
 
 -------------------------------------------------------------------------------
@@ -36,6 +39,15 @@ OPEN <id> <mode>
 CLOSE <id>
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+READ <id> <offset> <size>
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+WRITE <id> <offset> <size>
+<chunk> (raw buffer of size <size>)
+-------------------------------------------------------------------------------
+
 == Server -> Client (notifications) ==
 
 When new asset metadata is available, or a client action impacted asset
@@ -43,7 +55,8 @@ information:
 -------------------------------------------------------------------------------
 UPDATED <id>
 path <path>
-author <name>
+author <user>
+[lock <user> <application>]
 END
 -------------------------------------------------------------------------------
 A filename is specified when the asset has been successfully opened. Otherwise,
@@ -55,3 +68,7 @@ elsewhere):
 REMOVED <id>
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+CHUNK <id> <offset> <size>
+<chunk> (raw buffer of size <size>)
+-------------------------------------------------------------------------------

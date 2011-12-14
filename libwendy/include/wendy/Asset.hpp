@@ -50,8 +50,11 @@ struct WENDYAPI Asset
 	/// user who uploaded the current revision
 	std::string author;
 	
+	/// unix timestamp of last modification date
+	unsigned long long lastModified;
+	
 	/// user locking this asset ("" if not locked)
-	//std::string lockingUser;
+	std::string lockingUser;
 };
 
 } // wendy namespace

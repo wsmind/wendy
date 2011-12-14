@@ -35,6 +35,7 @@ function CouchStorage(host, port, database)
 	this.database = database
 	this.sequence = 0 // passed to 'since' parameter of _changes requests
 }
+exports.CouchStorage = CouchStorage
 
 CouchStorage.prototype.watchChanges = function(callback)
 {
@@ -127,4 +128,22 @@ CouchStorage.prototype.download = function(id, blob, file, callback)
 	request.end()
 }
 
-exports.CouchStorage = CouchStorage
+CouchStorage.prototype.create = function(asset)
+{
+	var options = {
+		method: "POST",
+		host: this.host,
+		port: this.port,
+		path: "/" + this.database,
+		headers: {
+			"Content-Type": "application/json"
+		}
+	}
+	
+	var request = http.request(options, function(response)
+	{
+		assert(Math.floor(response.statusCode / 100) == 2)
+	})
+	
+	request.end(JSON.stringify(asset))
+}

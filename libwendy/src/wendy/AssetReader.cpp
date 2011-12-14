@@ -87,7 +87,7 @@ void AssetReader::run()
 				
 				if (attribute == "path") notification.asset.path = value;
 				else if (attribute == "author") notification.asset.author = value;
-				
+				else if (attribute == "lockingUser") notification.asset.lockingUser = value;
 			}
 		}
 	}

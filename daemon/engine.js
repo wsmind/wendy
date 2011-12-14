@@ -46,7 +46,8 @@ function Engine(storage, cache)
 	// {
 	//    author: <string>,
 	//    path: <string>,
-	//    blob: <int>
+	//    [blob: <int>,]
+	//    date: <unix timestamp>
 	// }
 	//
 	// Blobs
@@ -86,6 +87,21 @@ Engine.prototype.dump = function(callback)
 	}
 }
 
+Engine.prototype.create = function(path)
+{
+	var asset = {
+		revisions: {
+			"0": {
+				author: "Mr Blob",
+				path: path,
+				date: 42,
+			}
+		}
+	}
+	
+	this.storage.create(42, asset)
+}
+
 // Determine asset state, and take necessary actions
 // to get it up to date
 Engine.prototype._checkAssetState = function(id)
@@ -100,7 +116,7 @@ Engine.prototype._checkAssetState = function(id)
 	
 	// check associated blob
 	var blob = revisions[lastRevision].blob
-	if (!(id in this.blobs) || (this.blobs[id].indexOf(blob) == -1))
+	if ((blob != undefined) && (!(id in this.blobs) || (this.blobs[id].indexOf(blob) == -1)))
 	{
 		// this blob must be dowloaded
 		asset.state = "downloading"

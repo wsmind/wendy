@@ -77,12 +77,24 @@ bool LocalStream::readLine(std::string *line)
 		if (recv(this->socketId, &chr, 1, 0) <= 0)
 			return false;
 		
-		// ignore '\r' for cross-platform line endings
-		if (chr == '\r')
-			continue;
-		
 		if (chr != '\n')
 			*line += chr;
+	}
+	
+	return true;
+}
+
+bool LocalStream::readChunk(char *buffer, unsigned long size)
+{
+	int total = 0;
+	while (total < size)
+	{
+		int read = recv(this->socketId, buffer, size - total, 0);
+		if (read <= 0)
+			return false;
+		
+		buffer += read;
+		total += read;
 	}
 	
 	return true;
@@ -97,6 +109,22 @@ bool LocalStream::writeLine(const std::string &line)
 	}
 	
 	return false;
+}
+
+bool LocalStream::writeChunk(const char *buffer, unsigned long size)
+{
+	int total = 0;
+	while (total < size)
+	{
+		int written = send(this->socketId, buffer, size - total, 0);
+		if (written <= 0)
+			return false;
+		
+		buffer += written;
+		total += written;
+	}
+	
+	return true;
 }
 
 void LocalStream::connect()

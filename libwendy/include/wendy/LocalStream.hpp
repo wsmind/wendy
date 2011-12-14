@@ -65,7 +65,9 @@ class WENDYAPI LocalStream
 		bool isConnected();
 		
 		bool readLine(std::string *line);
+		bool readChunk(char *buffer, unsigned long size);
 		bool writeLine(const std::string &line);
+		bool writeChunk(const char *buffer, unsigned long size);
 		
 	private:
 		void connect();

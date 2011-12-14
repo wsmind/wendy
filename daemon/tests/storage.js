@@ -27,10 +27,23 @@
 var storage = new (require("../storage.js").CouchStorage)("localhost", 5984, "plop")
 var fs = require("fs")
 
+storage.create({
+	revisions: {
+		"0": {
+			author: "Mr Blob",
+			path: "yop/sub/great.txt",
+			date: 42,
+		}
+	}
+})
+
 storage.watchChanges(function(id, asset)
 {
 	for (var i in asset.revisions)
 	{
+		if (!asset.revisions[i].blob)
+			continue
+		
 		console.log("downloading rev " + i)
 		
 		fs.open("cache/" + id + "-" + i, "w", 0666, function(err, fd)

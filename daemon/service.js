@@ -72,10 +72,37 @@ Service.prototype.handleClient = function(client)
 	})
 	
 	// client actions
-	// TODO
+	var reader = new StreamReader(client)
+	this.processAction(reader)
 	
 	// initial dump
 	this.engine.dump(assetCallback)
+}
+
+Service.prototype.processAction = function(reader)
+{
+	var self = this
+	reader.readLine(function(line)
+	{
+		var spacePosition = line.indexOf(" ")
+		var command = line.slice(0, spacePosition)
+		var parameters = line.slice(spacePosition + 1)
+		
+		switch (command)
+		{
+			case "CREATE":
+			{
+				console.log("CREATE!!")
+				var path = parameters
+				console.log("path = " + path)
+				self.engine.create(path)
+				break
+			}
+		}
+		
+		// process next action
+		self.processAction(reader)
+	})
 }
 
 Service.prototype.sendAsset = function(client, id, asset)
@@ -96,5 +123,107 @@ Service.prototype.sendAsset = function(client, id, asset)
 		client.write("path " + revision.path + "\n")
 		client.write("author " + revision.author + "\n")
 		client.write("END\n")
+	}
+}
+
+Service.prototype.sendChunk = function(client, id, offset, chunk)
+{
+	client.write("CHUNK " + id + " " + offset + " " + chunk.length + "\n")
+	client.write(chunk)
+}
+
+// helper for splitting the stream into lines and binary chunks
+function StreamReader(stream)
+{
+	this.stream = stream
+	this.readingBuffer = new Buffer(0)
+	this.currentObject = null // might be "line" or "chunk"
+	this.chunkSize = 0
+	this.callback = null
+	
+	var self = this
+	this.stream.on("data", function(buffer)
+	{
+		self.readingBuffer += buffer
+		self._checkContent()
+	})
+}
+exports.StreamReader = StreamReader // exported for testing purposes
+
+StreamReader.prototype.readLine = function(callback)
+{
+	this.currentObject = "line"
+	this.callback = callback
+	this._checkContent()
+}
+
+StreamReader.prototype.readChunk = function(size, callback)
+{
+	this.currentObject = "chunk"
+	this.chunkSize = size
+	this.callback = callback
+	this._checkContent()
+}
+
+StreamReader.prototype._checkContent = function()
+{
+	switch (this.currentObject)
+	{
+		case "line":
+		{
+			// scan for a newline in the accumulated buffer
+			for (var i = 0; i < this.readingBuffer.length; i++)
+			{
+				if (this.readingBuffer[i] == '\n')
+				{
+					// extract line
+					var line = this.readingBuffer.slice(0, i).toString("utf8")
+					
+					// shrink reading buffer keeping only unread content
+					this.readingBuffer = this.readingBuffer.slice(i + 1)
+					
+					// save callback
+					var callback = this.callback
+					
+					// reset state
+					this.currentObject = null
+					this.callback = null
+					
+					// signal the line
+					callback(line)
+					
+					return
+				}
+			}
+			
+			break;
+		}
+		case "chunk":
+		{
+			// check if enough data were read
+			if (this.readingBuffer.length >= this.chunkSize)
+			{
+				// extract chunk
+				var chunk = this.readingBuffer.slice(0, this.chunkSize)
+				
+				// shrink reading buffer keeping only unused content
+				this.readingBuffer = this.readingBuffer.slice(this.chunkSize)
+				
+				// save callback
+				var callback = this.callback
+				
+				// reset state
+				this.currentObject = null
+				this.chunkSize = 0
+				this.callback = null
+				
+				// signal the chunk
+				callback(chunk)
+				
+				return
+			}
+			
+			break;
+		}
 	}
 }
