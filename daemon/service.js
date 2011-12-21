@@ -73,13 +73,14 @@ Service.prototype.handleClient = function(client)
 	
 	// client actions
 	var reader = new StreamReader(client)
-	this.processAction(reader)
+	var openedFiles = {} // id -> cache.AssetFile
+	this.processAction(client, reader, openedFiles)
 	
 	// initial dump
 	this.engine.dump(assetCallback)
 }
 
-Service.prototype.processAction = function(reader)
+Service.prototype.processAction = function(client, reader, openedFiles)
 {
 	var self = this
 	reader.readLine(function(line)
@@ -92,16 +93,64 @@ Service.prototype.processAction = function(reader)
 		{
 			case "CREATE":
 			{
-				console.log("CREATE!!")
 				var path = parameters
-				console.log("path = " + path)
 				self.engine.create(path)
 				break
+			}
+			
+			case "OPEN":
+			{
+				var parts = parameters.split(" ")
+				var id = parts[0]
+				var mode = parts[1]
+				console.log("OPEN!! -> " + id + ", " + mode)
+				
+				var engineMode = null
+				if (mode == "READING") engineMode = "r"
+				else if (mode == "WRITING") engineMode = "w"
+				
+				self.engine.open(id, engineMode, function(err, file)
+				{
+					if (err) throw err
+					
+					openedFiles[id] = file
+					
+					// TODO: send asset with open information
+				})
+				
+				break;
+			}
+			
+			case "READ":
+			{
+				var parts = parameters.split(" ")
+				var id = parts[0]
+				var offset = parts[1]
+				var size = parts[2]
+				
+				console.log("READ!! -> " + id + ", " + offset + ", " + size)
+				
+				if (openedFiles[id] === undefined)
+				{
+					console.error("Asset " + id + " was read but not opened!")
+					break;
+				}
+				
+				openedFiles[id].read(new Buffer(size), function(err, bytesRead, buffer)
+				{
+					if (err) throw err
+					
+					// TODO: handle bytesRead < size
+					
+					self.sendChunk(client, id, offset, buffer)
+				})
+				
+				break;
 			}
 		}
 		
 		// process next action
-		self.processAction(reader)
+		self.processAction(client, reader, openedFiles)
 	})
 }
 

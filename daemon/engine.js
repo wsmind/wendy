@@ -24,6 +24,7 @@
  * 
  *****************************************************************************/
 
+var assert = require("assert")
 var util = require("util")
 var events = require("events")
 
@@ -100,6 +101,53 @@ Engine.prototype.create = function(path)
 	}
 	
 	this.storage.create(42, asset)
+}
+
+// mode must be "r" or "w"
+Engine.prototype.open = function(id, mode, callback)
+{
+	assert((mode == "r") || (mode == "w"))
+	
+	if (mode == "r")
+	{
+		if (this.blobs[id] === undefined)
+		{
+			callback("No blob available for asset " + id)
+			return
+		}
+		
+		// when opening for reading, find the latest complete blob available
+		// for this asset and open it
+		var lastBlob = null
+		var revisions = this.assets[id].revisions
+		var blobs = this.blobs[id]
+		for (var revisionId in revisions)
+		{
+			// check is this blob has finished downloading
+			var blob = revisions[revisionId].blob
+			if (blobs.indexOf(blob) != -1)
+				lastBlob = revisions[revisionId].blob
+		}
+		
+		if (lastBlob === null)
+		{
+			callback("No blob found in revisions (asset " + id + ")")
+			return
+		}
+		
+		console.log("opening asset " + id + ", blob " + lastBlob)
+		
+		this.cache.open(id, lastBlob, mode, function(file)
+		{
+			callback(null, file)
+		})
+	}
+	else
+	{
+		// to open an asset for writing, the asset must be locked by the current
+		// user
+		assert(!"not implemented")
+	}
 }
 
 // Determine asset state, and take necessary actions
