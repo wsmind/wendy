@@ -56,10 +56,11 @@ class WENDYAPI AssetReader: public Runnable
 		
 		/**
 		 * \brief Read one asset notification
+		 * \return true if the stream was disconnected and no more notifications will arrive
 		 * 
 		 * Blocks if nothing is available, until a change information arrives
 		 */
-		AssetNotification getNextNotification();
+		bool getNextNotification(AssetNotification *notification);
 		
 	private:
 		LocalStream *stream;
@@ -70,4 +71,3 @@ class WENDYAPI AssetReader: public Runnable
 } // wendy namespace
 
 #endif // __WENDY_ASSETREADER_HPP__
-

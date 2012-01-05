@@ -75,7 +75,10 @@ bool LocalStream::readLine(std::string *line)
 	while (chr != '\n')
 	{
 		if (recv(this->socketId, &chr, 1, 0) <= 0)
+		{
+			this->connected = false;
 			return false;
+		}
 		
 		if (chr != '\n')
 			*line += chr;
@@ -91,7 +94,10 @@ bool LocalStream::readChunk(char *buffer, unsigned long size)
 	{
 		int read = recv(this->socketId, buffer, size - total, 0);
 		if (read <= 0)
+		{
+			this->connected = false;
 			return false;
+		}
 		
 		buffer += read;
 		total += read;
@@ -105,7 +111,10 @@ bool LocalStream::writeLine(const std::string &line)
 	for (unsigned int i = 0; i < line.size(); ++i)
 	{
 		if (send(this->socketId, &line[i], 1, 0) <= 0)
+		{
+			this->connected = false;
 			return false;
+		}
 	}
 	
 	return false;
@@ -118,7 +127,10 @@ bool LocalStream::writeChunk(const char *buffer, unsigned long size)
 	{
 		int written = send(this->socketId, buffer, size - total, 0);
 		if (written <= 0)
+		{
+			this->connected = false;
 			return false;
+		}
 		
 		buffer += written;
 		total += written;

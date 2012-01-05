@@ -38,6 +38,8 @@ Queue<PayloadType>::Queue()
 {
 	this->mutex = new wendy::Mutex;
 	this->conditionVariable = this->mutex->createConditionVariable();
+	
+	this->terminated = false;
 }
 
 template <class PayloadType>
@@ -52,7 +54,7 @@ bool Queue<PayloadType>::isEmpty()
 {
 	ScopeLock lock(this->mutex);
 	
-	return (this->internalQueue.size() == 0);
+	return (this->internalQueue.size() == 0) || this->terminated;
 }
 
 template <class PayloadType>
@@ -65,18 +67,33 @@ void Queue<PayloadType>::send(const PayloadType &element)
 }
 
 template <class PayloadType>
-PayloadType Queue<PayloadType>::receive()
+void Queue<PayloadType>::sendTermination()
 {
 	ScopeLock lock(this->mutex);
 	
-	// wait for at least an element
-	while (this->internalQueue.size() == 0)
+	this->terminated = true;
+	this->conditionVariable->signal();
+}
+
+template <class PayloadType>
+bool Queue<PayloadType>::receive(PayloadType *element)
+{
+	ScopeLock lock(this->mutex);
+	
+	// wait for at least an element, or termination
+	while ((this->internalQueue.size() == 0) && (this->terminated == false))
 		this->conditionVariable->wait();
 	
-	// send it back
-	PayloadType element = this->internalQueue.front();
-	this->internalQueue.pop_front();
-	return element;
+	// check for elements
+	if (this->internalQueue.size() > 0)
+	{
+		*element = this->internalQueue.front();
+		this->internalQueue.pop_front();
+		return false;
+	}
+	
+	// termination was received
+	return true;
 }
 
 } // wendy namespace

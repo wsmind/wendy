@@ -68,8 +68,11 @@ bool Project::isConnected()
 
 void Project::waitChanges()
 {
-	AssetNotification notification = this->reader->getNextNotification();
-	this->processNotification(notification);
+	AssetNotification notification;
+	if (this->reader->getNextNotification(&notification))
+		this->disconnect();
+	else
+		this->processNotification(notification);
 }
 
 void Project::checkChanges()
@@ -77,8 +80,11 @@ void Project::checkChanges()
 	// process only available notifications, in order not to block
 	while (this->reader->hasNotification())
 	{
-		AssetNotification notification = this->reader->getNextNotification();
-		this->processNotification(notification);
+		AssetNotification notification;
+		if (this->reader->getNextNotification(&notification))
+			this->disconnect();
+		else
+			this->processNotification(notification);
 	}
 }
 

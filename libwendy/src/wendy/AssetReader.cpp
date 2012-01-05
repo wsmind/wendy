@@ -91,6 +91,9 @@ void AssetReader::run()
 			}
 		}
 	}
+	
+	// the stream was disconnected
+	this->queue->sendTermination();
 }
 
 bool AssetReader::hasNotification()
@@ -98,10 +101,9 @@ bool AssetReader::hasNotification()
 	return !this->queue->isEmpty();
 }
 
-AssetNotification AssetReader::getNextNotification()
+bool AssetReader::getNextNotification(AssetNotification *notification)
 {
-	AssetNotification notification = this->queue->receive();
-	return notification;
+	return this->queue->receive(notification);
 }
 
 } // wendy namespace

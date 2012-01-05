@@ -45,8 +45,8 @@ class Processor: public wendy::Runnable
 		
 		~Processor()
 		{
-			// send termination message
-			this->queue->send("exit");
+			// send special termination message
+			this->queue->sendTermination();
 			
 			// join thread
 			std::cout << "joining" << std::endl;
@@ -67,9 +67,10 @@ class Processor: public wendy::Runnable
 			while (running)
 			{
 				wendy::Thread::sleepSeconds(1);
-				std::string thing = this->queue->receive();
+				std::string thing;
+				bool terminated = this->queue->receive(&thing);
 				
-				if (thing == "exit")
+				if (terminated)
 				{
 					std::cout << "stopped processing!!" << std::endl;
 					running = false;

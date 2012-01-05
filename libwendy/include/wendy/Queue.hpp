@@ -54,7 +54,10 @@ class Queue
 		~Queue();
 		
 		/**
-		 * \brief Test if elements are present in the queue (non-blocking)
+		 * \brief Test if receive can be called without blocking
+		 *
+		 * Will return true either if elements are present in the queue, or
+		 * if the termination event was sent
 		 */
 		bool isEmpty();
 		
@@ -64,17 +67,31 @@ class Queue
 		void send(const PayloadType &element);
 		
 		/**
+		 * \brief Send termination event
+		 *
+		 * This will make the next call to receive() return true.
+		 */
+		void sendTermination();
+		
+		/**
 		 * \brief Pops the first element available and return it
+		 * \return true if sendTermination() was called, and false otherwise
 		 *
 		 * Blocks until at least one element is available. If isEmpty() returned false,
-		 * the next call to this method is guaranteed not to blocK.
+		 * the next call to this method is guaranteed not to block.
+		 *
+		 * When true is returned (termination event), no useful data is put in
+		 * the payload object.
 		 */
-		PayloadType receive();
+		bool receive(PayloadType *element);
 		
 	private:
 		std::list<PayloadType> internalQueue;
 		wendy::Mutex *mutex;
 		wendy::ConditionVariable *conditionVariable;
+		
+		// used for ending payload queueing
+		bool terminated;
 };
 
 } // wendy namespace
