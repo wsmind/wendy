@@ -147,3 +147,60 @@ CouchStorage.prototype.create = function(asset)
 	
 	request.end(JSON.stringify(asset))
 }
+
+CouchStorage.prototype.lock = function(id, application)
+{
+	// first, fetch the latest version of the asset
+	var options = {
+		method: "GET",
+		host: this.host,
+		port: this.port,
+		path: "/" + this.database + "/" + id,
+		agent: false
+	}
+	
+	var request = http.request(options, function(response)
+	{
+		assert(Math.floor(response.statusCode / 100) == 2)
+		
+		var doc = ""
+		response.setEncoding("utf8")
+		
+		response.on("data", function(chunk)
+		{
+			doc += chunk
+		})
+		
+		response.on("end", function()
+		{
+			var asset = JSON.parse(doc)
+			
+			// check that the asset is not already locked
+			if (asset.lock === undefined)
+			{
+				// send the locked version
+				asset.lock = {
+					user: "MrPlop",
+					application: application
+				}
+				
+				var sendOptions = {
+					method: "PUT",
+					host: this.host,
+					port: this.port,
+					path: "/" + this.database + "/" + id,
+					agent: false,
+					headers: {
+						"Content-Type": "application/json"
+					}
+				}
+				
+				console.log(asset)
+				var sendRequest = http.request(sendOptions)
+				//sendRequest.end(JSON.stringify(asset), "utf8")
+			}
+		})
+	})
+	
+	request.end()
+}

@@ -53,20 +53,15 @@ WRITE <id> <offset> <size>
 When new asset metadata is available, or a client action impacted asset
 information:
 -------------------------------------------------------------------------------
-UPDATED <id>
-path <path>
+ASSET <id>
+revision <int>
 author <user>
+[path <path>]
 [lock <user> <application>]
 END
 -------------------------------------------------------------------------------
-A filename is specified when the asset has been successfully opened. Otherwise,
-this field is not present.
-
-If an asset was removed (either by the connected client or another client
-elsewhere):
--------------------------------------------------------------------------------
-REMOVED <id>
--------------------------------------------------------------------------------
+If the asset was deleted (either by the connected client or another client
+elsewhere), it will have no path.
 
 -------------------------------------------------------------------------------
 CHUNK <id> <offset> <size>

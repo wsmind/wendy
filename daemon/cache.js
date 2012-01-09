@@ -113,7 +113,7 @@ AssetFile.prototype.read = function(buffer, callback)
 	fs.read(this.fd, buffer, 0, buffer.length, null, function(err, bytesRead, buffer)
 	{
 		// TODO: handle error
-		assert(!err)
+		if (err) throw err
 		
 		callback(err, bytesRead, buffer)
 	})
@@ -124,7 +124,7 @@ AssetFile.prototype.write = function(buffer, callback)
 	fs.write(this.fd, buffer, 0, buffer.length, null, function(err, written, buffer)
 	{
 		// TODO: handle error
-		assert(!err)
+		if (err) throw err
 		
 		callback(err, written, buffer)
 	})

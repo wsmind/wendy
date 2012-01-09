@@ -98,6 +98,18 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 				break
 			}
 			
+			case "LOCK":
+			{
+				var parts = parameters.split(" ")
+				var id = parts[0]
+				var application = parts[1]
+				console.log("LOCK!! -> " + id + ", " + application)
+				
+				self.engine.lock(id, application);
+				
+				break
+			}
+			
 			case "OPEN":
 			{
 				var parts = parameters.split(" ")
@@ -115,7 +127,7 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 					
 					openedFiles[id] = file
 					
-					// TODO: send asset with open information
+					client.write("OPENED " + id + " " + mode + "\n")
 				})
 				
 				break;
@@ -162,17 +174,13 @@ Service.prototype.sendAsset = function(client, id, asset)
 	var lastRevision = Math.max.apply(Math, Object.keys(asset.revisions))
 	var revision = asset.revisions[lastRevision]
 	
-	if (revision.blob == null)
-	{
-		client.write("REMOVED " + id + "\n")
-	}
-	else
-	{
-		client.write("UPDATED " + id + "\n")
+	client.write("ASSET " + id + "\n")
+	client.write("revision " + lastRevision + "\n")
+	client.write("author " + revision.author + "\n")
+	client.write("date " + revision.date + "\n")
+	if (revision.path)
 		client.write("path " + revision.path + "\n")
-		client.write("author " + revision.author + "\n")
-		client.write("END\n")
-	}
+	client.write("END\n")
 }
 
 Service.prototype.sendChunk = function(client, id, offset, chunk)

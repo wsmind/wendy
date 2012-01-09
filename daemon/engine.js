@@ -43,10 +43,10 @@ function Engine(storage, cache)
 	// }
 	//
 	// Revision structure
-	// (author and path will be null if the asset was deleted in this revision)
+	// (path and blob will be undefined if the asset was deleted in this revision)
 	// {
 	//    author: <string>,
-	//    path: <string>,
+	//    [path: <string>,]
 	//    [blob: <int>,]
 	//    date: <unix timestamp>
 	// }
@@ -101,6 +101,11 @@ Engine.prototype.create = function(path)
 	}
 	
 	this.storage.create(42, asset)
+}
+
+Engine.prototype.lock = function(id, application)
+{
+	this.storage.lock(id, application)
 }
 
 // mode must be "r" or "w"

@@ -3,7 +3,7 @@ so it can be used as a basic comment system.
 
 //CREATE plop
 
-//LOCK 28535546eca18955bbc14ae82c000b24 MyGreatEditor
+LOCK 28535546eca18955bbc14ae82c000b24 MyGreatEditor
 //UNLOCK 28535546eca18955bbc14ae82c000b24
 
 OPEN 28535546eca18955bbc14ae82c000b24 READING

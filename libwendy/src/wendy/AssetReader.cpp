@@ -63,8 +63,7 @@ void AssetReader::run()
 			std::string notificationType = headerLine.substr(0, spacePos);
 			notification.asset.id = headerLine.substr(spacePos + 1);
 			
-			if (notificationType == "UPDATED") notification.type = AssetNotification::UPDATED;
-			else if (notificationType == "REMOVED") notification.type = AssetNotification::REMOVED;
+			if (notificationType == "ASSET") notification.type = AssetNotification::UPDATED;
 			else continue;
 			
 			// extract asset attributes
