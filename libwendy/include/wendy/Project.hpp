@@ -76,8 +76,6 @@ class WENDYAPI Project
 		 */
 		void checkChanges();
 		
-		const Asset getAsset(const std::string &id);
-		
 		void createAsset(const std::string &path);
 		
 		void deleteAsset(const std::string &id);
@@ -96,9 +94,6 @@ class WENDYAPI Project
 		AssetReader *reader;
 		ProjectListener *listener;
 		LocalStream *stream;
-		
-		typedef std::map<std::string, Asset> AssetMap;
-		AssetMap assets;
 };
 
 } // wendy namespace

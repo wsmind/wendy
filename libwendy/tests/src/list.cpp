@@ -31,19 +31,9 @@
 class TestPlop: public wendy::ProjectListener
 {
 	public:
-		virtual void assetAdded(wendy::Project *project, const wendy::Asset &asset)
+		virtual void assetChanged(const wendy::Asset &asset)
 		{
-			std::cout << "Added: " << asset.id << " at " << asset.path << std::endl;
-		}
-		
-		virtual void assetUpdated(wendy::Project *project, const wendy::Asset &oldAsset, const wendy::Asset &newAsset)
-		{
-			std::cout << "Updated: " << oldAsset.id;
-		}
-		
-		virtual void assetRemoved(wendy::Project *project, const wendy::Asset &asset)
-		{
-			std::cout << "Removed: " << asset.id << " at " << asset.path << std::endl;
+			std::cout << "Changed: " << asset.id << " at " << asset.path << std::endl;
 		}
 };
 

@@ -42,12 +42,13 @@ class WENDYAPI ProjectListener
 	public:
 		virtual ~ProjectListener() {}
 		
-		virtual void assetAdded(Project *project, const Asset &asset) {}
-		virtual void assetUpdated(Project *project, const Asset &oldAsset, const Asset &newAsset) {}
-		virtual void assetRemoved(Project *project, const Asset &asset) {}
+		//virtual void connected() {}
+		//virtual void disconnected() {}
+		
+		virtual void assetChanged(const Asset &asset) {}
+		virtual void chunkReceived(const std::string &id, unsigned long offset, const char *buffer, unsigned long length) {}
 };
 
 } // wendy namespace
 
 #endif // __WENDY_PROJECTLISTENER_HPP__
-

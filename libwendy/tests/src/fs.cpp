@@ -25,39 +25,25 @@
  *****************************************************************************/
 
 #include <iostream>
-#include <wendy/Project.hpp>
-#include <wendy/ProjectListener.hpp>
+#include <wendy/ProjectFileSystem.hpp>
 
-class TestPlop: public wendy::ProjectListener
-{
-	public:
-		virtual void assetChanged(const wendy::Asset &asset)
-		{
-			std::cout << "Changed: " << asset.id << " at " << asset.path << std::endl;
-		}
-};
+#include <windows.h>
 
 int main()
 {
-	TestPlop *listener = new TestPlop;
-	wendy::Project *project = new wendy::Project(listener);
+	wendy::ProjectFileSystem fs;
 	
-	project->connect();
+	Sleep(2000);
 	
-	if (!project->isConnected())
-		std::cout << "Connection failed!" << std::endl;
+	std::vector<std::string> files;
+	fs.readdir("yop/sub", &files);
 	
-	project->createAsset("test/newassets/plop.txt");
-	project->createAsset("test/fake/otherasset.txt");
-	project->createAsset("test/dafyduck.pdf");
+	for (unsigned int i = 0; i < files.size(); i++)
+		std::cout << "found file: " << files[i] << std::endl;
 	
-	while (project->isConnected())
-	{
-		project->waitChanges();
-	}
+	std::string id = fs.open("portal.wav", wendy::ProjectFileSystem::READING);
 	
-	project->disconnect();
+	fs.close(id);
 	
-	delete listener;
-	delete project;
+	return 0;
 }

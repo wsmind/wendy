@@ -35,11 +35,13 @@
 
 #include <wendy/Mutex.hpp>
 #include <wendy/Project.hpp>
+#include <wendy/ProjectFileSystem.hpp>
 #include <wendy/ScopeLock.hpp>
 
-#include "ProjectProxy.hpp"
+//#include "ProjectProxy.hpp"
 
-static ProjectProxy *proxy = NULL;
+//static ProjectProxy *proxy = NULL;
+static wendy::ProjectFileSystem *fs = NULL;
 static wendy::Mutex mutex;
 
 static std::string wideToUtf8(std::wstring wide)
@@ -99,8 +101,8 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	
 	std::string path = makePathStandard(filename);
 	
-	ProjectProxy::FileAttributes attributes;
-	if (!proxy->getFileAttributes(path, &attributes))
+	wendy::ProjectFileSystem::FileAttributes attributes;
+	if (!fs->stat(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
 	if (attributes.folder)
@@ -116,8 +118,8 @@ static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO 
 	
 	std::string path = makePathStandard(filename);
 	
-	ProjectProxy::FileAttributes attributes;
-	if (!proxy->getFileAttributes(path, &attributes))
+	wendy::ProjectFileSystem::FileAttributes attributes;
+	if (!fs->stat(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
 	if (!attributes.folder)
@@ -132,11 +134,11 @@ static int DOKAN_CALLBACK WendyCreateDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 	wprintf(L"CreateDirectory %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
-	ProjectProxy::FileAttributes attributes;
-	if (proxy->getFileAttributes(path, &attributes))
+	wendy::ProjectFileSystem::FileAttributes attributes;
+	if (fs->stat(path, &attributes))
 		return -ERROR_ALREADY_EXISTS;
 	
-	proxy->createFolder(path);
+	fs->mkdir(path);
 	
 	return 0;
 }
@@ -187,8 +189,8 @@ static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_
 	
 	std::string path = makePathStandard(filename);
 	
-	ProjectProxy::FileAttributes attributes;
-	if (!proxy->getFileAttributes(path, &attributes))
+	wendy::ProjectFileSystem::FileAttributes attributes;
+	if (!fs->stat(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
 	ZeroMemory(buffer, sizeof(BY_HANDLE_FILE_INFORMATION));
@@ -223,7 +225,8 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 	
 	std::string path = makePathStandard(filename);
 	
-	std::vector<std::string> files = proxy->listFolder(path);
+	std::vector<std::string> files;
+	fs->readdir(path, &files);
 	for (unsigned int i = 0; i < files.size(); ++i)
 	{
 		// filename
@@ -232,11 +235,11 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		wcsncpy(entry.cFileName, wfilename.c_str(), MAX_PATH - 1);
 		
 		// other attributes
-		ProjectProxy::FileAttributes attributes;
+		wendy::ProjectFileSystem::FileAttributes attributes;
 		std::string fullChildPath = files[i];
 		if (path.size() > 0)
 			fullChildPath = path + "/" + files[i];
-		proxy->getFileAttributes(fullChildPath, &attributes);
+		fs->stat(fullChildPath, &attributes);
 		entry.dwFileAttributes = attributes.folder ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
 		entry.nFileSizeLow = strlen("Hi from Wendy!\r\n");
 		
@@ -253,11 +256,11 @@ static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 	wprintf(L"DeleteDirectory %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
-	ProjectProxy::FileAttributes attributes;
-	if (!proxy->getFileAttributes(path, &attributes))
+	wendy::ProjectFileSystem::FileAttributes attributes;
+	if (!fs->stat(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
-	proxy->removeFolder(path);
+	fs->rmdir(path);
 	
 	return 0;
 }
@@ -316,11 +319,11 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 	operations.GetDiskFreeSpace = WendyGetDiskFreeSpace;
 	operations.GetVolumeInformation = WendyGetVolumeInformation;
 	
-	proxy = new ProjectProxy();
+	fs = new wendy::ProjectFileSystem;
 	
 	int result = DokanMain(&options, &operations);
 	
-	delete proxy;
+	delete fs;
 	
 	return result;
 }

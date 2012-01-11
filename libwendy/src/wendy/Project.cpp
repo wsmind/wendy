@@ -88,15 +88,6 @@ void Project::checkChanges()
 	}
 }
 
-const Asset Project::getAsset(const std::string &id)
-{
-	AssetMap::iterator it = this->assets.find(id);
-	if (it != this->assets.end())
-		return it->second;
-	
-	return Asset();
-}
-
 void Project::createAsset(const std::string &path)
 {
 	this->stream->writeLine("CREATE " + path + "\n");
@@ -130,35 +121,7 @@ void Project::closeAsset(AssetFile *file)
 void Project::processNotification(const AssetNotification& notification)
 {
 	std::cout << "asset " << notification.asset.id << " got notification " << notification.type << std::endl;
-	
-	std::string id = notification.asset.id;
-	bool existing = (this->assets.find(id) != this->assets.end());
-	
-	switch (notification.type)
-	{
-		case AssetNotification::UPDATED:
-		{
-			Asset old = this->assets[id];
-			this->assets[id] = notification.asset;
-			
-			if (!existing)
-				this->listener->assetAdded(this, notification.asset);
-			else
-				this->listener->assetUpdated(this, old, notification.asset);
-			
-			break;
-		}
-		
-		case AssetNotification::REMOVED:
-		{
-			if (!existing)
-				break;
-			
-			this->listener->assetRemoved(this, this->assets[id]);
-			this->assets.erase(id);
-			break;
-		}
-	}
+	this->listener->assetChanged(notification.asset);
 }
 
 } // wendy namespace
