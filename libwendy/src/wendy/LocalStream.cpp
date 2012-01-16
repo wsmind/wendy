@@ -43,23 +43,40 @@ LocalStream::LocalStream(unsigned short port)
 	this->serverAddress.sin_port = htons(port);
 	memset(this->serverAddress.sin_zero, 0, sizeof(this->serverAddress.sin_zero));
 	
-	this->socketId = socket(AF_INET, SOCK_STREAM, 0);
-	
+	this->socketId = -1;
 	this->connected = false;
-	
-	// try to connect
-	this->connect();
 }
 
 LocalStream::~LocalStream()
 {
 	this->disconnect();
+}
+
+void LocalStream::connect()
+{
+	this->socketId = socket(AF_INET, SOCK_STREAM, 0);
+	
+	if (::connect(this->socketId, (struct sockaddr *)&this->serverAddress, sizeof(this->serverAddress)) != -1)
+		this->connected = true;
+	else
+		this->disconnect();
+}
+
+void LocalStream::disconnect()
+{
+	if (this->socketId == -1)
+		return;
 	
 #	ifdef _WIN32
+		shutdown(this->socketId, SD_BOTH);
 		closesocket(this->socketId);
 #	else
+		shutdown(this->socketId, SHUT_RDWR);
 		close(this->socketId);
 #	endif
+	
+	this->socketId = -1;
+	this->connected = false;
 }
 
 bool LocalStream::isConnected()
@@ -76,7 +93,7 @@ bool LocalStream::readLine(std::string *line)
 	{
 		if (recv(this->socketId, &chr, 1, 0) <= 0)
 		{
-			this->connected = false;
+			this->disconnect();
 			return false;
 		}
 		
@@ -95,7 +112,7 @@ bool LocalStream::readChunk(char *buffer, unsigned long size)
 		int read = recv(this->socketId, buffer, size - total, 0);
 		if (read <= 0)
 		{
-			this->connected = false;
+			this->disconnect();
 			return false;
 		}
 		
@@ -112,7 +129,7 @@ bool LocalStream::writeLine(const std::string &line)
 	{
 		if (send(this->socketId, &line[i], 1, 0) <= 0)
 		{
-			this->connected = false;
+			this->disconnect();
 			return false;
 		}
 	}
@@ -128,7 +145,7 @@ bool LocalStream::writeChunk(const char *buffer, unsigned long size)
 		int written = send(this->socketId, buffer, size - total, 0);
 		if (written <= 0)
 		{
-			this->connected = false;
+			this->disconnect();
 			return false;
 		}
 		
@@ -137,23 +154,6 @@ bool LocalStream::writeChunk(const char *buffer, unsigned long size)
 	}
 	
 	return true;
-}
-
-void LocalStream::connect()
-{
-	if (::connect(this->socketId, (struct sockaddr *)&this->serverAddress, sizeof(this->serverAddress)) != -1)
-		this->connected = true;
-}
-
-void LocalStream::disconnect()
-{
-#	ifdef _WIN32
-		shutdown(this->socketId, SD_BOTH);
-#	else
-		shutdown(this->socketId, SHUT_RDWR);
-#	endif
-	
-	this->connected = false;
 }
 
 } // wendy namespace

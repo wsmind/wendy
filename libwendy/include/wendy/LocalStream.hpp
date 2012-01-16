@@ -62,6 +62,8 @@ class WENDYAPI LocalStream
 		LocalStream(unsigned short port);
 		~LocalStream();
 		
+		void connect();
+		void disconnect();
 		bool isConnected();
 		
 		bool readLine(std::string *line);
@@ -70,9 +72,6 @@ class WENDYAPI LocalStream
 		bool writeChunk(const char *buffer, unsigned long size);
 		
 	private:
-		void connect();
-		void disconnect();
-		
 		bool connected;
 		
 		sockaddr_in serverAddress;

@@ -18,7 +18,7 @@ testEnv.Append(CPPPATH = ["libwendy/include"])
 testEnv.Append(LIBPATH = ["libwendy/lib"])
 testEnv.Append(LIBS = ["wendy"])
 if testEnv["CC"] == "cl":
-	testEnv.Append(CPPFLAGS = ["/EHsc"])
+	testEnv.Append(CPPFLAGS = ["/EHsc", "/Z7"])
 testEnv.Program("libwendy/tests/bin/add", "libwendy/tests/src/add.cpp")
 testEnv.Program("libwendy/tests/bin/fs", "libwendy/tests/src/fs.cpp")
 testEnv.Program("libwendy/tests/bin/list", "libwendy/tests/src/list.cpp")

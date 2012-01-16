@@ -52,8 +52,8 @@ int main()
 		project->waitChanges();
 	}
 	
-	project->disconnect();
+	//project->disconnect();
 	
-	delete listener;
 	delete project;
+	delete listener;
 }

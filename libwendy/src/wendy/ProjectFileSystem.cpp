@@ -59,22 +59,42 @@ bool ProjectFileSystem::stat(const std::string &path, FileAttributes *attributes
 	return true;
 }
 
-std::string ProjectFileSystem::open(const std::string &path, OpenMode mode)
+long ProjectFileSystem::open(const std::string &path, OpenMode mode)
 {
 	this->project->checkChanges();
-	return "";
+	
+	// check if file exists
+	FileSystemNode *node = this->root->find(path);
+	if (!node)
+		return -1;
+	
+	const std::string &id = node->getId();
+	
+	// check if directory
+	if (id == "")
+		return -1;
+	
+	this->project->openAsset(id, (mode == READING) ? Project::READING : Project::WRITING);
+	
+	return -1;
 }
 
-void ProjectFileSystem::close(const std::string &id)
+void ProjectFileSystem::close(long fd)
 {
 	this->project->checkChanges();
+	
+	if (fd >= 0)
+		this->project->closeAsset((unsigned long)fd);
 }
 
 bool ProjectFileSystem::mkdir(const std::string &path)
 {
 	this->project->checkChanges();
 	
-	// TODO: check if already existing
+	FileSystemNode *node = this->root->find(path);
+	if (node)
+		return false; // already exists
+	
 	this->root->insert(path, "");
 	return true;
 }
@@ -83,8 +103,18 @@ bool ProjectFileSystem::rmdir(const std::string &path)
 {
 	this->project->checkChanges();
 	
-	// TODO: check if not existing
+	FileSystemNode *node = this->root->find(path);
+	if (!node)
+		return false; // not found
+	
+	if (node->getId() != "")
+		return false; // not a directory
+	
+	if (!node->isEmpty())
+		return false; // not empty
+	
 	this->root->remove(path);
+	
 	return true;
 }
 
@@ -93,9 +123,14 @@ bool ProjectFileSystem::readdir(const std::string &path, std::vector<std::string
 	this->project->checkChanges();
 	
 	FileSystemNode *node = this->root->find(path);
+	if (!node)
+		return false; // not found
+	
+	if (node->getId() != "")
+		return false; // not a directory
+	
 	*items = node->list();
 	
-	// TODO: add checks
 	return true;
 }
 
@@ -115,6 +150,10 @@ void ProjectFileSystem::assetChanged(const Asset &asset)
 	
 	// updated saved metadata
 	this->assets[asset.id] = asset;
+}
+
+void ProjectFileSystem::assetOpened(const std::string &id, unsigned long fd)
+{
 }
 
 } // wendy namespace

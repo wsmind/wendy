@@ -44,17 +44,22 @@ FileSystemNode::~FileSystemNode()
 		delete it->second;
 }
 
-const std::string &FileSystemNode::getId()
+const std::string &FileSystemNode::getId() const
 {
 	return this->id;
 }
 
-std::vector<std::string> FileSystemNode::list()
+bool FileSystemNode::isEmpty() const
+{
+	return (this->subNodes.size() == 0);
+}
+
+std::vector<std::string> FileSystemNode::list() const
 {
 	std::vector<std::string> subElements;
 	
 	// list subfolders first
-	NodeMap::iterator it;
+	NodeMap::const_iterator it;
 	for (it = this->subNodes.begin(); it != this->subNodes.end(); ++it)
 		subElements.push_back(it->first);
 	
@@ -70,7 +75,7 @@ FileSystemNode *FileSystemNode::find(const std::string &path)
 	std::string childPath;
 	this->extractPathComponents(path, &childName, &childPath);
 	
-	NodeMap::iterator it = this->subNodes.find(childName);
+	NodeMap::const_iterator it = this->subNodes.find(childName);
 	if (it == this->subNodes.end())
 		return NULL;
 	
@@ -121,7 +126,7 @@ void FileSystemNode::remove(const std::string &path)
 	}
 }
 
-void FileSystemNode::extractPathComponents(const std::string &path, std::string *childName, std::string *childPath)
+void FileSystemNode::extractPathComponents(const std::string &path, std::string *childName, std::string *childPath) const
 {
 	size_t slashPos = path.find('/');
 	if (childName)

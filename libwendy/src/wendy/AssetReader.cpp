@@ -45,7 +45,7 @@ AssetReader::AssetReader(LocalStream *stream)
 
 AssetReader::~AssetReader()
 {
-	delete this->thread;
+	delete this->thread; // will join before destructing the thread
 	delete this->queue;
 }
 
@@ -61,32 +61,40 @@ void AssetReader::run()
 			// extract notification type and asset ID
 			size_t spacePos = headerLine.find(' ');
 			std::string notificationType = headerLine.substr(0, spacePos);
-			notification.asset.id = headerLine.substr(spacePos + 1);
+			std::string notificationParams = headerLine.substr(spacePos + 1);
 			
-			if (notificationType == "ASSET") notification.type = AssetNotification::UPDATED;
-			else continue;
-			
-			// extract asset attributes
-			std::string attributeLine;
-			while (this->stream->readLine(&attributeLine))
+			if (notificationType == "ASSET")
 			{
-				if (attributeLine == "END")
+				notification.type = AssetNotification::CHANGED;
+				notification.changed.asset.id = notificationParams;
+				
+				// extract asset attributes
+				std::string attributeLine;
+				while (this->stream->readLine(&attributeLine))
 				{
-					// notification is complete
-					// send it though the queue
-					this->queue->send(notification);
+					if (attributeLine == "END")
+					{
+						// notification is complete
+						// send it though the queue
+						this->queue->send(notification);
+						
+						break;
+					}
 					
-					break;
+					// read attribute
+					size_t separatorPos = attributeLine.find(' ');
+					std::string attribute = attributeLine.substr(0, separatorPos);
+					std::string value = attributeLine.substr(separatorPos + 1);
+					
+					if (attribute == "path") notification.changed.asset.path = value;
+					else if (attribute == "author") notification.changed.asset.author = value;
+					else if (attribute == "lockingUser") notification.changed.asset.lockingUser = value;
 				}
-				
-				// read attribute
-				size_t separatorPos = attributeLine.find(' ');
-				std::string attribute = attributeLine.substr(0, separatorPos);
-				std::string value = attributeLine.substr(separatorPos + 1);
-				
-				if (attribute == "path") notification.asset.path = value;
-				else if (attribute == "author") notification.asset.author = value;
-				else if (attribute == "lockingUser") notification.asset.lockingUser = value;
+			}
+			
+			else if (notificationType == "OPENED")
+			{
+				std::cout << "OPENED!!!" << std::endl;
 			}
 		}
 	}

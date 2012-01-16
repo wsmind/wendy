@@ -67,13 +67,15 @@ Service.prototype.handleClient = function(client)
 	{
 		console.log("client disconnected")
 		
+		// TODO: close all remaining AssetFiles
+		
 		connected = false
 		self.engine.removeListener("changed", assetCallback)
 	})
 	
 	// client actions
 	var reader = new StreamReader(client)
-	var openedFiles = {} // id -> cache.AssetFile
+	var openedFiles = {} // fd -> cache.AssetFile
 	this.processAction(client, reader, openedFiles)
 	
 	// initial dump
@@ -125,9 +127,14 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 				{
 					if (err) throw err
 					
-					openedFiles[id] = file
+					// find a free file descriptor number
+					var fd = 0
+					while (openedFiles[fd] != undefined)
+						fd++;
 					
-					client.write("OPENED " + id + " " + mode + "\n")
+					openedFiles[fd] = file
+					
+					client.write("OPENED " + id + " " + mode + " " + fd + "\n")
 				})
 				
 				break;
@@ -136,28 +143,46 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 			case "READ":
 			{
 				var parts = parameters.split(" ")
-				var id = parts[0]
+				var fd = parts[0]
 				var offset = parts[1]
 				var size = parts[2]
 				
-				console.log("READ!! -> " + id + ", " + offset + ", " + size)
+				console.log("READ!! -> " + fd + ", " + offset + ", " + size)
 				
-				if (openedFiles[id] === undefined)
+				if (openedFiles[fd] === undefined)
 				{
-					console.error("Asset " + id + " was read but not opened!")
+					console.error("File " + fd + " was read but not opened!")
 					break;
 				}
 				
-				openedFiles[id].read(new Buffer(size), function(err, bytesRead, buffer)
+				openedFiles[fd].read(new Buffer(size), function(err, bytesRead, buffer)
 				{
 					if (err) throw err
 					
 					// TODO: handle bytesRead < size
 					
-					self.sendChunk(client, id, offset, buffer)
+					self.sendChunk(client, fd, offset, buffer)
 				})
 				
 				break;
+			}
+			
+			case "CLOSE":
+			{
+				var fd = parameters
+				
+				if (openedFiles[fd] === undefined)
+				{
+					console.error("File " + fd + " was closed but not opened!")
+					break;
+				}
+				
+				openedFiles[fd].close()
+				delete openedFiles[fd]
+				
+				client.write("CLOSED " + fd + "\n")
+				
+				break
 			}
 		}
 		
@@ -183,9 +208,9 @@ Service.prototype.sendAsset = function(client, id, asset)
 	client.write("END\n")
 }
 
-Service.prototype.sendChunk = function(client, id, offset, chunk)
+Service.prototype.sendChunk = function(client, fd, offset, chunk)
 {
-	client.write("CHUNK " + id + " " + offset + " " + chunk.length + "\n")
+	client.write("CHUNK " + fd + " " + offset + " " + chunk.length + "\n")
 	client.write(chunk)
 }
 

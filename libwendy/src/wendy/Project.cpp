@@ -27,6 +27,7 @@
 #include <wendy/Project.hpp>
 
 #include <iostream>
+#include <sstream>
 #include <wendy/AssetReader.hpp>
 #include <wendy/AssetNotification.hpp>
 #include <wendy/LocalStream.hpp>
@@ -43,17 +44,22 @@ Project::Project(ProjectListener *listener)
 
 Project::~Project()
 {
-	delete this->stream;
+	this->disconnect();
 }
 
 void Project::connect()
 {
 	this->stream = new LocalStream(46288);
+	this->stream->connect();
+	
 	this->reader = new AssetReader(this->stream);
 }
 
 void Project::disconnect()
 {
+	if (this->stream)
+		this->stream->disconnect();
+	
 	delete this->reader;
 	this->reader = NULL;
 	
@@ -109,19 +115,34 @@ void Project::unlockAsset(const std::string &id)
 	this->stream->writeLine("UNLOCK " + id + "\n");
 }
 
-AssetFile *Project::openAsset(const std::string &id, AssetFile::OpenMode mode)
+void Project::openAsset(const std::string &id, OpenMode mode)
 {
-	return NULL;
+	this->stream->writeLine("OPEN " + id + " " + ((mode == READING) ? "READING" : "WRITING") + "\n");
 }
 
-void Project::closeAsset(AssetFile *file)
+void Project::closeAsset(unsigned long fd)
 {
+	std::stringstream ss;
+	ss << "CLOSE " << fd << "\n";
+	this->stream->writeLine(ss.str());
 }
 
 void Project::processNotification(const AssetNotification& notification)
 {
-	std::cout << "asset " << notification.asset.id << " got notification " << notification.type << std::endl;
-	this->listener->assetChanged(notification.asset);
+	switch (notification.type)
+	{
+		case AssetNotification::CHANGED:
+		{
+			this->listener->assetChanged(notification.changed.asset);
+			break;
+		}
+		
+		case AssetNotification::OPENED:
+		{
+			this->listener->assetOpened(notification.opened.id, notification.opened.fd);
+			break;
+		}
+	}
 }
 
 } // wendy namespace

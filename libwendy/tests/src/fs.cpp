@@ -27,23 +27,24 @@
 #include <iostream>
 #include <wendy/ProjectFileSystem.hpp>
 
-#include <windows.h>
+#include <wendy/Thread.hpp>
 
 int main()
 {
 	wendy::ProjectFileSystem fs;
 	
-	Sleep(2000);
+	wendy::Thread::sleepSeconds(2);
 	
 	std::vector<std::string> files;
-	fs.readdir("yop/sub", &files);
+	fs.readdir("", &files);
 	
 	for (unsigned int i = 0; i < files.size(); i++)
 		std::cout << "found file: " << files[i] << std::endl;
 	
-	std::string id = fs.open("portal.wav", wendy::ProjectFileSystem::READING);
+	long fd = fs.open("portal2.wav", wendy::ProjectFileSystem::READING);
+	std::cout << "fd of 'portal2.wav': " << fd << std::endl;
 	
-	fs.close(id);
+	fs.close(fd);
 	
 	return 0;
 }

@@ -34,7 +34,6 @@
 #include <map>
 
 #include <wendy/Asset.hpp>
-#include <wendy/AssetFile.hpp>
 
 namespace wendy {
 
@@ -84,9 +83,14 @@ class WENDYAPI Project
 		
 		void unlockAsset(const std::string &id);
 		
-		AssetFile *openAsset(const std::string &id, AssetFile::OpenMode mode);
+		enum OpenMode
+		{
+			READING,
+			WRITING,
+		};
+		void openAsset(const std::string &id, OpenMode mode);
 		
-		void closeAsset(AssetFile *file);
+		void closeAsset(unsigned long fd);
 		
 	private:
 		void processNotification(const AssetNotification& notification);

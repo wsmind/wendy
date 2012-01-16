@@ -64,12 +64,14 @@ class FileSystemNode
 		
 		~FileSystemNode();
 		
-		const std::string &getId();
+		const std::string &getId() const;
+		
+		bool isEmpty() const;
 		
 		/**
 		 * \brief List nodes contained in this one (not recursive)
 		 */
-		std::vector<std::string> list();
+		std::vector<std::string> list() const;
 		
 		/**
 		 * \brief Find one of the relative subnodes of this one
@@ -94,7 +96,7 @@ class FileSystemNode
 	private:
 		// separate the path in two at the next '/' (or end of string, in which case childPath is "")
 		// output parameters can be NULL if their value is not wanted
-		void extractPathComponents(const std::string &path, std::string *childName, std::string *childPath);
+		void extractPathComponents(const std::string &path, std::string *childName, std::string *childPath) const;
 		
 		std::string id;
 		

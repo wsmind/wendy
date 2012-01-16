@@ -40,20 +40,29 @@ struct WENDYAPI AssetNotification
 {
 	enum NotificationType
 	{
-		UPDATED,
-		REMOVED
+		CHANGED,
+		OPENED,
+		CLOSED,
+		CHUNK
 	};
 	
 	/// what happened to this asset
 	NotificationType type;
 	
-	/// actual asset content
-	/// only the id of the asset is guaranteed to be valid
-	/// other fields of the structure are usable only when type is UPDATED
-	Asset asset;
+	struct
+	{
+		/// actual asset metadata
+		Asset asset;
+	} changed;
+	
+	struct
+	{
+		std::string id;
+		std::string mode;
+		unsigned long fd;
+	} opened;
 };
 
 } // wendy namespace
 
 #endif // __WENDY_ASSETNOTIFICATION_HPP__
-

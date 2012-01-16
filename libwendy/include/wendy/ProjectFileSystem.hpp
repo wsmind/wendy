@@ -62,15 +62,17 @@ class WENDYAPI ProjectFileSystem: public ProjectListener
 			READING,
 			WRITING,
 		};
-		std::string open(const std::string &path, OpenMode mode);
+		long open(const std::string &path, OpenMode mode);
 		
-		void close(const std::string &id);
+		void close(long fd);
 		
 		bool mkdir(const std::string &path);
 		
 		bool rmdir(const std::string &path);
 		
 		bool readdir(const std::string &path, std::vector<std::string> *items);
+		
+		virtual void assetOpened(const std::string &id, unsigned long fd);
 		
 		virtual void assetChanged(const Asset &asset);
 		
