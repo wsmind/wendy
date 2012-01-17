@@ -31,6 +31,7 @@
 #include <wendy/Project.hpp>
 
 #include <iostream>
+#include <cstring>
 
 namespace wendy {
 
