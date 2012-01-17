@@ -47,8 +47,7 @@ class WENDYAPI ProjectListener
 		
 		virtual void assetChanged(const Asset &asset) {}
 		virtual void assetOpened(const std::string &id, unsigned long fd) {}
-		virtual void assetClosed(unsigned long fd) {}
-		virtual void chunkReceived(unsigned long fd, unsigned long offset, const char *buffer, unsigned long length) {}
+		virtual void chunkReceived(unsigned long fd, unsigned long offset, const void *buffer, unsigned long length) {}
 };
 
 } // wendy namespace

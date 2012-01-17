@@ -92,6 +92,8 @@ class WENDYAPI Project
 		
 		void closeAsset(unsigned long fd);
 		
+		void readAsset(unsigned long fd, unsigned long offset, unsigned long length);
+		
 	private:
 		void processNotification(const AssetNotification& notification);
 		

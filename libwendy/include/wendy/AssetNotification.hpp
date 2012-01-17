@@ -42,7 +42,6 @@ struct WENDYAPI AssetNotification
 	{
 		CHANGED,
 		OPENED,
-		CLOSED,
 		CHUNK
 	};
 	
@@ -61,6 +60,14 @@ struct WENDYAPI AssetNotification
 		std::string mode;
 		unsigned long fd;
 	} opened;
+	
+	struct
+	{
+		unsigned long fd;
+		unsigned long offset;
+		char *buffer;
+		unsigned long length;
+	} chunk;
 };
 
 } // wendy namespace

@@ -143,9 +143,9 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 			case "READ":
 			{
 				var parts = parameters.split(" ")
-				var fd = parts[0]
-				var offset = parts[1]
-				var size = parts[2]
+				var fd = parseInt(parts[0])
+				var offset = parseInt(parts[1])
+				var size = parseInt(parts[2])
 				
 				console.log("READ!! -> " + fd + ", " + offset + ", " + size)
 				

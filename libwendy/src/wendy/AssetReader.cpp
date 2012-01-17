@@ -31,6 +31,7 @@
 #include <wendy/Thread.hpp>
 
 #include <iostream>
+#include <sstream>
 
 namespace wendy {
 
@@ -94,7 +95,25 @@ void AssetReader::run()
 			
 			else if (notificationType == "OPENED")
 			{
-				std::cout << "OPENED!!!" << std::endl;
+				notification.type = AssetNotification::OPENED;
+				
+				std::stringstream ss(notificationParams);
+				ss >> notification.opened.id >> notification.opened.mode >> notification.opened.fd;
+				
+				this->queue->send(notification);
+			}
+			
+			else if (notificationType == "CHUNK")
+			{
+				notification.type = AssetNotification::CHUNK;
+				
+				std::stringstream ss(notificationParams);
+				ss >> notification.chunk.fd >> notification.chunk.offset >> notification.chunk.length;
+				
+				notification.chunk.buffer = new char[notification.chunk.length];
+				this->stream->readChunk(notification.chunk.buffer, notification.chunk.length);
+				
+				this->queue->send(notification);
 			}
 		}
 	}

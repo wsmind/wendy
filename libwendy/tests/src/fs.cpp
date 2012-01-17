@@ -44,6 +44,12 @@ int main()
 	long fd = fs.open("portal2.wav", wendy::ProjectFileSystem::READING);
 	std::cout << "fd of 'portal2.wav': " << fd << std::endl;
 	
+	char buf[100];
+	if (fs.read(fd, 10, buf, 100))
+		std::cout << "read succeeded!" << std::endl;
+	else
+		std::cout << "read failed!" << std::endl;
+	
 	fs.close(fd);
 	
 	return 0;

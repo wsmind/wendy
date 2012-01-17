@@ -30,6 +30,8 @@
 #include <wendy/FileSystemNode.hpp>
 #include <wendy/Project.hpp>
 
+#include <iostream>
+
 namespace wendy {
 
 ProjectFileSystem::ProjectFileSystem()
@@ -68,15 +70,29 @@ long ProjectFileSystem::open(const std::string &path, OpenMode mode)
 	if (!node)
 		return -1;
 	
-	const std::string &id = node->getId();
+	// initialize operation data
+	this->openData.id = node->getId();
+	this->openData.fd = -1;
 	
 	// check if directory
-	if (id == "")
+	if (this->openData.id == "")
 		return -1;
 	
-	this->project->openAsset(id, (mode == READING) ? Project::READING : Project::WRITING);
+	// start asynchronous operation
+	this->project->openAsset(this->openData.id, (mode == READING) ? Project::READING : Project::WRITING);
 	
-	return -1;
+	while (this->openData.fd == -1)
+	{
+		if (!this->project->isConnected())
+			return -1; // connection lost
+		
+		// TODO: check errors on this->assets[asset.id]
+		
+		this->project->waitChanges();
+	}
+	
+	// open succeeded
+	return this->openData.fd;
 }
 
 void ProjectFileSystem::close(long fd)
@@ -85,6 +101,37 @@ void ProjectFileSystem::close(long fd)
 	
 	if (fd >= 0)
 		this->project->closeAsset((unsigned long)fd);
+}
+
+bool ProjectFileSystem::read(long fd, unsigned long offset, void *buffer, unsigned long length)
+{
+	if (fd < 0)
+		return false; // BAD FD
+	
+	this->project->checkChanges();
+	
+	// initialize operation data
+	this->readData.fd = fd;
+	this->readData.offset = offset;
+	this->readData.buffer = buffer;
+	this->readData.length = length;
+	this->readData.sizeRead = 0;
+	
+	// start asynchronous operation
+	this->project->readAsset(this->readData.fd, offset, length);
+	
+	while (this->readData.sizeRead != length)
+	{
+		if (!this->project->isConnected())
+			return false; // connection lost
+		
+		// TODO: check errors on this->assets[asset.id]
+		
+		this->project->waitChanges();
+	}
+	
+	// read succeeded
+	return true;
 }
 
 bool ProjectFileSystem::mkdir(const std::string &path)
@@ -154,6 +201,28 @@ void ProjectFileSystem::assetChanged(const Asset &asset)
 
 void ProjectFileSystem::assetOpened(const std::string &id, unsigned long fd)
 {
+	if (this->openData.id != id)
+	{
+		std::cout << "Received OPENED for the wrong asset! (" << id << " instead of " << this->openData.id << ")" << std::endl;
+		return;
+	}
+	
+	this->openData.fd = fd;
+}
+
+void ProjectFileSystem::chunkReceived(unsigned long fd, unsigned long offset, const void *buffer, unsigned long length)
+{
+	if (fd != this->readData.fd)
+		return; // wrong fd
+	
+	if (offset != this->readData.offset)
+		return; // wrong offset
+	
+	if (length > this->readData.length)
+		return; // too much data
+	
+	memcpy(this->readData.buffer, buffer, length);
+	this->readData.sizeRead = length;
 }
 
 } // wendy namespace

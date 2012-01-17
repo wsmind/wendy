@@ -108,6 +108,12 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	if (attributes.folder)
 		info->IsDirectory = TRUE;
 	
+	long fd = fs->open(path, wendy::ProjectFileSystem::READING);
+	if (fd == -1)
+		return -ERROR_PATH_NOT_FOUND;
+	
+	info->Context = (ULONG64)fd;
+	
 	return 0;
 }
 
@@ -164,12 +170,16 @@ int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOf
 	wendy::ScopeLock lock(&mutex);
 	wprintf(L"ReadFile %s\n", filename);
 	
-	char *content = "Hi from Wendy!\r\n";
+	/*char *content = "Hi from Wendy!\r\n";
 	DWORD remaining = (DWORD)((LONGLONG)strlen(content) - offset);
 	*numberOfBytesRead = (remaining < numberOfBytesToRead) ? remaining : numberOfBytesToRead;
 	
 	wprintf(L"returning %d bytes\n", *numberOfBytesRead);
-	memcpy(buffer, content, *numberOfBytesRead);
+	memcpy(buffer, content, *numberOfBytesRead);*/
+	
+	unsigned long fd = (unsigned long)info->Context;
+	fs->read(fd, offset, buffer, numberOfBytesToRead);
+	*numberOfBytesRead = numberOfBytesToRead;
 	
 	return 0;
 }

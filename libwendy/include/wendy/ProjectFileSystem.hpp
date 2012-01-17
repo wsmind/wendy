@@ -66,15 +66,19 @@ class WENDYAPI ProjectFileSystem: public ProjectListener
 		
 		void close(long fd);
 		
+		bool read(long fd, unsigned long offset, void *buffer, unsigned long length);
+		
 		bool mkdir(const std::string &path);
 		
 		bool rmdir(const std::string &path);
 		
 		bool readdir(const std::string &path, std::vector<std::string> *items);
 		
+		virtual void assetChanged(const Asset &asset);
+		
 		virtual void assetOpened(const std::string &id, unsigned long fd);
 		
-		virtual void assetChanged(const Asset &asset);
+		virtual void chunkReceived(unsigned long fd, unsigned long offset, const void *buffer, unsigned long length);
 		
 	private:
 		FileSystemNode *root;
@@ -82,6 +86,21 @@ class WENDYAPI ProjectFileSystem: public ProjectListener
 		
 		typedef std::map<std::string, Asset> AssetMap;
 		AssetMap assets;
+		
+		struct
+		{
+			std::string id;
+			long fd;
+		} openData;
+		
+		struct
+		{
+			long fd;
+			unsigned long offset;
+			void *buffer;
+			unsigned long length;
+			unsigned long sizeRead;
+		} readData;
 };
 
 } // wendy namespace

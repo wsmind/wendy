@@ -127,6 +127,13 @@ void Project::closeAsset(unsigned long fd)
 	this->stream->writeLine(ss.str());
 }
 
+void Project::readAsset(unsigned long fd, unsigned long offset, unsigned long length)
+{
+	std::stringstream ss;
+	ss << "READ " << fd << " " << offset << " " << length << "\n";
+	this->stream->writeLine(ss.str());
+}
+
 void Project::processNotification(const AssetNotification& notification)
 {
 	switch (notification.type)
@@ -140,6 +147,13 @@ void Project::processNotification(const AssetNotification& notification)
 		case AssetNotification::OPENED:
 		{
 			this->listener->assetOpened(notification.opened.id, notification.opened.fd);
+			break;
+		}
+		
+		case AssetNotification::CHUNK:
+		{
+			this->listener->chunkReceived(notification.chunk.fd, notification.chunk.offset, notification.chunk.buffer, notification.chunk.length);
+			delete notification.chunk.buffer;
 			break;
 		}
 	}
