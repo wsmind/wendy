@@ -155,7 +155,7 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 					break;
 				}
 				
-				openedFiles[fd].read(new Buffer(size), function(err, bytesRead, buffer)
+				openedFiles[fd].read(new Buffer(size), offset, function(err, bytesRead, buffer)
 				{
 					if (err) throw err
 					
@@ -170,6 +170,8 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 			case "CLOSE":
 			{
 				var fd = parameters
+				
+				console.log("CLOSE!! -> " + fd)
 				
 				if (openedFiles[fd] === undefined)
 				{

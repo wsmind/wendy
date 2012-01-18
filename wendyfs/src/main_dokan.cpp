@@ -160,6 +160,12 @@ static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 	wendy::ScopeLock lock(&mutex);
 	wprintf(L"Cleanup %s\n", filename);
 	
+	if (!info->IsDirectory)
+	{
+		long fd = (long)info->Context;
+		fs->close(fd);
+	}
+	
 	return 0;
 }
 
@@ -184,14 +190,20 @@ int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOf
 	memcpy(buffer, content, *numberOfBytesRead);*/
 	
 	bool eof = false;
-	if (offset + numberOfBytesToRead > 24961928)
+	if (offset + numberOfBytesToRead > 42716)
 	{
-		 numberOfBytesToRead = 24961928 - offset;
+		if (offset < 42716)
+			numberOfBytesToRead = 42716 - offset;
+		else
+			numberOfBytesToRead = 0;
 	}
 	
-	unsigned long fd = (unsigned long)info->Context;
-	if (!fs->read(fd, offset, buffer, numberOfBytesToRead))
-		return -ERROR_READ_FAULT;
+	if (numberOfBytesToRead > 0)
+	{
+		long fd = (long)info->Context;
+		if (!fs->read(fd, offset, buffer, numberOfBytesToRead))
+			return -ERROR_READ_FAULT;
+	}
 	*numberOfBytesRead = numberOfBytesToRead;
 	
 	if (eof)
@@ -267,7 +279,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 			fullChildPath = path + "/" + files[i];
 		fs->stat(fullChildPath, &attributes);
 		entry.dwFileAttributes = attributes.folder ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
-		entry.nFileSizeLow = 24961928;
+		entry.nFileSizeLow = 42716;
 		
 		// send item back to caller
 		fillFindData(&entry, info);

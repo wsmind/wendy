@@ -109,11 +109,13 @@ CouchStorage.prototype.download = function(id, blob, file, callback)
 		assert(response.statusCode == 200)
 		
 		// stream data to asset file
+		var position = 0
 		response.on("data", function(chunk)
 		{
 			response.pause()
-			file.write(chunk, function()
+			file.write(chunk, position, function()
 			{
+				position += chunk.length
 				response.resume()
 			})
 		})

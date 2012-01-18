@@ -108,9 +108,9 @@ function AssetFile(fd)
 	this.fd = fd
 }
 
-AssetFile.prototype.read = function(buffer, callback)
+AssetFile.prototype.read = function(buffer, position, callback)
 {
-	fs.read(this.fd, buffer, 0, buffer.length, null, function(err, bytesRead, buffer)
+	fs.read(this.fd, buffer, 0, buffer.length, position, function(err, bytesRead, buffer)
 	{
 		// TODO: handle error
 		if (err) throw err
@@ -119,9 +119,9 @@ AssetFile.prototype.read = function(buffer, callback)
 	})
 }
 
-AssetFile.prototype.write = function(buffer, callback)
+AssetFile.prototype.write = function(buffer, position, callback)
 {
-	fs.write(this.fd, buffer, 0, buffer.length, null, function(err, written, buffer)
+	fs.write(this.fd, buffer, 0, buffer.length, position, function(err, written, buffer)
 	{
 		// TODO: handle error
 		if (err) throw err
