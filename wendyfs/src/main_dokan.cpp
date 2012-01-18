@@ -106,13 +106,19 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 		return -ERROR_PATH_NOT_FOUND;
 	
 	if (attributes.folder)
+	{
+		// flag as directory
 		info->IsDirectory = TRUE;
-	
-	long fd = fs->open(path, wendy::ProjectFileSystem::READING);
-	if (fd == -1)
-		return -ERROR_PATH_NOT_FOUND;
-	
-	info->Context = (ULONG64)fd;
+	}
+	else
+	{
+		// open asset
+		long fd = fs->open(path, wendy::ProjectFileSystem::READING);
+		if (fd == -1)
+			return -ERROR_PATH_NOT_FOUND;
+		
+		info->Context = (ULONG64)fd;
+	}
 	
 	return 0;
 }
@@ -177,9 +183,19 @@ int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOf
 	wprintf(L"returning %d bytes\n", *numberOfBytesRead);
 	memcpy(buffer, content, *numberOfBytesRead);*/
 	
+	bool eof = false;
+	if (offset + numberOfBytesToRead > 24961928)
+	{
+		 numberOfBytesToRead = 24961928 - offset;
+	}
+	
 	unsigned long fd = (unsigned long)info->Context;
-	fs->read(fd, offset, buffer, numberOfBytesToRead);
+	if (!fs->read(fd, offset, buffer, numberOfBytesToRead))
+		return -ERROR_READ_FAULT;
 	*numberOfBytesRead = numberOfBytesToRead;
+	
+	if (eof)
+		return -ERROR_HANDLE_EOF;
 	
 	return 0;
 }
@@ -251,7 +267,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 			fullChildPath = path + "/" + files[i];
 		fs->stat(fullChildPath, &attributes);
 		entry.dwFileAttributes = attributes.folder ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
-		entry.nFileSizeLow = strlen("Hi from Wendy!\r\n");
+		entry.nFileSizeLow = 24961928;
 		
 		// send item back to caller
 		fillFindData(&entry, info);

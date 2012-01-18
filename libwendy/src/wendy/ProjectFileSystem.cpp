@@ -109,6 +109,11 @@ bool ProjectFileSystem::read(long fd, unsigned long offset, void *buffer, unsign
 	if (fd < 0)
 		return false; // BAD FD
 	
+	// TODO: check that offset < file length
+	
+	if (length == 0)
+		return false; // cannot read 0 bytes
+	
 	this->project->checkChanges();
 	
 	// initialize operation data

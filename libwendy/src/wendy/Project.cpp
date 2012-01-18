@@ -74,6 +74,9 @@ bool Project::isConnected()
 
 void Project::waitChanges()
 {
+	if (!this->reader)
+		return;
+	
 	AssetNotification notification;
 	if (this->reader->getNextNotification(&notification))
 		this->disconnect();
@@ -83,6 +86,9 @@ void Project::waitChanges()
 
 void Project::checkChanges()
 {
+	if (!this->reader)
+		return;
+	
 	// process only available notifications, in order not to block
 	while (this->reader->hasNotification())
 	{
