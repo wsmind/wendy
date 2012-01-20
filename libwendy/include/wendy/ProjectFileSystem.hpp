@@ -54,6 +54,8 @@ class WENDYAPI ProjectFileSystem: public ProjectListener
 		struct FileAttributes
 		{
 			bool folder;
+			unsigned long long date;
+			unsigned long long length;
 		};
 		bool stat(const std::string &path, FileAttributes *attributes);
 		

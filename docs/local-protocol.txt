@@ -57,6 +57,8 @@ ASSET <id>
 revision <int>
 author <user>
 [path <path>]
+[type <mime>]
+[length <int>]
 [lock <user> <application>]
 END
 -------------------------------------------------------------------------------

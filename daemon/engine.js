@@ -46,9 +46,12 @@ function Engine(storage, cache)
 	// (path and blob will be undefined if the asset was deleted in this revision)
 	// {
 	//    author: <string>,
+	//    date: <unix timestamp>
+	//    //tag: <string>
 	//    [path: <string>,]
 	//    [blob: <int>,]
-	//    date: <unix timestamp>
+	//    [type: <mime>]
+	//    [length: <int>]
 	// }
 	//
 	// Blobs

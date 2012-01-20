@@ -33,6 +33,11 @@
 #include <iostream>
 #include <sstream>
 
+// standard conversions workaround
+#ifdef WIN32
+#	define atoll _atoi64
+#endif
+
 namespace wendy {
 
 AssetReader::AssetReader(LocalStream *stream)
@@ -87,8 +92,12 @@ void AssetReader::run()
 					std::string attribute = attributeLine.substr(0, separatorPos);
 					std::string value = attributeLine.substr(separatorPos + 1);
 					
-					if (attribute == "path") notification.changed.asset.path = value;
+					if (attribute == "revision") notification.changed.asset.revision = value;
 					else if (attribute == "author") notification.changed.asset.author = value;
+					else if (attribute == "date") notification.changed.asset.date = atoll(value.c_str());
+					else if (attribute == "path") notification.changed.asset.path = value;
+					else if (attribute == "type") notification.changed.asset.type = value;
+					else if (attribute == "length") notification.changed.asset.length = atoll(value.c_str());
 					else if (attribute == "lockingUser") notification.changed.asset.lockingUser = value;
 				}
 			}

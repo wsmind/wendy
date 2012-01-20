@@ -41,8 +41,16 @@ int main()
 	for (unsigned int i = 0; i < files.size(); i++)
 		std::cout << "found file: " << files[i] << std::endl;
 	
-	long fd = fs.open("portal2.wav", wendy::ProjectFileSystem::READING);
-	std::cout << "fd of 'portal2.wav': " << fd << std::endl;
+	wendy::ProjectFileSystem::FileAttributes attribs;
+	if (fs.stat("proxy.cpp", &attribs))
+	{
+		std::cout << "Attribs for proxy.cpp" << std::endl;
+		std::cout << "  dir: " << attribs.folder << std::endl;
+		std::cout << "  length: " << attribs.length << std::endl;
+	}
+	
+	long fd = fs.open("lapin42.wav", wendy::ProjectFileSystem::READING);
+	std::cout << "fd of 'lapin42.wav': " << fd << std::endl;
 	
 	char buf[100];
 	if (fs.read(fd, 10, buf, 100))

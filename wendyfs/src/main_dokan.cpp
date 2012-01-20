@@ -26,6 +26,7 @@
 
 #ifdef _WIN32
 
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <winbase.h>
 #include <stdio.h>
@@ -92,6 +93,17 @@ static std::string makePathStandard(LPCWSTR path)
 	
 	// remove leading slash
 	return utfPath.substr(1);
+}
+
+static FILETIME unixTimeToFileTime(unsigned long long unixTimestamp)
+{
+	FILETIME fileTime;
+	
+	unsigned long long fileTimeValue = (unixTimestamp + 11644473600lu) * 10000000lu;
+	fileTime.dwHighDateTime = (fileTimeValue & 0xffffffff00000000lu) >> 32;
+	fileTime.dwLowDateTime = (fileTimeValue & 0x00000000fffffffflu) >> 0;
+	
+	return fileTime;
 }
 
 static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DWORD shareMode, DWORD creationDisposition, DWORD flagsAndAttributes, PDOKAN_FILE_INFO info)
@@ -182,18 +194,17 @@ int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOf
 	wendy::ScopeLock lock(&mutex);
 	wprintf(L"ReadFile %s\n", filename);
 	
-	/*char *content = "Hi from Wendy!\r\n";
-	DWORD remaining = (DWORD)((LONGLONG)strlen(content) - offset);
-	*numberOfBytesRead = (remaining < numberOfBytesToRead) ? remaining : numberOfBytesToRead;
+	std::string path = makePathStandard(filename);
 	
-	wprintf(L"returning %d bytes\n", *numberOfBytesRead);
-	memcpy(buffer, content, *numberOfBytesRead);*/
+	wendy::ProjectFileSystem::FileAttributes attributes;
+	if (!fs->stat(path, &attributes))
+		return -ERROR_PATH_NOT_FOUND;
 	
 	bool eof = false;
-	if (offset + numberOfBytesToRead > 42716)
+	if (offset + (unsigned long long)numberOfBytesToRead > attributes.length)
 	{
-		if (offset < 42716)
-			numberOfBytesToRead = 42716 - offset;
+		if (offset < attributes.length)
+			numberOfBytesToRead = (DWORD)(attributes.length - offset);
 		else
 			numberOfBytesToRead = 0;
 	}
@@ -201,7 +212,7 @@ int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOf
 	if (numberOfBytesToRead > 0)
 	{
 		long fd = (long)info->Context;
-		if (!fs->read(fd, offset, buffer, numberOfBytesToRead))
+		if (!fs->read(fd, (long)offset, buffer, numberOfBytesToRead)) // TODO: take a long long as offset
 			return -ERROR_READ_FAULT;
 	}
 	*numberOfBytesRead = numberOfBytesToRead;
@@ -240,7 +251,8 @@ static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_
 	else
 	{
 		buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
-		buffer->nFileSizeLow = strlen("Hi from Wendy!\r\n");
+		buffer->nFileSizeLow = attributes.length;
+		buffer->ftLastWriteTime = unixTimeToFileTime(attributes.date);
 	}
 	
 	return 0;
@@ -279,8 +291,9 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 			fullChildPath = path + "/" + files[i];
 		fs->stat(fullChildPath, &attributes);
 		entry.dwFileAttributes = attributes.folder ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
-		entry.nFileSizeLow = 42716;
-		
+		entry.nFileSizeLow = attributes.length; // TODO: use the 64 bits
+		entry.ftLastWriteTime = unixTimeToFileTime(attributes.date);
+
 		// send item back to caller
 		fillFindData(&entry, info);
 	}

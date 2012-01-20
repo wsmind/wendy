@@ -80,6 +80,16 @@ CouchStorage.prototype.watchChanges = function(callback)
 						revisions: data.doc.revisions
 					}
 					
+					// append additional information from blobs in revisions
+					for (var i in asset.revisions)
+					{
+						var revision = asset.revisions[i]
+						var attachement = data.doc._attachments[revision.blob]
+						
+						revision.type = attachement.content_type
+						revision.length = attachement.length
+					}
+					
 					callback(data.doc._id, asset)
 				}
 			}

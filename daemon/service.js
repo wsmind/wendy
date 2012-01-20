@@ -205,8 +205,9 @@ Service.prototype.sendAsset = function(client, id, asset)
 	client.write("revision " + lastRevision + "\n")
 	client.write("author " + revision.author + "\n")
 	client.write("date " + revision.date + "\n")
-	if (revision.path)
-		client.write("path " + revision.path + "\n")
+	if (revision.path) client.write("path " + revision.path + "\n")
+	if (revision.type) client.write("type " + revision.type + "\n")
+	if (revision.length) client.write("length " + revision.length + "\n")
 	client.write("END\n")
 }
 

@@ -58,6 +58,14 @@ bool ProjectFileSystem::stat(const std::string &path, FileAttributes *attributes
 		return false;
 	
 	attributes->folder = (node->getId() == "");
+	attributes->length = 0;
+	
+	if (!attributes->folder)
+	{
+		Asset &asset = this->assets[node->getId()];
+		attributes->date = asset.date;
+		attributes->length = asset.length;
+	}
 	
 	return true;
 }

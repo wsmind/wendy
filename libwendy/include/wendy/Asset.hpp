@@ -44,14 +44,21 @@ struct WENDYAPI Asset
 	/// unique id (will remain the same even in case of path changes)
 	std::string id;
 	
-	/// relative path to repository root (contains forward slashes only)
-	std::string path;
+	/// current revision number
+	std::string revision;
 	
 	/// user who uploaded the current revision
 	std::string author;
 	
 	/// unix timestamp of last modification date
-	unsigned long long lastModified;
+	unsigned long long date;
+	
+	/// [optional] relative path to repository root (contains forward slashes only)
+	std::string path;
+	
+	std::string type;
+	
+	unsigned long long length;
 	
 	/// user locking this asset ("" if not locked)
 	std::string lockingUser;
