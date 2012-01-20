@@ -62,15 +62,6 @@ struct WENDYAPI Asset
 	
 	/// user locking this asset ("" if not locked)
 	std::string lockingUser;
-	
-	/// is the asset open ?
-	enum AccessMode
-	{
-		CLOSED,
-		READING,
-		WRITING
-	};
-	AccessMode access;
 };
 
 } // wendy namespace
