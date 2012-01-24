@@ -49,7 +49,7 @@ int main()
 		std::cout << "  length: " << attribs.length << std::endl;
 	}
 	
-	long fd = fs.open("lapin42.wav", wendy::ProjectFileSystem::READING);
+	long fd = fs.open("lapin42.wav", wendy::ProjectFileSystem::READING, "testApp");
 	std::cout << "fd of 'lapin42.wav': " << fd << std::endl;
 	
 	char buf[100];
@@ -59,6 +59,11 @@ int main()
 		std::cout << "read failed!" << std::endl;
 	
 	fs.close(fd);
+	
+	long fd2 = fs.open("proxy.cpp", wendy::ProjectFileSystem::WRITING, "plopApp");
+	std::cout << "fd of 'proxy.cpp': " << fd << std::endl;
+	
+	fs.close(fd2);
 	
 	return 0;
 }

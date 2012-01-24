@@ -4,6 +4,7 @@
 #include <wendy/AssetFile.hpp>
 #include <wendy/Project.hpp>
 #include <wendy/ProjectListener.hpp>
+#include <wendy/ProjectFileSystem.hpp>
 %}
 
 /* allows callbacks through inheritance */
@@ -14,3 +15,4 @@
 %include <wendy/AssetFile.hpp>
 %include <wendy/Project.hpp>
 %include <wendy/ProjectListener.hpp>
+%include <wendy/ProjectFileSystem.hpp>

@@ -84,10 +84,14 @@ CouchStorage.prototype.watchChanges = function(callback)
 					for (var i in asset.revisions)
 					{
 						var revision = asset.revisions[i]
-						var attachement = data.doc._attachments[revision.blob]
 						
-						revision.type = attachement.content_type
-						revision.length = attachement.length
+						if (revision.blob)
+						{
+							var attachement = data.doc._attachments[revision.blob]
+							
+							revision.type = attachement.content_type
+							revision.length = attachement.length
+						}
 					}
 					
 					callback(data.doc._id, asset)
@@ -168,7 +172,7 @@ CouchStorage.prototype.lock = function(id, application)
 		host: this.host,
 		port: this.port,
 		path: "/" + this.database + "/" + id,
-		agent: false
+		agent: new http.Agent({maxSockets:1})
 	}
 	
 	var request = http.request(options, function(response)
@@ -196,20 +200,60 @@ CouchStorage.prototype.lock = function(id, application)
 					application: application
 				}
 				
-				var sendOptions = {
-					method: "PUT",
-					host: this.host,
-					port: this.port,
-					path: "/" + this.database + "/" + id,
-					agent: false,
-					headers: {
+				options.method = "PUT"
+				options.headers = {
 						"Content-Type": "application/json"
-					}
 				}
 				
-				console.log(asset)
-				var sendRequest = http.request(sendOptions)
-				//sendRequest.end(JSON.stringify(asset), "utf8")
+				var sendRequest = http.request(options)
+				sendRequest.end(JSON.stringify(asset), "utf8")
+			}
+		})
+	})
+	
+	request.end()
+}
+
+CouchStorage.prototype.unlock = function(id)
+{
+	// first, fetch the latest version of the asset
+	var options = {
+		method: "GET",
+		host: this.host,
+		port: this.port,
+		path: "/" + this.database + "/" + id,
+		agent: new http.Agent({maxSockets:1})
+	}
+	
+	var request = http.request(options, function(response)
+	{
+		assert(Math.floor(response.statusCode / 100) == 2)
+		
+		var doc = ""
+		response.setEncoding("utf8")
+		
+		response.on("data", function(chunk)
+		{
+			doc += chunk
+		})
+		
+		response.on("end", function()
+		{
+			var asset = JSON.parse(doc)
+			
+			// check that the asset is not already unlocked
+			if (asset.lock !== undefined)
+			{
+				// send the unlocked version
+				delete asset.lock
+				
+				options.method = "PUT"
+				options.headers = {
+						"Content-Type": "application/json"
+				}
+				
+				var sendRequest = http.request(options)
+				sendRequest.end(JSON.stringify(asset), "utf8")
 			}
 		})
 	})

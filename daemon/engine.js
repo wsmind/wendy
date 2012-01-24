@@ -108,7 +108,27 @@ Engine.prototype.create = function(path)
 
 Engine.prototype.lock = function(id, application)
 {
+	if (this.assets[id] == undefined)
+		return // this id does not exist
+	
+	if (this.assets[id].lock != undefined)
+		return // already locked
+	
 	this.storage.lock(id, application)
+}
+
+Engine.prototype.unlock = function(id)
+{
+	if (this.assets[id] == undefined)
+		return // this id does not exist
+	
+	if (this.assets[id].lock == undefined)
+		return // not locked
+	
+	if (this.assets[id].lock.user != "MrPlop")
+		return // locked by someone else
+	
+	this.storage.unlock(id)
 }
 
 // mode must be "r" or "w"

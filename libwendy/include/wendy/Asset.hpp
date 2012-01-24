@@ -60,8 +60,14 @@ struct WENDYAPI Asset
 	
 	unsigned long long length;
 	
-	/// user locking this asset ("" if not locked)
-	std::string lockingUser;
+	struct
+	{
+		/// user locking this asset ("" if not locked, "<you>" if matching the local user)
+		std::string user;
+		
+		/// application the user has used first to modify the asset
+		std::string application;
+	} lock;
 };
 
 } // wendy namespace

@@ -70,7 +70,7 @@ bool ProjectFileSystem::stat(const std::string &path, FileAttributes *attributes
 	return true;
 }
 
-long ProjectFileSystem::open(const std::string &path, OpenMode mode)
+long ProjectFileSystem::open(const std::string &path, OpenMode mode, const std::string &applicationName)
 {
 	this->project->checkChanges();
 	
@@ -86,6 +86,27 @@ long ProjectFileSystem::open(const std::string &path, OpenMode mode)
 	// check if directory
 	if (this->openData.id == "")
 		return -1;
+	
+	Asset &asset = this->assets[this->openData.id];
+	
+	// check lock for write accesses
+	if ((mode == WRITING) && (asset.lock.user != "<you>"))
+	{
+		if (asset.lock.user == "")
+			this->project->lockAsset(this->openData.id, applicationName);
+		
+		// wait for lock
+		while (asset.lock.user != "<you>")
+		{
+			if (!this->project->isConnected())
+				return -1; // connection lost
+			
+			if ((asset.lock.user != "") && (asset.lock.user != "<you>"))
+				return -1; // asset was locked by someone else
+			
+			this->project->waitChanges();
+		}
+	}
 	
 	// start asynchronous operation
 	this->project->openAsset(this->openData.id, (mode == READING) ? Project::READING : Project::WRITING);

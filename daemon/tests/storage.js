@@ -27,19 +27,18 @@
 var storage = new (require("../storage.js").CouchStorage)("localhost", 5984, "plop")
 var fs = require("fs")
 
-storage.create({
+/*storage.create({
 	revisions: {
 		"0": {
 			author: "Mr Blob",
-			path: "yop/sub/great.txt",
 			date: 42,
 		}
 	}
-})
+})*/
 
 storage.watchChanges(function(id, asset)
 {
-	for (var i in asset.revisions)
+	/*for (var i in asset.revisions)
 	{
 		if (!asset.revisions[i].blob)
 			continue
@@ -66,5 +65,9 @@ storage.watchChanges(function(id, asset)
 				console.log(asset.revisions[i].path + " downloaded!")
 			})
 		})
-	}
+	}*/
+	
+	console.log("locking " + id)
+	
+	storage.lock(id, "fakeApplication")
 })

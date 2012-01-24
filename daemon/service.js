@@ -49,14 +49,12 @@ exports.Service = Service
 Service.prototype.handleClient = function(client)
 {
 	var self = this
-	var connected = true
 	
 	console.log("client connected")
 	
 	var assetCallback = function(id, asset)
 	{
-		if (connected)
-			self.sendAsset(client, id, asset)
+		self.sendAsset(client, id, asset)
 	}
 	
 	// engine notifications
@@ -69,7 +67,6 @@ Service.prototype.handleClient = function(client)
 		
 		// TODO: close all remaining AssetFiles
 		
-		connected = false
 		self.engine.removeListener("changed", assetCallback)
 	})
 	
@@ -112,6 +109,16 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 				break
 			}
 			
+			case "UNLOCK":
+			{
+				var id = parameters
+				console.log("UNLOCK!! -> " + id)
+				
+				self.engine.unlock(id);
+				
+				break
+			}
+			
 			case "OPEN":
 			{
 				var parts = parameters.split(" ")
@@ -134,7 +141,7 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 					
 					openedFiles[fd] = file
 					
-					client.write("OPENED " + id + " " + mode + " " + fd + "\n")
+					self.safeWrite(client, "OPENED " + id + " " + mode + " " + fd + "\n")
 				})
 				
 				break;
@@ -182,7 +189,7 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 				openedFiles[fd].close()
 				delete openedFiles[fd]
 				
-				client.write("CLOSED " + fd + "\n")
+				self.safeWrite(client, "CLOSED " + fd + "\n")
 				
 				break
 			}
@@ -201,20 +208,38 @@ Service.prototype.sendAsset = function(client, id, asset)
 	var lastRevision = Math.max.apply(Math, Object.keys(asset.revisions))
 	var revision = asset.revisions[lastRevision]
 	
-	client.write("ASSET " + id + "\n")
-	client.write("revision " + lastRevision + "\n")
-	client.write("author " + revision.author + "\n")
-	client.write("date " + revision.date + "\n")
-	if (revision.path) client.write("path " + revision.path + "\n")
-	if (revision.type) client.write("type " + revision.type + "\n")
-	if (revision.length) client.write("length " + revision.length + "\n")
-	client.write("END\n")
+	this.safeWrite(client, "ASSET " + id + "\n")
+	if (asset.lock)
+	{
+		this.safeWrite(client, "lockUser " + asset.lock.user + "\n")
+		this.safeWrite(client, "lockApp " + asset.lock.application + "\n")
+	}
+	this.safeWrite(client, "revision " + lastRevision + "\n")
+	this.safeWrite(client, "author " + revision.author + "\n")
+	this.safeWrite(client, "date " + revision.date + "\n")
+	if (revision.path) this.safeWrite(client, "path " + revision.path + "\n")
+	if (revision.type) this.safeWrite(client, "type " + revision.type + "\n")
+	if (revision.length) this.safeWrite(client, "length " + revision.length + "\n")
+	this.safeWrite(client, "END\n")
 }
 
 Service.prototype.sendChunk = function(client, fd, offset, chunk)
 {
-	client.write("CHUNK " + fd + " " + offset + " " + chunk.length + "\n")
-	client.write(chunk)
+	this.safeWrite(client, "CHUNK " + fd + " " + offset + " " + chunk.length + "\n")
+	this.safeWrite(client, chunk)
+}
+
+Service.prototype.safeWrite = function(client, data)
+{
+	try
+	{
+		client.write(data)
+	}
+	catch (err)
+	{
+		// can happen if the client disconnects *while* writing a bunch of data
+		console.log("ERRORRRRR!!!\n")
+	}
 }
 
 // helper for splitting the stream into lines and binary chunks

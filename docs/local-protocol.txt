@@ -54,12 +54,13 @@ When new asset metadata is available, or a client action impacted asset
 information:
 -------------------------------------------------------------------------------
 ASSET <id>
+[lockUser <user>]
+[lockApp <application>]
 revision <int>
 author <user>
 [path <path>]
 [type <mime>]
 [length <int>]
-[lock <user> <application>]
 END
 -------------------------------------------------------------------------------
 If the asset was deleted (either by the connected client or another client

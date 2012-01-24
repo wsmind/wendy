@@ -29,6 +29,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <winbase.h>
+#include <psapi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <dokan.h>
@@ -124,8 +125,23 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	}
 	else
 	{
+		// retrieve opening process name
+		std::string processName = "unknown application";
+		HANDLE process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, info->ProcessId);
+		if (process != NULL)
+		{
+			char processBaseName[256];
+			DWORD length = GetModuleBaseName(process, NULL, processBaseName, 255);
+			if (length > 0)
+			{
+				printf("Process image: %s\n", processBaseName);
+				processName = processBaseName;
+			}
+			CloseHandle(process);
+		}
+		
 		// open asset
-		long fd = fs->open(path, wendy::ProjectFileSystem::READING);
+		long fd = fs->open(path, wendy::ProjectFileSystem::READING, processName);
 		if (fd == -1)
 			return -ERROR_PATH_NOT_FOUND;
 		
@@ -293,7 +309,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		entry.dwFileAttributes = attributes.folder ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
 		entry.nFileSizeLow = attributes.length; // TODO: use the 64 bits
 		entry.ftLastWriteTime = unixTimeToFileTime(attributes.date);
-
+		
 		// send item back to caller
 		fillFindData(&entry, info);
 	}

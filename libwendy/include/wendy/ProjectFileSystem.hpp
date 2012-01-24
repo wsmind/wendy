@@ -64,7 +64,7 @@ class WENDYAPI ProjectFileSystem: public ProjectListener
 			READING,
 			WRITING,
 		};
-		long open(const std::string &path, OpenMode mode);
+		long open(const std::string &path, OpenMode mode, const std::string &applicationName);
 		
 		void close(long fd);
 		

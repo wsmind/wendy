@@ -98,7 +98,8 @@ void AssetReader::run()
 					else if (attribute == "path") notification.changed.asset.path = value;
 					else if (attribute == "type") notification.changed.asset.type = value;
 					else if (attribute == "length") notification.changed.asset.length = atoll(value.c_str());
-					else if (attribute == "lockingUser") notification.changed.asset.lockingUser = value;
+					else if (attribute == "lockUser") notification.changed.asset.lock.user = value;
+					else if (attribute == "lockApp") notification.changed.asset.lock.application = value;
 				}
 			}
 			
