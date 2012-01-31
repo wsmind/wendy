@@ -61,10 +61,12 @@ author <user>
 [path <path>]
 [type <mime>]
 [length <int>]
+[state <state>]
 END
 -------------------------------------------------------------------------------
 If the asset was deleted (either by the connected client or another client
 elsewhere), it will have no path.
+<state> is one of: MISSING, DOWNLOADING, CACHED
 
 -------------------------------------------------------------------------------
 OPENED <id> <mode> <fd>

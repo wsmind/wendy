@@ -50,6 +50,12 @@ struct WENDYAPI Asset
 	/// user who uploaded the current revision
 	std::string author;
 	
+	static const unsigned long READ_ACCESS = 0x1;
+	static const unsigned long WRITE_ACCESS = 0x2;
+	
+	/// access rights
+	unsigned long rights;
+	
 	/// unix timestamp of last modification date
 	unsigned long long date;
 	
@@ -59,6 +65,14 @@ struct WENDYAPI Asset
 	std::string type;
 	
 	unsigned long long length;
+	
+	/*enum TransferState
+	{
+		MISSING,
+		DOWNLOADING,
+		CACHED
+	};
+	TransferState state;*/
 	
 	struct
 	{

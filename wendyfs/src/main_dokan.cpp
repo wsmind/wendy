@@ -115,8 +115,15 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	std::string path = makePathStandard(filename);
 	
 	wendy::ProjectFileSystem::FileAttributes attributes;
-	if (!fs->stat(path, &attributes))
+	bool exists = fs->stat(path, &attributes);
+	
+	// cases when the file MUST exist
+	if (!exists && ((creationDisposition == OPEN_EXISTING) || (creationDisposition == TRUNCATE_EXISTING)))
 		return -ERROR_PATH_NOT_FOUND;
+	
+	// cases when the file MUST NOT exist
+	if (exists && (creationDisposition == CREATE_NEW))
+		return -ERROR_FILE_EXISTS;
 	
 	if (attributes.folder)
 	{
@@ -125,6 +132,10 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	}
 	else
 	{
+		// no real open
+		if (accessMode == 0)
+			return 0;
+		
 		// retrieve opening process name
 		std::string processName = "unknown application";
 		HANDLE process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, info->ProcessId);
@@ -140,8 +151,17 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 			CloseHandle(process);
 		}
 		
+		// translate access mode
+		wendy::ProjectFileSystem::OpenMode mode = wendy::ProjectFileSystem::READING;
+		
+		if ((accessMode & FILE_GENERIC_READ) == FILE_GENERIC_READ) mode = wendy::ProjectFileSystem::READING;
+		if ((accessMode & FILE_GENERIC_WRITE) == FILE_GENERIC_WRITE) mode = wendy::ProjectFileSystem::WRITING;
+		
+		if (mode == wendy::ProjectFileSystem::WRITING)
+			return -ERROR_ACCESS_DENIED;
+		
 		// open asset
-		long fd = fs->open(path, wendy::ProjectFileSystem::READING, processName);
+		long fd = fs->open(path, mode, processName);
 		if (fd == -1)
 			return -ERROR_PATH_NOT_FOUND;
 		

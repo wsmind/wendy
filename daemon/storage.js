@@ -144,6 +144,59 @@ CouchStorage.prototype.download = function(id, blob, file, callback)
 	request.end()
 }
 
+CouchStorage.prototype.upload = function(id, blob, file, callback)
+{
+	var self = this
+	
+	// read file size
+	file.stat(function(err, stats)
+	{
+		if (err) throw err
+		
+		var options = {
+			method: "PUT",
+			host: self.host,
+			port: 1234,
+			path: "/" + self.database + "/" + id + "/" + blob,
+			headers: {
+				"Content-Length": stats.size
+			}
+		}
+		
+		var request = http.request(options, function(response)
+		{
+			assert(Math.floor(response.statusCode / 100) == 2)
+		})
+		
+		// stream asset file to couch
+		var position = 0
+		var buffer = new Buffer(16 * 1024)
+		function uploadNextChunk()
+		{
+			file.read(buffer, position, function(err, bytesRead, buffer)
+			{
+				// send this buffer
+				position += bytesRead
+				request.write(buffer.slice(0, bytesRead))
+				
+				// read the next one (if any)
+				if (position < stats.size)
+				{
+					uploadNextChunk()
+				}
+				else
+				{
+					file.close()
+					request.end()
+				}
+			})
+		}
+		
+		// start chunked uploading
+		uploadNextChunk()
+	})
+}
+
 CouchStorage.prototype.create = function(asset)
 {
 	var options = {
@@ -171,8 +224,7 @@ CouchStorage.prototype.lock = function(id, application)
 		method: "GET",
 		host: this.host,
 		port: this.port,
-		path: "/" + this.database + "/" + id,
-		agent: new http.Agent({maxSockets:1})
+		path: "/" + this.database + "/" + id
 	}
 	
 	var request = http.request(options, function(response)
@@ -221,8 +273,7 @@ CouchStorage.prototype.unlock = function(id)
 		method: "GET",
 		host: this.host,
 		port: this.port,
-		path: "/" + this.database + "/" + id,
-		agent: new http.Agent({maxSockets:1})
+		path: "/" + this.database + "/" + id
 	}
 	
 	var request = http.request(options, function(response)

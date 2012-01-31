@@ -205,21 +205,45 @@ Service.prototype.sendAsset = function(client, id, asset)
 	console.log("sending " + id)
 	
 	// find last revision number
-	var lastRevision = Math.max.apply(Math, Object.keys(asset.revisions))
-	var revision = asset.revisions[lastRevision]
+	var lastRevisionId = Math.max.apply(Math, Object.keys(asset.revisions))
+	var lastRevision = asset.revisions[lastRevisionId]
+	
+	var rights = ""
+	
+	// check reading right (e.g if a complete (maybe old) revision is available)
+	for (var i in asset.revisions)
+	{
+		if (asset.revisions[i].state == "cached")
+		{
+			rights += "r"
+			break
+		}
+	}
+	
+	// check writing right (last revision downloaded + lock)
+	if (asset.lock && (lastRevision.state == "cached"))
+	{
+		if (asset.lock.user == "MrPlop")
+			rights += "w"
+	}
 	
 	this.safeWrite(client, "ASSET " + id + "\n")
 	if (asset.lock)
 	{
-		this.safeWrite(client, "lockUser " + asset.lock.user + "\n")
+		if (asset.lock.user == "MrPlop")
+			this.safeWrite(client, "lockUser <you>\n")
+		else
+			this.safeWrite(client, "lockUser " + asset.lock.user + "\n")
 		this.safeWrite(client, "lockApp " + asset.lock.application + "\n")
 	}
-	this.safeWrite(client, "revision " + lastRevision + "\n")
-	this.safeWrite(client, "author " + revision.author + "\n")
-	this.safeWrite(client, "date " + revision.date + "\n")
-	if (revision.path) this.safeWrite(client, "path " + revision.path + "\n")
-	if (revision.type) this.safeWrite(client, "type " + revision.type + "\n")
-	if (revision.length) this.safeWrite(client, "length " + revision.length + "\n")
+	if (rights != "")
+		this.safeWrite(client, "rights " + rights + "\n")
+	this.safeWrite(client, "revision " + lastRevisionId + "\n")
+	this.safeWrite(client, "author " + lastRevision.author + "\n")
+	this.safeWrite(client, "date " + lastRevision.date + "\n")
+	if (lastRevision.path) this.safeWrite(client, "path " + lastRevision.path + "\n")
+	if (lastRevision.type) this.safeWrite(client, "type " + lastRevision.type + "\n")
+	if (lastRevision.length) this.safeWrite(client, "length " + lastRevision.length + "\n")
 	this.safeWrite(client, "END\n")
 }
 

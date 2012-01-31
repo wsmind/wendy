@@ -79,12 +79,22 @@ Cache.prototype.open = function(id, blob, mode, callback)
 {
 	assert((mode == "r") || (mode == "w"))
 	
-	fs.open(path.join(this.root, id + "-" + blob), mode, 0666, function(err, fd)
+	var assetFolder = this.root
+	
+	// always write to temporary folder
+	if (mode == "w")
+		assetFolder = path.join(assetFolder, "tmp")
+	
+	var self = this
+	var assetPath = path.join(assetFolder, id + "-" + blob)
+	fs.open(assetPath, mode, 0666, function(err, fd)
 	{
 		// TODO: handle error
-		assert(!err)
+		if (err) throw err
 		
-		var file = new AssetFile(fd)
+		// path where to move the asset upon close
+		var targetPath = (mode == "w") ? path.join(self.root, id + "-" + blob) : null
+		var file = new AssetFile(fd, assetPath, targetPath)
 		callback(file)
 	})
 }
@@ -103,9 +113,23 @@ Cache.prototype._recursiveMkdir = function(directory)
 	}
 }
 
-function AssetFile(fd)
+function AssetFile(fd, path, targetPath)
 {
 	this.fd = fd
+	this.path = path
+	this.targetPath = targetPath
+}
+
+AssetFile.prototype.stat = function(callback)
+{
+	fs.fstat(this.fd, function(err, stats)
+	{
+		if (err) throw err
+		
+		callback(err, {
+			size: stats.size
+		})
+	})
 }
 
 AssetFile.prototype.read = function(buffer, position, callback)
@@ -133,4 +157,8 @@ AssetFile.prototype.write = function(buffer, position, callback)
 AssetFile.prototype.close = function()
 {
 	fs.closeSync(this.fd)
+	
+	// move the asset to another location
+	if (this.targetPath)
+		fs.renameSync(this.path, this.targetPath)
 }

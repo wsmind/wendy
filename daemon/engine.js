@@ -196,12 +196,14 @@ Engine.prototype._checkAssetState = function(id)
 	{
 		// this blob must be dowloaded
 		asset.state = "downloading"
+		revisions[lastRevision].state = "downloading"
 		this._download(id, blob)
 	}
 	else
 	{
 		// the asset is up to date
 		asset.state = "uptodate"
+		revisions[lastRevision].state = "cached"
 	}
 	
 	console.log("STATE of " + id + " -> " + asset.state)

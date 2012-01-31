@@ -67,7 +67,44 @@ storage.watchChanges(function(id, asset)
 		})
 	}*/
 	
-	console.log("locking " + id)
+	/*console.log("locking " + id)
 	
-	storage.lock(id, "fakeApplication")
+	storage.lock(id, "fakeApplication")*/
+	
+	var rev = asset.revisions["1"]
+	
+	if (rev && rev.blob)
+	{
+		fs.open("cache/" + id + "-" + rev.blob, "r", 0666, function(err, fd)
+		{
+			var file = {
+				stat: function(callback)
+				{
+					fs.fstat(fd, function(err, stats)
+					{
+						if (err) throw err
+						
+						callback(err, {
+							size: stats.size
+						})
+					})
+				},
+				read: function(buffer, position, callback)
+				{
+					fs.read(fd, buffer, 0, buffer.length, position, function(err, bytesRead, buffer)
+					{
+						callback(err, bytesRead, buffer)
+					})
+				},
+				close: function()
+				{
+				}
+			}
+			
+			storage.upload(id, rev.blob, file, function()
+			{
+				console.log(rev.path + " uploaded (again)!")
+			})
+		})
+	}
 })

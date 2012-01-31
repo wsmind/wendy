@@ -90,13 +90,13 @@ long ProjectFileSystem::open(const std::string &path, OpenMode mode, const std::
 	Asset &asset = this->assets[this->openData.id];
 	
 	// check lock for write accesses
-	if ((mode == WRITING) && (asset.lock.user != "<you>"))
+	if ((mode == WRITING) && !(asset.rights & Asset::WRITE_ACCESS))
 	{
 		if (asset.lock.user == "")
 			this->project->lockAsset(this->openData.id, applicationName);
 		
 		// wait for lock
-		while (asset.lock.user != "<you>")
+		while (!(asset.rights & Asset::WRITE_ACCESS))
 		{
 			if (!this->project->isConnected())
 				return -1; // connection lost
@@ -226,8 +226,9 @@ void ProjectFileSystem::assetChanged(const Asset &asset)
 		this->root->remove(asset.path);
 	}
 	
-	// reinsert the new asset into the hierarchy, if it was not deleted
-	if (asset.path != "")
+	// reinsert the new asset into the hierarchy, if it was not deleted and at least
+	// one revision is available locally
+	if ((asset.path != "") && (asset.rights & Asset::READ_ACCESS))
 		this->root->insert(asset.path, asset.id);
 	
 	// updated saved metadata

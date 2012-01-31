@@ -74,6 +74,11 @@ void AssetReader::run()
 				notification.type = AssetNotification::CHANGED;
 				notification.changed.asset.id = notificationParams;
 				
+				// initialization
+				notification.changed.asset.rights = 0;
+				notification.changed.asset.date = 0;
+				notification.changed.asset.length = 0;
+				
 				// extract asset attributes
 				std::string attributeLine;
 				while (this->stream->readLine(&attributeLine))
@@ -94,10 +99,21 @@ void AssetReader::run()
 					
 					if (attribute == "revision") notification.changed.asset.revision = value;
 					else if (attribute == "author") notification.changed.asset.author = value;
+					else if (attribute == "rights")
+					{
+						if (value.find("r") != -1) notification.changed.asset.rights |= Asset::READ_ACCESS;
+						if (value.find("w") != -1) notification.changed.asset.rights |= Asset::WRITE_ACCESS;
+					}
 					else if (attribute == "date") notification.changed.asset.date = atoll(value.c_str());
 					else if (attribute == "path") notification.changed.asset.path = value;
 					else if (attribute == "type") notification.changed.asset.type = value;
 					else if (attribute == "length") notification.changed.asset.length = atoll(value.c_str());
+					/*else if (attribute == "state")
+					{
+						notification.changed.asset.state = Asset::MISSING;
+						if (value == "DOWNLOADING") notification.changed.asset.state = Asset::DOWNLOADING;
+						else if (value == "CACHED") notification.changed.asset.state = Asset::CACHED;
+					}*/
 					else if (attribute == "lockUser") notification.changed.asset.lock.user = value;
 					else if (attribute == "lockApp") notification.changed.asset.lock.application = value;
 				}
@@ -143,4 +159,3 @@ bool AssetReader::getNextNotification(AssetNotification *notification)
 }
 
 } // wendy namespace
-
