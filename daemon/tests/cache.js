@@ -28,7 +28,7 @@ var cache = new (require("../cache.js").Cache)("cache")
 
 cache.open("plop", 42, "w", function(file)
 {
-	file.write(new Buffer("yeahha"), function(err, written, buffer)
+	file.write(new Buffer("yeahha"), 0, function(err, written, buffer)
 	{
 		file.close()
 		
@@ -36,7 +36,7 @@ cache.open("plop", 42, "w", function(file)
 		cache.open("plop", 42, "r", function(file2)
 		{
 			var buf = new Buffer(500)
-			file2.read(buf, function(err, bytesRead, buffer)
+			file2.read(buf, 0, function(err, bytesRead, buffer)
 			{
 				console.log("read " + bytesRead + " bytes:")
 				console.log(buf.slice(0, bytesRead).toString("utf8"))
@@ -47,17 +47,17 @@ cache.open("plop", 42, "w", function(file)
 	})
 })
 
-cache.open("plop", 47, "w", function(file)
+cache.open(new Buffer("plop"), 47, "w", function(file)
 {
-	file.write("yopyop", function(err, written, buffer)
+	file.write(new Buffer("yopyop"), 0, function(err, written, buffer)
 	{
 		file.close()
 	})
 })
 
-cache.open("noplop", 12, "w", function(file)
+cache.open(new Buffer("noplop"), 12, "w", function(file)
 {
-	file.write("wendy rules :p", function(err, written, buffer)
+	file.write(new Buffer("wendy rules :p"), 0, function(err, written, buffer)
 	{
 		file.close()
 	})
@@ -67,4 +67,23 @@ cache.dump(function(blobs)
 {
 	for (var id in blobs)
 		console.log("blobs for " + id + ": " + blobs[id])
+})
+
+cache.readLocalMetadata(function(err, metadata)
+{
+	console.log("current local metadata: " + JSON.stringify(metadata))
+	
+	metadata = {
+		"12": {author: "swingy", date: 100, tag: "you're it"},
+		"25": {path: "this-is-25.txt"}
+	}
+	cache.writeLocalMetadata(metadata, function(err)
+	{
+		if (err) throw err
+		
+		cache.readLocalMetadata(function(err, metadata)
+		{
+			console.log("new metadata: " + JSON.stringify(metadata))
+		})
+	})
 })

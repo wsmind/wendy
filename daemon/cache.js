@@ -93,9 +93,57 @@ Cache.prototype.open = function(id, blob, mode, callback)
 		if (err) throw err
 		
 		// path where to move the asset upon close
-		var targetPath = (mode == "w") ? path.join(self.root, id + "-" + blob) : null
+		var targetPath = null
+		if (mode == "w")
+		{
+			targetPath = path.join(self.root, id + "-" + blob)
+			
+			// if the target file already exists, delete it
+			if (path.existsSync(targetPath))
+				fs.unlinkSync(targetPath)
+		}
+		
 		var file = new AssetFile(fd, assetPath, targetPath)
 		callback(file)
+	})
+}
+
+// callback(err, object)
+Cache.prototype.readLocalMetadata = function(callback)
+{
+	var metadataPath = path.join(this.root, "local.json")
+	path.exists(metadataPath, function(exists)
+	{
+		if (exists)
+		{
+			fs.readFile(metadataPath, function(err, data)
+			{
+				if (err)
+				{
+					callback(err, null)
+				}
+				else
+				{
+					var metadata = JSON.parse(data)
+					callback(null, metadata)
+				}
+			})
+		}
+		else
+		{
+			// no metadata, return an empty object
+			callback(null, {})
+		}
+	})
+}
+
+// callback(err)
+Cache.prototype.writeLocalMetadata = function(metadata, callback)
+{
+	var metadataPath = path.join(this.root, "local.json")
+	fs.writeFile(metadataPath, JSON.stringify(metadata), function(err)
+	{
+		callback(err)
 	})
 }
 
