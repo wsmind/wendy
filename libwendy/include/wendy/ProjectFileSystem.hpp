@@ -59,6 +59,8 @@ class WENDYAPI ProjectFileSystem: public ProjectListener
 		};
 		bool stat(const std::string &path, FileAttributes *attributes);
 		
+		bool unlink(const std::string &path);
+		
 		enum OpenMode
 		{
 			READING,

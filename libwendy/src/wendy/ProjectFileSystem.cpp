@@ -70,6 +70,19 @@ bool ProjectFileSystem::stat(const std::string &path, FileAttributes *attributes
 	return true;
 }
 
+bool ProjectFileSystem::unlink(const std::string &path)
+{
+	FileSystemNode *node = this->root->find(path);
+	if (!node)
+		return false; // not found
+	
+	// TODO: lock asset
+	
+	// TODO: this->project->deleteAsset(node->getId());
+	
+	return true;
+}
+
 long ProjectFileSystem::open(const std::string &path, OpenMode mode, const std::string &applicationName)
 {
 	this->project->checkChanges();

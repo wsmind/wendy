@@ -24,7 +24,7 @@
  * 
  *****************************************************************************/
 
-var storage = new (require("./storage.js").CouchStorage)("assets.emp.fr.nf", 80, "plop")
+var storage = new (require("./storage.js").CouchStorage)("localhost", 5984, "plop")
 var cache = new (require("./cache.js").Cache)("./tests/cache")
 var engine = new (require("./engine.js").Engine)(storage, cache)
 var service = new (require("./service.js").Service)(engine)

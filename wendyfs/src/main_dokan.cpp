@@ -157,8 +157,8 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 		if ((accessMode & FILE_GENERIC_READ) == FILE_GENERIC_READ) mode = wendy::ProjectFileSystem::READING;
 		if ((accessMode & FILE_GENERIC_WRITE) == FILE_GENERIC_WRITE) mode = wendy::ProjectFileSystem::WRITING;
 		
-		if (mode == wendy::ProjectFileSystem::WRITING)
-			return -ERROR_ACCESS_DENIED;
+		//if (mode == wendy::ProjectFileSystem::WRITING)
+		//	return -ERROR_ACCESS_DENIED;
 		
 		// open asset
 		long fd = fs->open(path, mode, processName);
@@ -337,6 +337,22 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 	return 0;
 }
 
+static int DOKAN_CALLBACK WendyDeleteFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
+{
+	wendy::ScopeLock lock(&mutex);
+	wprintf(L"DeleteFile %s\n", filename);
+	std::string path = makePathStandard(filename);
+	
+	wendy::ProjectFileSystem::FileAttributes attributes;
+	if (!fs->stat(path, &attributes))
+		return -ERROR_PATH_NOT_FOUND;
+	
+	if (!fs->unlink(path))
+		return -ERROR_ACCESS_DENIED;
+	
+	return 0;
+}
+
 static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
 	wendy::ScopeLock lock(&mutex);
@@ -347,7 +363,8 @@ static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 	if (!fs->stat(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
-	fs->rmdir(path);
+	if (!fs->rmdir(path))
+		return -ERROR_DIR_NOT_EMPTY;
 	
 	return 0;
 }
@@ -402,6 +419,7 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 	operations.WriteFile = WendyWriteFile;
 	operations.GetFileInformation = WendyGetFileInformation;
 	operations.FindFiles = WendyFindFiles;
+	operations.DeleteFile = WendyDeleteFile;
 	operations.DeleteDirectory = WendyDeleteDirectory;
 	operations.GetDiskFreeSpace = WendyGetDiskFreeSpace;
 	operations.GetVolumeInformation = WendyGetVolumeInformation;

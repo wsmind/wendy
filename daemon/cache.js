@@ -59,6 +59,10 @@ Cache.prototype.dump = function(callback)
 			var blobs = {}
 			for (var i = 0; i < files.length; i++)
 			{
+				// skip special files
+				if ((files[i] == "tmp") || (files[i] == "local.json"))
+					continue
+				
 				var parts = files[i].split("-")
 				var id = parts[0]
 				var blob = parts[1]
@@ -182,6 +186,9 @@ AssetFile.prototype.stat = function(callback)
 
 AssetFile.prototype.read = function(buffer, position, callback)
 {
+	// avoid using the legacy fs.read implementation
+	assert(Buffer.isBuffer(buffer))
+	
 	fs.read(this.fd, buffer, 0, buffer.length, position, function(err, bytesRead, buffer)
 	{
 		// TODO: handle error
@@ -193,6 +200,9 @@ AssetFile.prototype.read = function(buffer, position, callback)
 
 AssetFile.prototype.write = function(buffer, position, callback)
 {
+	// avoid using the legacy fs.write implementation
+	assert(Buffer.isBuffer(buffer))
+	
 	fs.write(this.fd, buffer, 0, buffer.length, position, function(err, written, buffer)
 	{
 		// TODO: handle error
