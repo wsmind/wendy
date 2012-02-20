@@ -40,9 +40,6 @@
 #include <wendy/ProjectFileSystem.hpp>
 #include <wendy/ScopeLock.hpp>
 
-//#include "ProjectProxy.hpp"
-
-//static ProjectProxy *proxy = NULL;
 static wendy::ProjectFileSystem *fs = NULL;
 static wendy::Mutex mutex;
 

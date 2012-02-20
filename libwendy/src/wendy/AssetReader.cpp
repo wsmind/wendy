@@ -32,11 +32,7 @@
 
 #include <iostream>
 #include <sstream>
-
-// standard conversions workaround
-#ifdef WIN32
-#	define atoll _atoi64
-#endif
+#include <cstdlib>
 
 namespace wendy {
 
