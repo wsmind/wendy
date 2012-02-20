@@ -45,6 +45,7 @@
 	#include <unistd.h>
 	#define SOCKET_DATA_TYPE void *
 	#define SOCKET_OBJECT_TYPE int
+	#define INVALID_SOCKET -1
 #endif
 
 namespace wendy {

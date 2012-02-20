@@ -64,7 +64,7 @@ void LocalStream::connect()
 
 void LocalStream::disconnect()
 {
-	if (this->socketId == -1)
+	if (this->socketId == INVALID_SOCKET)
 		return;
 	
 #	ifdef _WIN32
@@ -106,7 +106,7 @@ bool LocalStream::readLine(std::string *line)
 
 bool LocalStream::readChunk(char *buffer, unsigned long size)
 {
-	int total = 0;
+	unsigned int total = 0;
 	while (total < size)
 	{
 		int read = recv(this->socketId, buffer, size - total, 0);
@@ -139,7 +139,7 @@ bool LocalStream::writeLine(const std::string &line)
 
 bool LocalStream::writeChunk(const char *buffer, unsigned long size)
 {
-	int total = 0;
+	unsigned int total = 0;
 	while (total < size)
 	{
 		int written = send(this->socketId, buffer, size - total, 0);

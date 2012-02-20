@@ -141,13 +141,10 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 		HANDLE process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, info->ProcessId);
 		if (process != NULL)
 		{
-			char processBaseName[256];
+			wchar_t processBaseName[256];
 			DWORD length = GetModuleBaseName(process, NULL, processBaseName, 255);
 			if (length > 0)
-			{
-				printf("Process image: %s\n", processBaseName);
-				processName = processBaseName;
-			}
+				processName = wideToUtf8(processBaseName);
 			CloseHandle(process);
 		}
 		
@@ -157,8 +154,8 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 		if ((accessMode & FILE_GENERIC_READ) == FILE_GENERIC_READ) mode = wendy::ProjectFileSystem::READING;
 		if ((accessMode & FILE_GENERIC_WRITE) == FILE_GENERIC_WRITE) mode = wendy::ProjectFileSystem::WRITING;
 		
-		//if (mode == wendy::ProjectFileSystem::WRITING)
-		//	return -ERROR_ACCESS_DENIED;
+		if (mode == wendy::ProjectFileSystem::WRITING)
+			return -ERROR_ACCESS_DENIED;
 		
 		// open asset
 		long fd = fs->open(path, mode, processName);
@@ -237,9 +234,9 @@ int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOf
 		return -ERROR_PATH_NOT_FOUND;
 	
 	bool eof = false;
-	if (offset + (unsigned long long)numberOfBytesToRead > attributes.length)
+	if ((unsigned long long)offset + (unsigned long long)numberOfBytesToRead > attributes.length)
 	{
-		if (offset < attributes.length)
+		if ((unsigned long long)offset < attributes.length)
 			numberOfBytesToRead = (DWORD)(attributes.length - offset);
 		else
 			numberOfBytesToRead = 0;
@@ -383,16 +380,16 @@ static int DOKAN_CALLBACK WendyGetVolumeInformation(LPWSTR volumeNameBuffer, DWO
 {
 	wendy::ScopeLock lock(&mutex);
 	
-	wcscpy_s(volumeNameBuffer, volumeNameSize / sizeof(WCHAR), L"Wendy");
+	wcsncpy(volumeNameBuffer, L"Wendy", volumeNameSize / sizeof(WCHAR));
 	*volumeSerialNumber = 0x42;
 	*maximumComponentLength = 255;
 	*fileSystemFlags = FILE_CASE_PRESERVED_NAMES | FILE_CASE_SENSITIVE_SEARCH | FILE_UNICODE_ON_DISK;
-	wcscpy_s(fileSystemNameBuffer, fileSystemNameSize / sizeof(WCHAR), L"wendyfs");
+	wcsncpy(fileSystemNameBuffer, L"wendyfs", fileSystemNameSize / sizeof(WCHAR));
 	
 	return 0;
 }
 
-int __cdecl wmain(ULONG argc, PWCHAR argv[])
+int main(int argc, char **argv)
 {
 	if (argc < 2)
 	{
@@ -406,7 +403,8 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 	ZeroMemory(&options, sizeof(DOKAN_OPTIONS));
 	options.Version = DOKAN_VERSION;
 	options.ThreadCount = 0; // use default
-	options.MountPoint = argv[1];
+	std::wstring mountPoint = utf8ToWide(argv[1]);
+	options.MountPoint = mountPoint.c_str();
 	options.Options = /*DOKAN_OPTION_DEBUG | DOKAN_OPTION_STDERR |*/ DOKAN_OPTION_KEEP_ALIVE;
 	
 	ZeroMemory(&operations, sizeof(DOKAN_OPERATIONS));

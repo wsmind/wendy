@@ -99,7 +99,7 @@ class WENDYAPI ProjectFileSystem: public ProjectListener
 		
 		struct
 		{
-			long fd;
+			unsigned long fd;
 			unsigned long offset;
 			void *buffer;
 			unsigned long length;

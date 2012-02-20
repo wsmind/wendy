@@ -101,8 +101,8 @@ void AssetReader::run()
 					else if (attribute == "author") notification.changed.asset.author = value;
 					else if (attribute == "rights")
 					{
-						if (value.find("r") != -1) notification.changed.asset.rights |= Asset::READ_ACCESS;
-						if (value.find("w") != -1) notification.changed.asset.rights |= Asset::WRITE_ACCESS;
+						if (value.find("r") != std::string::npos) notification.changed.asset.rights |= Asset::READ_ACCESS;
+						if (value.find("w") != std::string::npos) notification.changed.asset.rights |= Asset::WRITE_ACCESS;
 					}
 					else if (attribute == "date") notification.changed.asset.date = atoll(value.c_str());
 					else if (attribute == "path") notification.changed.asset.path = value;
