@@ -1,0 +1,35 @@
+import os
+
+Import("baseEnvironment")
+
+env = baseEnvironment.Clone()
+
+# Ensure the lib dir exists or swig will fail
+try:
+	#os.makedirs(os.path.join("..", env["BUILDDIR"], "pywendy/lib"))
+	#os.makedirs(str(env.Dir("lib")))
+	print(str(env.Dir("lib").rfile()))
+except:
+	pass
+
+env.Tool("swig")
+env.Append(ENV = os.environ)
+
+env.Append(CPPPATH = ["../libwendy/include"])
+env.Append(LIBPATH = ["../libwendy/lib"])
+env.Append(LIBS = ["wendy", "python27"])
+env.Append(SWIGFLAGS = ["-c++"])
+env.Append(SWIGFLAGS = ["-python"])
+env.Append(SWIGFLAGS = ["-Ilibwendy/include"])
+env["SHLIBPREFIX"] = "" # remove the leading 'lib' from output library filename
+if os.name == "posix":
+	# TODO: remove hard-coded python path
+	env.Append(CPPPATH = ["/usr/include/python2.6"])
+else:
+	env["SHLIBSUFFIX"] = ".pyd" # enforce .pyd instead of .dll
+	# TODO: remove hard-coded python path
+	env.Append(CPPPATH = ["C:/Python27/include"])
+	env.Append(LIBPATH = ["C:/Python27/libs"])
+if env["CC"] == "cl":
+	env.Append(CPPFLAGS = ["/EHsc"])
+env.SharedLibrary("lib/_pywendy", env.Glob("src/*.i"))

@@ -1,0 +1,25 @@
+import os
+
+Import("baseEnvironment")
+
+env = baseEnvironment.Clone()
+
+env.Append(CPPPATH = ["../libwendy/include"])
+env.Append(LIBPATH = ["../libwendy/lib"])
+env.Append(LIBS = ["wendy"])
+if env["CC"] == "cl":
+	env.Append(CPPFLAGS = ["/Z7", "/W2", "/wd4251", "/EHsc"])
+else:
+	env.Append(CPPFLAGS = ["-O2", "-Wall"])
+
+if os.name == "nt":
+	# TODO: remove hard-coded dokan path
+	env.Append(CPPPATH = ["C:\\Program Files (x86)\\Dokan\\DokanLibrary"])
+	env.Append(LIBPATH = ["C:\\Program Files (x86)\\Dokan\\DokanLibrary"])
+	env.Append(CPPDEFINES = ["UNICODE", "_UNICODE"])
+	env.Append(LIBS = ["psapi", "dokan"])
+else:
+	env.ParseConfig("pkg-config --cflags --libs fuse")
+	env.Append(CPPDEFINES = "FUSE_USE_VERSION=28")
+
+env.Program("bin/wendyfs", env.Glob("src/*.cpp"))

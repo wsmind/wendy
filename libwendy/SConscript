@@ -1,0 +1,31 @@
+import os
+
+Import("baseEnvironment")
+
+env = baseEnvironment.Clone()
+env.Append(CPPPATH = ["include"])
+env.Append(CPPDEFINES = ["BUILDING_WENDY"])
+if env["CC"] == "cl":
+	env.Append(CPPFLAGS = ["/Z7", "/W2", "/wd4251", "/EHsc"])
+else:
+	env.Append(CPPFLAGS = ["-O2", "-Wall"])
+
+if os.name == "nt":
+	env.Append(LIBS = ["ws2_32"])
+
+if os.name == "posix":
+	env.Append(LIBS = ["pthread"])
+
+env.SharedLibrary("lib/wendy", env.Glob("src/wendy/*.cpp"))
+
+testEnv = baseEnvironment.Clone()
+testEnv.Append(CPPPATH = ["include"])
+testEnv.Append(LIBPATH = ["lib"])
+testEnv.Append(LIBS = ["wendy"])
+if testEnv["CC"] == "cl":
+	testEnv.Append(CPPFLAGS = ["/EHsc", "/Z7"])
+testEnv.Program("bin/tests/add", "tests/src/add.cpp")
+testEnv.Program("bin/tests/fs", "tests/src/fs.cpp")
+testEnv.Program("bin/tests/list", "tests/src/list.cpp")
+testEnv.Program("bin/tests/queue", "tests/src/queue.cpp")
+testEnv.Program("bin/tests/threading", "tests/src/threading.cpp")

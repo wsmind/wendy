@@ -1,7 +1,3 @@
-*.o
-*.os
-*.obj
-*.cc
+build-*
 *.pyc
 .sconsign.dblite
-
