@@ -16,7 +16,7 @@ if os.name == "nt":
 if os.name == "posix":
 	env.Append(LIBS = ["pthread"])
 
-env.SharedLibrary("lib/wendy", env.Glob("src/wendy/*.cpp"))
+libNode = env.SharedLibrary("lib/wendy", env.Glob("src/wendy/*.cpp"))
 
 testEnv = baseEnvironment.Clone()
 testEnv.Append(CPPPATH = ["include"])
@@ -29,3 +29,9 @@ testEnv.Program("bin/tests/fs", "tests/src/fs.cpp")
 testEnv.Program("bin/tests/list", "tests/src/list.cpp")
 testEnv.Program("bin/tests/queue", "tests/src/queue.cpp")
 testEnv.Program("bin/tests/threading", "tests/src/threading.cpp")
+
+distItems = [
+	("${SHLIBPREFIX}wendy${SHLIBSUFFIX}", libNode)
+]
+Return("distItems")
+

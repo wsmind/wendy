@@ -22,4 +22,10 @@ else:
 	env.ParseConfig("pkg-config --cflags --libs fuse")
 	env.Append(CPPDEFINES = "FUSE_USE_VERSION=28")
 
-env.Program("bin/wendyfs", env.Glob("src/*.cpp"))
+progNode = env.Program("bin/wendyfs", env.Glob("src/*.cpp"))
+
+distItems = [
+	("wendyfs", progNode)
+]
+Return("distItems")
+

@@ -1,0 +1,13 @@
+import os
+
+Import("baseEnvironment")
+
+env = baseEnvironment.Clone()
+
+distItems = []
+
+for node in env.Glob("*.js"):
+	distItems += [("daemon/" + node.name, node)]
+
+Return("distItems")
+
