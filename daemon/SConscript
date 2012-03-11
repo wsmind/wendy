@@ -6,8 +6,13 @@ env = baseEnvironment.Clone()
 
 distItems = []
 
+# distribute all .js files in this folder (but not subfolders)
 for node in env.Glob("*.js"):
 	distItems += [("daemon/" + node.name, node)]
+
+# append nodejs binary (windows-only)
+if os.name == "nt":
+	distItems += [("daemon/node.exe", env.File("$BINARYDEPS/node/node.exe"))]
 
 Return("distItems")
 

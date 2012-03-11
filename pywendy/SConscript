@@ -19,9 +19,8 @@ if os.name == "posix":
 	env.Append(CPPPATH = ["/usr/include/python2.7"])
 else:
 	env["SHLIBSUFFIX"] = ".pyd" # enforce .pyd instead of .dll
-	# TODO: remove hard-coded python path
-	env.Append(CPPPATH = ["C:/Python27/include"])
-	env.Append(LIBPATH = ["C:/Python27/libs"])
+	env.Append(CPPPATH = ["$BINARYDEPS/python27/include"])
+	env.Append(LIBPATH = ["$BINARYDEPS/python27/libs"])
 if env["CC"] == "cl":
 	env.Append(CPPFLAGS = ["/EHsc"])
 env.SharedLibrary("lib/_pywendy", env.Glob("src/*.i"))

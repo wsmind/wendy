@@ -13,9 +13,8 @@ else:
 	env.Append(CPPFLAGS = ["-O2", "-Wall"])
 
 if os.name == "nt":
-	# TODO: remove hard-coded dokan path
-	env.Append(CPPPATH = ["C:\\Program Files (x86)\\Dokan\\DokanLibrary"])
-	env.Append(LIBPATH = ["C:\\Program Files (x86)\\Dokan\\DokanLibrary"])
+	env.Append(CPPPATH = ["$BINARYDEPS/dokan"])
+	env.Append(LIBPATH = ["$BINARYDEPS/dokan"])
 	env.Append(CPPDEFINES = ["UNICODE", "_UNICODE"])
 	env.Append(LIBS = ["psapi", "dokan"])
 else:
