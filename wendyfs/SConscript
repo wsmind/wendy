@@ -25,7 +25,7 @@ else:
 progNode = env.Program("bin/wendyfs", env.Glob("src/*.cpp"))
 
 distItems = [
-	("wendyfs", progNode)
+	("wendyfs${PROGSUFFIX}", progNode)
 ]
 Return("distItems")
 
