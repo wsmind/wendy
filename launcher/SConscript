@@ -1,0 +1,31 @@
+import os
+
+Import("baseEnvironment")
+
+env = baseEnvironment.Clone()
+
+distItems = []
+
+# on linux, distribute the python files directly
+if os.name == "posix":
+	for node in env.Glob("*.py"):
+		distItems += [("launcher/" + node.name, node)]
+
+# on windows, package the launcher with py2exe
+if os.name == "nt":
+	env.Append(ENV = os.environ) # helps finding python in PATH (TODO: embed python in wendy-deps if possible)
+	launcher = env.Command("dist/launcher.exe", env.Glob("*.py"), "cd $BUILDDIR/launcher && python setup.py py2exe")
+	sideEffects = env.SideEffect(env.Dir("dist"), launcher)
+	#for node in sideEffects:
+	#	distItems += [(node.name, node)]
+	#distItems += [("launcher/" + launcher[0].name, launcher)]
+	distItems += [("launcher", sideEffects)]
+	#pythonDll = env.Command("dist/python27.dll", launcher, "") # fake dependency
+	#pythonLibs = env.Command("dist/library.zip", launcher, "") # fake dependency
+	#tkinter = env.Command("dist/_tkinter.pyd", launcher, "") # fake dependency
+	#distItems += [(pythonDll[0].name, pythonDll)]
+	#distItems += [(pythonLibs[0].name, pythonLibs)]
+	#distItems += [(tkinter[0].name, tkinter)]
+
+Return("distItems")
+
