@@ -1,7 +1,25 @@
 import subprocess
+import threading
+import time
 import ttk
 import tkMessageBox
 from Tkinter import *
+
+class ProcessLauncher(threading.Thread):
+	def __init__(self, name, args, cwd, wait):
+		threading.Thread.__init__(self)
+		self.name = name
+		self.args = args
+		self.cwd = cwd
+		self.wait = wait
+		self.start()
+	
+	def run(self):
+		try:
+			time.sleep(self.wait)
+			subprocess.check_call(self.args, cwd = self.cwd)
+		except:
+			tkMessageBox.showerror(title = "Error", message = self.name + " crashed!")
 
 def connect():
 	if server.get() == "":
@@ -14,7 +32,8 @@ def connect():
 		tkMessageBox.showerror(title = "Error", message = "No password!")
 		return
 	print("connect to %s as %s:%s" % (server.get(), user.get(), password.get()))
-	subprocess.check_call(["../daemon/node", "../daemon/wendyd.js"])
+	ProcessLauncher("Wendy Daemon", ["../daemon/node", "../daemon/wendyd.js"], "../daemon", 0)
+	ProcessLauncher("Wendy FileSystem", ["../wendyfs", "k"], "..", 2) # TODO: use some form of config for drive letter
 
 root = Tk()
 root.title("Wendy Login")
