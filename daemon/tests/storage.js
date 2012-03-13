@@ -38,25 +38,26 @@ var fs = require("fs")
 
 storage.watchChanges(function(id, asset)
 {
-	/*for (var i in asset.revisions)
+	for (var i in asset.revisions)
 	{
 		if (!asset.revisions[i].blob)
 			continue
 		
 		console.log("downloading rev " + i)
 		
-		fs.open("cache/" + id + "-" + i, "w", 0666, function(err, fd)
+		fs.open("cache/" + id + "-" + i + "-" + asset.revisions[i].path, "w", 0666, function(err, fd)
 		{
 			var file = {
-				write: function(buffer, callback)
+				write: function(buffer, position, callback)
 				{
-					fs.write(fd, buffer, 0, buffer.length, null, function(err, written, buffer)
+					fs.write(fd, buffer, 0, buffer.length, position, function(err, written, buffer)
 					{
 						callback(err, written, buffer)
 					})
 				},
-				close: function()
+				close: function(callback)
 				{
+					fs.close(fd, callback)
 				}
 			}
 			
@@ -65,13 +66,13 @@ storage.watchChanges(function(id, asset)
 				console.log(asset.revisions[i].path + " downloaded!")
 			})
 		})
-	}*/
+	}
 	
 	/*console.log("locking " + id)
 	
 	storage.lock(id, "fakeApplication")*/
 	
-	var rev = asset.revisions["1"]
+	/*var rev = asset.revisions["1"]
 	
 	if (rev && rev.blob)
 	{
@@ -96,8 +97,9 @@ storage.watchChanges(function(id, asset)
 						callback(err, bytesRead, buffer)
 					})
 				},
-				close: function()
+				close: function(callback)
 				{
+					fs.close(fd, callback)
 				}
 			}
 			
@@ -106,5 +108,5 @@ storage.watchChanges(function(id, asset)
 				console.log(rev.path + " uploaded (again)!")
 			})
 		})
-	}
+	}*/
 })

@@ -127,8 +127,11 @@ CouchStorage.prototype.download = function(id, blob, file, callback)
 		response.on("data", function(chunk)
 		{
 			response.pause()
-			file.write(chunk, position, function()
+			file.write(chunk, position, function(err, written, buffer)
 			{
+				if (err) throw err
+				if (written < chunk.length) throw new Error("TODO: handle incomplete writes")
+				
 				position += chunk.length
 				response.resume()
 			})
@@ -136,8 +139,11 @@ CouchStorage.prototype.download = function(id, blob, file, callback)
 		
 		response.on("end", function()
 		{
-			file.close()
-			callback()
+			file.close(function(err)
+			{
+				if (err) throw err
+				callback()
+			})
 		})
 	})
 	
@@ -175,6 +181,8 @@ CouchStorage.prototype.upload = function(id, blob, file, callback)
 		{
 			file.read(buffer, position, function(err, bytesRead, buffer)
 			{
+				if (err) throw err
+				
 				// send this buffer
 				position += bytesRead
 				request.write(buffer.slice(0, bytesRead))
@@ -186,8 +194,11 @@ CouchStorage.prototype.upload = function(id, blob, file, callback)
 				}
 				else
 				{
-					file.close()
-					request.end()
+					file.close(function(err)
+					{
+						if (err) throw err
+						request.end()
+					})
 				}
 			})
 		}

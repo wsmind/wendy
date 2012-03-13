@@ -1,3 +1,4 @@
+import subprocess
 import ttk
 import tkMessageBox
 from Tkinter import *
@@ -13,6 +14,7 @@ def connect():
 		tkMessageBox.showerror(title = "Error", message = "No password!")
 		return
 	print("connect to %s as %s:%s" % (server.get(), user.get(), password.get()))
+	subprocess.check_call(["../daemon/node", "../daemon/wendyd.js"])
 
 root = Tk()
 root.title("Wendy Login")

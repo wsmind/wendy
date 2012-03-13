@@ -186,10 +186,13 @@ Service.prototype.processAction = function(client, reader, openedFiles)
 					break;
 				}
 				
-				openedFiles[fd].close()
-				delete openedFiles[fd]
-				
-				self.safeWrite(client, "CLOSED " + fd + "\n")
+				openedFiles[fd].close(function(err)
+				{
+					if (err) throw err
+					
+					delete openedFiles[fd]
+					self.safeWrite(client, "CLOSED " + fd + "\n")
+				})
 				
 				break
 			}

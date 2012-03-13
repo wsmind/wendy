@@ -212,11 +212,25 @@ AssetFile.prototype.write = function(buffer, position, callback)
 	})
 }
 
-AssetFile.prototype.close = function()
+// callback(err)
+AssetFile.prototype.close = function(callback)
 {
-	fs.closeSync(this.fd)
-	
-	// move the asset to another location
-	if (this.targetPath)
-		fs.renameSync(this.path, this.targetPath)
+	var self = this
+	fs.close(self.fd, function(err)
+	{
+		if (err)
+		{
+			callback(err)
+		}
+		else
+		{
+			// move the asset to another location
+			if (self.targetPath)
+			{
+				fs.renameSync(self.path, self.targetPath)
+			}
+			
+			callback(null)
+		}
+	})
 }

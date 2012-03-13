@@ -30,18 +30,28 @@ cache.open("plop", 42, "w", function(file)
 {
 	file.write(new Buffer("yeahha"), 0, function(err, written, buffer)
 	{
-		file.close()
+		if (err) throw err
 		
-		// read back what was written
-		cache.open("plop", 42, "r", function(file2)
+		file.close(function(err)
 		{
-			var buf = new Buffer(500)
-			file2.read(buf, 0, function(err, bytesRead, buffer)
+			if (err) throw err
+			
+			// read back what was written
+			cache.open("plop", 42, "r", function(file2)
 			{
-				console.log("read " + bytesRead + " bytes:")
-				console.log(buf.slice(0, bytesRead).toString("utf8"))
-				
-				file2.close()
+				var buf = new Buffer(500)
+				file2.read(buf, 0, function(err, bytesRead, buffer)
+				{
+					if (err) throw err
+					
+					console.log("read " + bytesRead + " bytes:")
+					console.log(buf.slice(0, bytesRead).toString("utf8"))
+					
+					file2.close(function(err)
+					{
+						if (err) throw err
+					})
+				})
 			})
 		})
 	})
@@ -51,7 +61,9 @@ cache.open(new Buffer("plop"), 47, "w", function(file)
 {
 	file.write(new Buffer("yopyop"), 0, function(err, written, buffer)
 	{
-		file.close()
+		file.close(function(err)
+		{
+		})
 	})
 })
 
@@ -59,7 +71,9 @@ cache.open(new Buffer("noplop"), 12, "w", function(file)
 {
 	file.write(new Buffer("wendy rules :p"), 0, function(err, written, buffer)
 	{
-		file.close()
+		file.close(function(err)
+		{
+		})
 	})
 })
 
