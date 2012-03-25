@@ -36,9 +36,37 @@ var fs = require("fs")
 	}
 })*/
 
+/*storage.create(function(id)
+{
+	console.log("created asset with id " + id)
+	
+	fs.open("downstream.pdf", "r", 0666, function(err, fd)
+	{
+		var file = {
+			stat: function(callback)
+			{
+				fs.fstat(fd, callback)
+			},
+			read: function(buffer, position, callback)
+			{
+				fs.read(fd, buffer, 0, buffer.length, position, callback)
+			},
+			close: function(callback)
+			{
+				fs.close(fd, callback)
+			}
+		}
+		
+		storage.upload(id, "42.pdf", file, function()
+		{
+			console.log("downstream.pdf uploaded!")
+		})
+	})
+})*/
+
 storage.watchChanges(function(id, asset)
 {
-	for (var i in asset.revisions)
+	/*for (var i in asset.revisions)
 	{
 		if (!asset.revisions[i].blob)
 			continue
@@ -66,11 +94,12 @@ storage.watchChanges(function(id, asset)
 				console.log(asset.revisions[i].path + " downloaded!")
 			})
 		})
-	}
+	}*/
 	
-	/*console.log("locking " + id)
+	console.log("unlocking " + id)
 	
-	storage.lock(id, "fakeApplication")*/
+	storage.lock(id, "fakeApplication")
+	//storage.unlock(id)
 	
 	/*var rev = asset.revisions["1"]
 	

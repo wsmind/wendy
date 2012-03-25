@@ -154,61 +154,76 @@ CouchStorage.prototype.upload = function(id, blob, file, callback)
 {
 	var self = this
 	
-	// read file size
-	file.stat(function(err, stats)
+	// read current revision
+	self._readMetadata(id, function(asset)
 	{
-		if (err) throw err
-		
-		var options = {
-			method: "PUT",
-			host: self.host,
-			port: 1234,
-			path: "/" + self.database + "/" + id + "/" + blob,
-			headers: {
-				"Content-Length": stats.size
+		// read file size
+		file.stat(function(err, stats)
+		{
+			if (err) throw err
+			
+			var options = {
+				method: "PUT",
+				host: self.host,
+				port: self.port,
+				path: "/" + self.database + "/" + id + "/" + blob + "?rev=" + asset._rev,
+				headers: {
+					"Content-Length": stats.size
+				}
 			}
-		}
-		
-		var request = http.request(options, function(response)
-		{
-			assert(Math.floor(response.statusCode / 100) == 2)
-		})
-		
-		// stream asset file to couch
-		var position = 0
-		var buffer = new Buffer(16 * 1024)
-		function uploadNextChunk()
-		{
-			file.read(buffer, position, function(err, bytesRead, buffer)
+			
+			var request = http.request(options, function(response)
 			{
-				if (err) throw err
-				
-				// send this buffer
-				position += bytesRead
-				request.write(buffer.slice(0, bytesRead))
-				
-				// read the next one (if any)
-				if (position < stats.size)
-				{
-					uploadNextChunk()
-				}
-				else
-				{
-					file.close(function(err)
-					{
-						if (err) throw err
-						request.end()
-					})
-				}
+				assert(Math.floor(response.statusCode / 100) == 2)
+				callback()
 			})
-		}
-		
-		// start chunked uploading
-		uploadNextChunk()
+			
+			// stream asset file to couch
+			var position = 0
+			var chunk = new Buffer(16 * 1024) // TODO: hardcoding is bad
+			function uploadNextChunk()
+			{
+				file.read(chunk, position, function(err, bytesRead, buffer)
+				{
+					if (err) throw err
+					
+					// send this chunk
+					position += bytesRead
+					var async = !request.write(buffer.slice(0, bytesRead))
+					
+					// send next chunk (if any)
+					if (position < stats.size)
+					{
+						if (async)
+							request.once("drain", uploadNextChunk)
+						else
+							uploadNextChunk()
+					}
+					else
+					{
+						file.close(function(err)
+						{
+							if (err) throw err
+							request.end()
+						})
+					}
+				})
+			}
+			
+			request.on("error", function(exception)
+			{
+				throw exception
+			})
+			
+			// start chunked upload
+			uploadNextChunk()
+		})
 	})
 }
 
-CouchStorage.prototype.create = function(asset)
+// create an empty asset
+// callback(id)
+CouchStorage.prototype.create = function(callback)
 {
 	var options = {
 		method: "POST",
@@ -223,63 +238,87 @@ CouchStorage.prototype.create = function(asset)
 	var request = http.request(options, function(response)
 	{
 		assert(Math.floor(response.statusCode / 100) == 2)
+		
+		var doc = ""
+		response.setEncoding("utf8")
+		
+		response.on("data", function(chunk)
+		{
+			doc += chunk
+		})
+		
+		response.on("end", function()
+		{
+			var asset = JSON.parse(doc)
+			callback(asset.id)
+		})
 	})
 	
-	request.end(JSON.stringify(asset))
+	request.end("{}")
 }
 
 CouchStorage.prototype.lock = function(id, application)
 {
 	// first, fetch the latest version of the asset
-	var options = {
-		method: "GET",
-		host: this.host,
-		port: this.port,
-		path: "/" + this.database + "/" + id
-	}
-	
-	var request = http.request(options, function(response)
+	var self = this
+	self._readMetadata(id, function(asset)
 	{
-		assert(Math.floor(response.statusCode / 100) == 2)
-		
-		var doc = ""
-		response.setEncoding("utf8")
-		
-		response.on("data", function(chunk)
+		// check that the asset is not already locked
+		if (asset.lock === undefined)
 		{
-			doc += chunk
-		})
-		
-		response.on("end", function()
-		{
-			var asset = JSON.parse(doc)
-			
-			// check that the asset is not already locked
-			if (asset.lock === undefined)
-			{
-				// send the locked version
-				asset.lock = {
-					user: "MrPlop",
-					application: application
-				}
-				
-				options.method = "PUT"
-				options.headers = {
-						"Content-Type": "application/json"
-				}
-				
-				var sendRequest = http.request(options)
-				sendRequest.end(JSON.stringify(asset), "utf8")
+			// send the locked version
+			asset.lock = {
+				user: "MrPlop",
+				application: application
 			}
-		})
+			
+			var options = {
+				method: "PUT",
+				host: self.host,
+				port: self.port,
+				path: "/" + self.database + "/" + id,
+				headers: {
+					"Content-Type": "application/json"
+				}
+			}
+			
+			var sendRequest = http.request(options)
+			sendRequest.end(JSON.stringify(asset), "utf8")
+		}
 	})
-	
-	request.end()
 }
 
 CouchStorage.prototype.unlock = function(id)
 {
 	// first, fetch the latest version of the asset
+	var self = this
+	self._readMetadata(id, function(asset)
+	{
+		// check that the asset is not already unlocked
+		if (asset.lock !== undefined)
+		{
+			// send the unlocked version
+			delete asset.lock
+			
+			var options = {
+				method: "PUT",
+				host: self.host,
+				port: self.port,
+				path: "/" + self.database + "/" + id,
+				headers: {
+					"Content-Type": "application/json"
+				}
+			}
+			
+			var sendRequest = http.request(options)
+			sendRequest.end(JSON.stringify(asset), "utf8")
+		}
+	})
+}
+
+// callback(metadataObject)
+CouchStorage.prototype._readMetadata = function(id, callback)
+{
 	var options = {
 		method: "GET",
 		host: this.host,
@@ -302,21 +341,7 @@ CouchStorage.prototype.unlock = function(id)
 		response.on("end", function()
 		{
 			var asset = JSON.parse(doc)
-			
-			// check that the asset is not already unlocked
-			if (asset.lock !== undefined)
-			{
-				// send the unlocked version
-				delete asset.lock
-				
-				options.method = "PUT"
-				options.headers = {
-						"Content-Type": "application/json"
-				}
-				
-				var sendRequest = http.request(options)
-				sendRequest.end(JSON.stringify(asset), "utf8")
-			}
+			callback(asset)
 		})
 	})
 	
