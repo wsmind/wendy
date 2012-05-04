@@ -22,7 +22,9 @@ toolchain = ["default"]
 if os.name == "nt":
 	toolchain = ["mingw"]
 baseEnvironment = Environment(tools = toolchain, BUILDDIR=buildDir, variables=buildVariables)
-baseEnvironment["BINARYDEPS"] = os.path.abspath(baseEnvironment["BINARYDEPS"])
+
+if os.name == "nt":
+	baseEnvironment["BINARYDEPS"] = os.path.abspath(baseEnvironment["BINARYDEPS"])
 Export("baseEnvironment")
 
 # Command line help
@@ -34,7 +36,7 @@ distItems = []
 distItems += baseEnvironment.SConscript("daemon/SConscript", variant_dir="$BUILDDIR/daemon", duplicate=0)
 distItems += baseEnvironment.SConscript("launcher/SConscript", variant_dir="$BUILDDIR/launcher", duplicate=1)
 distItems += baseEnvironment.SConscript("libwendy/SConscript", variant_dir="$BUILDDIR/libwendy", duplicate=0)
-distItems += baseEnvironment.SConscript("pywendy/SConscript", variant_dir="$BUILDDIR/pywendy", duplicate=0)
+#distItems += baseEnvironment.SConscript("pywendy/SConscript", variant_dir="$BUILDDIR/pywendy", duplicate=0)
 distItems += baseEnvironment.SConscript("wendyfs/SConscript", variant_dir="$BUILDDIR/wendyfs", duplicate=0)
 
 # Package in dist/ folder

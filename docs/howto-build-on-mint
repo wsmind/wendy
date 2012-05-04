@@ -1,0 +1,4 @@
+<git pull>
+sudo apt-get install scons swig libfuse-dev python-dev python-tk nodejs
+scons
+
