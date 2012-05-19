@@ -237,7 +237,7 @@ CouchStorage.prototype.create = function(callback)
 	
 	var request = http.request(options, function(response)
 	{
-		assert(Math.floor(response.statusCode / 100) == 2)
+		//assert(Math.floor(response.statusCode / 100) == 2)
 		
 		var doc = ""
 		response.setEncoding("utf8")
@@ -252,6 +252,16 @@ CouchStorage.prototype.create = function(callback)
 			var asset = JSON.parse(doc)
 			callback(asset.id)
 		})
+		
+		response.on("error", function(err)
+		{
+			throw err
+		})
+	})
+	
+	request.on("error", function(err)
+	{
+		throw err
 	})
 	
 	request.end("{}")
@@ -342,6 +352,11 @@ CouchStorage.prototype._readMetadata = function(id, callback)
 		{
 			var asset = JSON.parse(doc)
 			callback(asset)
+		})
+		
+		response.on("error", function(err)
+		{
+			throw err
 		})
 	})
 	

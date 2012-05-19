@@ -24,23 +24,14 @@
  * 
  *****************************************************************************/
 
-var storage = new (require("../storage.js").CouchStorage)("localhost", 5984, "plop")
+var storage = new (require("../storage.js").CouchStorage)("localhost", 5985, "plop")
 var fs = require("fs")
 
-/*storage.create({
-	revisions: {
-		"0": {
-			author: "Mr Blob",
-			date: 42,
-		}
-	}
-})*/
-
-/*storage.create(function(id)
+storage.create(function(id)
 {
 	console.log("created asset with id " + id)
 	
-	fs.open("downstream.pdf", "r", 0666, function(err, fd)
+	/*fs.open("downstream.pdf", "r", 0666, function(err, fd)
 	{
 		var file = {
 			stat: function(callback)
@@ -57,15 +48,15 @@ var fs = require("fs")
 			}
 		}
 		
-		storage.upload(id, "42.pdf", file, function()
+		storage.upload(id, "1", file, function()
 		{
 			console.log("downstream.pdf uploaded!")
 		})
-	})
-})*/
+	})*/
+})
 
-storage.watchChanges(function(id, asset)
-{
+//storage.watchChanges(function(id, asset)
+//{
 	/*for (var i in asset.revisions)
 	{
 		if (!asset.revisions[i].blob)
@@ -96,9 +87,9 @@ storage.watchChanges(function(id, asset)
 		})
 	}*/
 	
-	console.log("unlocking " + id)
+	//console.log("unlocking " + id)
 	
-	storage.lock(id, "fakeApplication")
+	//storage.lock(id, "fakeApplication")
 	//storage.unlock(id)
 	
 	/*var rev = asset.revisions["1"]
@@ -138,4 +129,4 @@ storage.watchChanges(function(id, asset)
 			})
 		})
 	}*/
-})
+//})

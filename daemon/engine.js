@@ -132,6 +132,7 @@ Engine.prototype.unlock = function(id)
 }
 
 // mode must be "r" or "w"
+// callback(err, file)
 Engine.prototype.open = function(id, mode, callback)
 {
 	assert((mode == "r") || (mode == "w"))
@@ -140,7 +141,7 @@ Engine.prototype.open = function(id, mode, callback)
 	{
 		if (this.blobs[id] === undefined)
 		{
-			callback("No blob available for asset " + id)
+			callback(new Error("No blob available for asset " + id))
 			return
 		}
 		
@@ -148,6 +149,12 @@ Engine.prototype.open = function(id, mode, callback)
 		// for this asset and open it
 		var lastBlob = null
 		var revisions = this.assets[id].revisions
+		if (revisions === undefined)
+		{
+			callback(new Error("Asset " + id + " has no revisions"))
+			return
+		}
+		
 		var blobs = this.blobs[id]
 		for (var revisionId in revisions)
 		{
@@ -159,7 +166,7 @@ Engine.prototype.open = function(id, mode, callback)
 		
 		if (lastBlob === null)
 		{
-			callback("No blob found in revisions (asset " + id + ")")
+			callback(new Error("No blob found in revisions (asset " + id + ")"))
 			return
 		}
 		
@@ -188,6 +195,8 @@ Engine.prototype._checkAssetState = function(id)
 	
 	// find last revision number
 	var revisions = asset.revisions
+	if (!revisions)
+		return
 	var lastRevision = Math.max.apply(Math, Object.keys(revisions))
 	
 	// check associated blob
