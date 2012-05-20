@@ -1,0 +1,17 @@
+{
+	"storage": {
+		"host": "localhost",
+		"port": 5984,
+		"database": "plop"
+	},
+	
+	"cache": {
+		"root": "d:/wendy-cache"
+	},
+	
+	"engine": {
+	},
+	
+	"service": {
+	}
+}

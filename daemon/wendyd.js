@@ -24,7 +24,18 @@
  * 
  *****************************************************************************/
 
-var storage = new (require("./storage.js").CouchStorage)("localhost", 5984, "plop")
-var cache = new (require("./cache.js").Cache)("./tests/cache")
-var engine = new (require("./engine.js").Engine)(storage, cache)
-var service = new (require("./service.js").Service)(engine)
+var fs = require("fs")
+
+// read config file
+fs.readFile(__dirname + "/config.json", function(err, data)
+{
+	if (err) throw err
+	
+	var config = JSON.parse(data)
+	
+	// initialize daemon
+	var storage = new (require("./storage.js").CouchStorage)(config.storage.host, config.storage.port, config.storage.database)
+	var cache = new (require("./cache.js").Cache)(config.cache.root)
+	var engine = new (require("./engine.js").Engine)(storage, cache)
+	var service = new (require("./service.js").Service)(engine)
+})
