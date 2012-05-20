@@ -24,7 +24,8 @@
  * 
  *****************************************************************************/
 
-var cache = new (require("../cache.js").Cache)("cache")
+var assert = require("assert")
+var cache = new (require("../../cache.js").Cache)("cache")
 
 cache.open("plop", 42, "w", function(file)
 {

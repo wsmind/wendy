@@ -34,7 +34,7 @@ Help(buildVariables.GenerateHelpText(baseEnvironment))
 # in the form of an item list: [ (path, SCons node), (path, SCons node), ... ]
 distItems = []
 distItems += baseEnvironment.SConscript("daemon/SConscript", variant_dir="$BUILDDIR/daemon", duplicate=0)
-distItems += baseEnvironment.SConscript("launcher/SConscript", variant_dir="$BUILDDIR/launcher", duplicate=1)
+#distItems += baseEnvironment.SConscript("launcher/SConscript", variant_dir="$BUILDDIR/launcher", duplicate=1)
 distItems += baseEnvironment.SConscript("libwendy/SConscript", variant_dir="$BUILDDIR/libwendy", duplicate=0)
 #distItems += baseEnvironment.SConscript("pywendy/SConscript", variant_dir="$BUILDDIR/pywendy", duplicate=0)
 distItems += baseEnvironment.SConscript("wendyfs/SConscript", variant_dir="$BUILDDIR/wendyfs", duplicate=0)
