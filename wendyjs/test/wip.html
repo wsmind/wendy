@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script type="text/javascript" src="../wendy.js"></script>
+	<script type="text/javascript">
+		function share()
+		{
+			var client = new WendyClient()
+			var description = $("#description").text()
+			client.share(description, function(err)
+			{
+				if (err)
+					alert("failed!")
+				else
+					alert("shared!")
+			})
+		}
+		
+		function buildWipList()
+		{
+			var client = new WendyClient()
+			
+			client.readVersion("local", function(err, version)
+			{
+				var wipList = $("#wip")
+				wipList.empty()
+				for (var filename in version)
+					wipList.append("<li>" + filename + "</li>")
+			})
+		}
+	</script>
+	<body onload="buildWipList()">
+		<h1>Your work</h1>
+		<ul id="wip"></ul>
+		<textarea type="textarea" id="description"></textarea><br />
+		<button onclick="share()">Share!</button>
+	</body>
+</html>
