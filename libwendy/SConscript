@@ -3,7 +3,7 @@ import os
 Import("baseEnvironment")
 
 env = baseEnvironment.Clone()
-env.Append(CPPPATH = ["include"])
+env.Append(CPPPATH = ["src"])
 env.Append(CPPDEFINES = ["BUILDING_WENDY"])
 if env["CC"] == "cl":
 	env.Append(CPPFLAGS = ["/Z7", "/W2", "/wd4251", "/EHsc"])
@@ -29,18 +29,13 @@ if os.name == "nt":
 	env.Command("bin/tests/libcJSON.dll", "$BINARYDEPS/cjson/libcJSON.dll", Copy("$TARGET", "$SOURCE"))
 
 testEnv = baseEnvironment.Clone()
-testEnv.Append(CPPPATH = ["include"])
+testEnv.Append(CPPPATH = ["src"])
 testEnv.Append(LIBPATH = ["lib"])
 testEnv.Append(LIBS = ["wendy"])
 if testEnv["CC"] == "cl":
 	testEnv.Append(CPPFLAGS = ["/EHsc", "/Z7"])
-testEnv.Program("bin/tests/add", "tests/src/add.cpp")
-testEnv.Program("bin/tests/client", "tests/src/client.cpp")
-testEnv.Program("bin/tests/fs", "tests/src/fs.cpp")
-testEnv.Program("bin/tests/http", "tests/src/http.cpp")
-testEnv.Program("bin/tests/list", "tests/src/list.cpp")
-testEnv.Program("bin/tests/queue", "tests/src/queue.cpp")
-testEnv.Program("bin/tests/threading", "tests/src/threading.cpp")
+testEnv.Program("bin/tests/client", "tests/client.cpp")
+testEnv.Program("bin/tests/http", "tests/http.cpp")
 
 distItems = [
 	("${SHLIBPREFIX}wendy${SHLIBSUFFIX}", libNode)
