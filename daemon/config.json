@@ -1,8 +1,13 @@
 {
 	"storage": {
 		"host": "localhost",
+		"port": 1234
+	},
+	
+	"meta": {
+		"host": "localhost",
 		"port": 5984,
-		"database": "plop"
+		"database": "test"
 	},
 	
 	"cache": {

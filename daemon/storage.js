@@ -24,341 +24,107 @@
  * 
  *****************************************************************************/
 
-var assert = require("assert")
 var fs = require("fs")
 var http = require("http")
 
-function CouchStorage(host, port, database)
+function Storage(host, port, database)
 {
 	this.host = host
 	this.port = port
-	this.database = database
-	this.sequence = 0 // passed to 'since' parameter of _changes requests
 }
-exports.CouchStorage = CouchStorage
+exports.Storage = Storage
 
-CouchStorage.prototype.watchChanges = function(callback)
+Storage.prototype.download = function(hash, filename, callback)
 {
 	var options = {
 		method: "GET",
 		host: this.host,
 		port: this.port,
-		// TODO: remove deleted docs from changes stream w/ couch filters
-		path: "/" + this.database + "/_changes?feed=continuous&include_docs=true&since=" + this.sequence
+		path: "/" + hash
 	}
 	
-	var self = this
-	var request = http.request(options, function(response)
+	function signalResult(err)
 	{
-		response.on("data", function(chunk)
-		{
-			var data
-			try
-			{
-				data = JSON.parse(chunk)
-			}
-			catch (e)
-			{
-				// ignore invalid chunks (such as a single new line)
-				return
-			}
-			
-			// last_seq is sent by couch before closing the connection
-			// we must keep the sequence number to avoid getting more changes
-			// than necessary from the next connection.
-			if (data.last_seq !== undefined)
-			{
-				self.sequence = data.last_seq
-			}
-			else
-			{
-				// TODO: remove when ignored at request level
-				if (data.deleted === undefined)
-				{
-					var asset = {
-						lock: data.doc.lock,
-						revisions: data.doc.revisions
-					}
-					
-					// append additional information from blobs in revisions
-					for (var i in asset.revisions)
-					{
-						var revision = asset.revisions[i]
-						
-						if (revision.blob)
-						{
-							var attachement = data.doc._attachments[revision.blob]
-							
-							revision.type = attachement.content_type
-							revision.length = attachement.length
-						}
-					}
-					
-					callback(data.doc._id, asset)
-				}
-			}
-		})
-		
-		response.on("end", function()
-		{
-			// restart change watching
-			self.watchChanges(callback)
-		})
-	})
-	
-	request.end()
-}
-
-CouchStorage.prototype.download = function(id, blob, file, callback)
-{
-	var options = {
-		method: "GET",
-		host: this.host,
-		port: this.port,
-		path: "/" + this.database + "/" + id + "/" + blob
+		if (callback)
+			callback(err)
+		callback = null
 	}
 	
 	var request = http.request(options, function(response)
 	{
-		assert(response.statusCode == 200)
-		
-		// stream data to asset file
-		var position = 0
-		response.on("data", function(chunk)
+		if (response.statusCode != 200)
 		{
-			response.pause()
-			file.write(chunk, position, function(err, written, buffer)
-			{
-				if (err) throw err
-				if (written < chunk.length) throw new Error("TODO: handle incomplete writes")
-				
-				position += chunk.length
-				response.resume()
-			})
-		})
-		
-		response.on("end", function()
-		{
-			file.close(function(err)
-			{
-				if (err) throw err
-				callback()
-			})
-		})
-	})
-	
-	request.end()
-}
-
-CouchStorage.prototype.upload = function(id, blob, file, callback)
-{
-	var self = this
-	
-	// read current revision
-	self._readMetadata(id, function(asset)
-	{
-		// read file size
-		file.stat(function(err, stats)
-		{
-			if (err) throw err
-			
-			var options = {
-				method: "PUT",
-				host: self.host,
-				port: self.port,
-				path: "/" + self.database + "/" + id + "/" + blob + "?rev=" + asset._rev,
-				headers: {
-					"Content-Length": stats.size
-				}
-			}
-			
-			var request = http.request(options, function(response)
-			{
-				assert(Math.floor(response.statusCode / 100) == 2)
-				callback()
-			})
-			
-			// stream asset file to couch
-			var position = 0
-			var chunk = new Buffer(16 * 1024) // TODO: hardcoding is bad
-			function uploadNextChunk()
-			{
-				file.read(chunk, position, function(err, bytesRead, buffer)
-				{
-					if (err) throw err
-					
-					// send this chunk
-					position += bytesRead
-					var async = !request.write(buffer.slice(0, bytesRead))
-					
-					// send next chunk (if any)
-					if (position < stats.size)
-					{
-						if (async)
-							request.once("drain", uploadNextChunk)
-						else
-							uploadNextChunk()
-					}
-					else
-					{
-						file.close(function(err)
-						{
-							if (err) throw err
-							request.end()
-						})
-					}
-				})
-			}
-			
-			request.on("error", function(exception)
-			{
-				throw exception
-			})
-			
-			// start chunked upload
-			uploadNextChunk()
-		})
-	})
-}
-
-// create an empty asset
-// callback(id)
-CouchStorage.prototype.create = function(callback)
-{
-	var options = {
-		method: "POST",
-		host: this.host,
-		port: this.port,
-		path: "/" + this.database,
-		headers: {
-			"Content-Type": "application/json"
+			signalResult(new Error("Wrong answer from server: " + response.statusCode))
+			return;
 		}
-	}
-	
-	var request = http.request(options, function(response)
-	{
-		//assert(Math.floor(response.statusCode / 100) == 2)
-		
-		var doc = ""
-		response.setEncoding("utf8")
-		
-		response.on("data", function(chunk)
-		{
-			doc += chunk
-		})
-		
-		response.on("end", function()
-		{
-			var asset = JSON.parse(doc)
-			callback(asset.id)
-		})
 		
 		response.on("error", function(err)
 		{
-			throw err
+			signalResult(err)
 		})
+		
+		response.on("close", function()
+		{
+			// if the stream is still readable, the connection was abnormaly closed
+			if (response.readable)
+				signalResult(new Error("Connection lost"))
+		})
+		
+		var fileStream = fs.createWriteStream(filename)
+		
+		fileStream.on("error", function(err)
+		{
+			// error during transfer
+			signalResult(err)
+		})
+		
+		fileStream.on("close", function()
+		{
+			// successful termination (if nothing else failed before)
+			signalResult()
+		})
+		
+		response.pipe(fileStream)
 	})
+	
+	// handle errors during connection
+	request.on("error", function(err)
+	{
+		// error during transfer
+		signalResult(err)
+	})
+	
+	request.end()
+}
+
+Storage.prototype.upload = function(hash, filename, callback)
+{
+	var options = {
+		method: "PUT",
+		host: this.host,
+		port: this.port,
+		path: "/" + hash
+	}
+	
+	var request = http.request(options, function(response)
+	{
+		if (response.statusCode != 200)
+		{
+			callback(new Error("Wrong answer from server: " + response.statusCode))
+			return;
+		}
+		
+		// successful upload
+		callback()
+	})
+	
+	// stream asset file
+	var fileStream = fs.createReadStream(filename)
+	fileStream.pipe(request)
 	
 	request.on("error", function(err)
 	{
-		throw err
+		// upload failed
+		callback(err)
 	})
-	
-	request.end("{}")
-}
-
-CouchStorage.prototype.lock = function(id, application)
-{
-	// first, fetch the latest version of the asset
-	var self = this
-	self._readMetadata(id, function(asset)
-	{
-		// check that the asset is not already locked
-		if (asset.lock === undefined)
-		{
-			// send the locked version
-			asset.lock = {
-				user: "MrPlop",
-				application: application
-			}
-			
-			var options = {
-				method: "PUT",
-				host: self.host,
-				port: self.port,
-				path: "/" + self.database + "/" + id,
-				headers: {
-					"Content-Type": "application/json"
-				}
-			}
-			
-			var sendRequest = http.request(options)
-			sendRequest.end(JSON.stringify(asset), "utf8")
-		}
-	})
-}
-
-CouchStorage.prototype.unlock = function(id)
-{
-	// first, fetch the latest version of the asset
-	var self = this
-	self._readMetadata(id, function(asset)
-	{
-		// check that the asset is not already unlocked
-		if (asset.lock !== undefined)
-		{
-			// send the unlocked version
-			delete asset.lock
-			
-			var options = {
-				method: "PUT",
-				host: self.host,
-				port: self.port,
-				path: "/" + self.database + "/" + id,
-				headers: {
-					"Content-Type": "application/json"
-				}
-			}
-			
-			var sendRequest = http.request(options)
-			sendRequest.end(JSON.stringify(asset), "utf8")
-		}
-	})
-}
-
-// callback(metadataObject)
-CouchStorage.prototype._readMetadata = function(id, callback)
-{
-	var options = {
-		method: "GET",
-		host: this.host,
-		port: this.port,
-		path: "/" + this.database + "/" + id
-	}
-	
-	var request = http.request(options, function(response)
-	{
-		assert(Math.floor(response.statusCode / 100) == 2)
-		
-		var doc = ""
-		response.setEncoding("utf8")
-		
-		response.on("data", function(chunk)
-		{
-			doc += chunk
-		})
-		
-		response.on("end", function()
-		{
-			var asset = JSON.parse(doc)
-			callback(asset)
-		})
-		
-		response.on("error", function(err)
-		{
-			throw err
-		})
-	})
-	
-	request.end()
 }

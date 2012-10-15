@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Wendy asset manager
- * Copyright (c) 2011 Remi Papillie
+ * Copyright (c) 2011-2012 Remi Papillie
  * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,109 +24,11 @@
  * 
  *****************************************************************************/
 
-var storage = new (require("../storage.js").CouchStorage)("localhost", 5985, "plop")
-var fs = require("fs")
+var storage = new (require("../../storage.js").Storage)("localhost", 1234)
 
-storage.create(function(id)
+storage.upload("51a52687284e55046bb7040f9732efff", "plop2.png", function(err)
 {
-	console.log("created asset with id " + id)
+	if (err) throw err
 	
-	/*fs.open("downstream.pdf", "r", 0666, function(err, fd)
-	{
-		var file = {
-			stat: function(callback)
-			{
-				fs.fstat(fd, callback)
-			},
-			read: function(buffer, position, callback)
-			{
-				fs.read(fd, buffer, 0, buffer.length, position, callback)
-			},
-			close: function(callback)
-			{
-				fs.close(fd, callback)
-			}
-		}
-		
-		storage.upload(id, "1", file, function()
-		{
-			console.log("downstream.pdf uploaded!")
-		})
-	})*/
+	console.log("upload complete!")
 })
-
-//storage.watchChanges(function(id, asset)
-//{
-	/*for (var i in asset.revisions)
-	{
-		if (!asset.revisions[i].blob)
-			continue
-		
-		console.log("downloading rev " + i)
-		
-		fs.open("cache/" + id + "-" + i + "-" + asset.revisions[i].path, "w", 0666, function(err, fd)
-		{
-			var file = {
-				write: function(buffer, position, callback)
-				{
-					fs.write(fd, buffer, 0, buffer.length, position, function(err, written, buffer)
-					{
-						callback(err, written, buffer)
-					})
-				},
-				close: function(callback)
-				{
-					fs.close(fd, callback)
-				}
-			}
-			
-			storage.download(id, asset.revisions[i].blob, file, function()
-			{
-				console.log(asset.revisions[i].path + " downloaded!")
-			})
-		})
-	}*/
-	
-	//console.log("unlocking " + id)
-	
-	//storage.lock(id, "fakeApplication")
-	//storage.unlock(id)
-	
-	/*var rev = asset.revisions["1"]
-	
-	if (rev && rev.blob)
-	{
-		fs.open("cache/" + id + "-" + rev.blob, "r", 0666, function(err, fd)
-		{
-			var file = {
-				stat: function(callback)
-				{
-					fs.fstat(fd, function(err, stats)
-					{
-						if (err) throw err
-						
-						callback(err, {
-							size: stats.size
-						})
-					})
-				},
-				read: function(buffer, position, callback)
-				{
-					fs.read(fd, buffer, 0, buffer.length, position, function(err, bytesRead, buffer)
-					{
-						callback(err, bytesRead, buffer)
-					})
-				},
-				close: function(callback)
-				{
-					fs.close(fd, callback)
-				}
-			}
-			
-			storage.upload(id, rev.blob, file, function()
-			{
-				console.log(rev.path + " uploaded (again)!")
-			})
-		})
-	}*/
-//})

@@ -24,19 +24,63 @@
  * 
  *****************************************************************************/
 
-var net = require("net")
+var http = require("http")
+var querystring = require("querystring")
 
-function Service(engine)
+// HTTP API declaration
+// This structure is used to validate requests before
+// attempting any further processing. It does not perform
+// advanced checks, such as parameter type validation or
+// regex matching.
+// All query parameters are considered optional, none
+// are enforced as mandatory.
+var api = {
+	"data": {
+		"GET": ["version"],
+		"PUT": []
+	},
+	"list": {
+		"GET": []
+	},
+	"share": {
+		"POST": []
+	},
+	"version": {
+		"GET":  []
+	},
+	"tools": {
+		"GET": []
+	}
+}
+
+function WebService(engine)
 {
 	this.engine = engine
 	
-	var server = net.createServer()
+	var server = http.createServer()
 	
 	var self = this
-	server.on("connection", function(client)
+	server.on("request", function(request, response)
 	{
-		console.log("Client connected!")
-		self.handleClient(client)
+		var url = require("url").parse(request.url, true)
+		
+		var pathParts = url.pathname.split("/")
+		
+		// basic API check
+		if (!self._validate(pathParts[1], request.method, url.query))
+		{
+			response.writeHead(418, "I'm a teapot")
+			response.end()
+			return
+		}
+		
+		// forge method name
+		var methodName = "_" + pathParts[1] + "_" + request.method
+		
+		var resource = "/" + pathParts.slice(2).join("/")
+		
+		// call it
+		self[methodName](resource, url.query, request, response)
 	})
 	
 	server.listen(46288, function()
@@ -44,9 +88,147 @@ function Service(engine)
 		console.log("Server listening on port 46288")
 	})
 }
-exports.Service = Service
+exports.WebService = WebService
 
-Service.prototype.handleClient = function(client)
+WebService.prototype._validate = function(category, method, parameters)
+{
+	var allowedMethods = api[category]
+	if (allowedMethods === undefined)
+		return false // unknown call semantics
+	
+	var allowedParameters = allowedMethods[method]
+	if (allowedParameters === undefined)
+		return false // method not allowed
+	
+	for (var parameterName in parameters)
+	{
+		if (allowedParameters.indexOf(parameterName) == -1)
+			return false // parameter not allowed
+	}
+	
+	// all tests passed
+	return true
+}
+
+WebService.prototype._data_GET = function(resource, parameters, request, response)
+{
+	// try to read asset
+	this.engine.read(resource, function(err, stream)
+	{
+		if (err)
+		{
+			response.writeHead(400, err.message)
+			response.end()
+		}
+		else
+		{
+			response.writeHead(200, "OK")
+			stream.pipe(response)
+		}
+	})
+}
+
+WebService.prototype._data_PUT = function(resource, parameters, request, response)
+{
+	// try to write asset
+	this.engine.save(resource, request, function(err)
+	{
+		if (err)
+		{
+			response.writeHead(400, err.message)
+			response.end()
+		}
+		else
+		{
+			response.writeHead(200, "OK")
+			response.end()
+		}
+	})
+}
+
+WebService.prototype._list_GET = function(resource, parameters, request, response)
+{
+	// enumerate assets with the given filter
+	this.engine.list(resource, function(err, pathList)
+	{
+		if (err)
+		{
+			response.writeHead(400, err.message)
+			response.end()
+		}
+		else
+		{
+			response.writeHead(200, "OK")
+			response.write(JSON.stringify(pathList))
+			response.end()
+		}
+	})
+}
+
+WebService.prototype._share_POST = function(resource, parameters, request, response)
+{
+	var self = this
+	var body = ""
+	
+	request.on("data", function(chunk)
+	{
+		body += chunk
+	})
+	
+	request.on("end", function()
+	{
+		var postData = querystring.decode(body)
+		
+		// check that the description field is present
+		if (postData["description"] === undefined)
+		{
+			response.writeHead(400, "Required parameter: 'description'")
+			response.end()
+		}
+		else
+		{
+			// try to share everything local
+			self.engine.share(postData["description"], function(err, version)
+			{
+				if (err) throw err
+				
+				console.log("version " + version + " successfully shared")
+				
+				response.writeHead(200, "OK", {"Content-Type": "application/json"})
+				response.write(JSON.stringify({version: version}))
+				response.end()
+			})
+		}
+	})
+}
+
+WebService.prototype._version_GET = function(resource, parameters, request, response)
+{
+	// try to read version
+	this.engine.readVersion(resource.slice(1), function(err, version)
+	{
+		if (err)
+		{
+			response.writeHead(400, err.message)
+			response.end()
+		}
+		else
+		{
+			response.writeHead(200, "OK", {
+				"Content-Type": "application/json"
+			})
+			response.end(JSON.stringify(version))
+		}
+	})
+}
+
+WebService.prototype._tools_GET = function(resource, parameters, request, response)
+{
+	// rewrite the special /tools URL
+	this._data_GET("/.tools" + resource, parameters, request, response)
+}
+
+/*Service.prototype.handleClient = function(client)
 {
 	var self = this
 	
@@ -267,100 +449,4 @@ Service.prototype.safeWrite = function(client, data)
 		// can happen if the client disconnects *while* writing a bunch of data
 		console.log("ERRORRRRR!!!\n")
 	}
-}
-
-// helper for splitting the stream into lines and binary chunks
-function StreamReader(stream)
-{
-	this.stream = stream
-	this.readingBuffer = new Buffer(0)
-	this.currentObject = null // might be "line" or "chunk"
-	this.chunkSize = 0
-	this.callback = null
-	
-	var self = this
-	this.stream.on("data", function(buffer)
-	{
-		self.readingBuffer += buffer
-		self._checkContent()
-	})
-}
-exports.StreamReader = StreamReader // exported for testing purposes
-
-StreamReader.prototype.readLine = function(callback)
-{
-	this.currentObject = "line"
-	this.callback = callback
-	this._checkContent()
-}
-
-StreamReader.prototype.readChunk = function(size, callback)
-{
-	this.currentObject = "chunk"
-	this.chunkSize = size
-	this.callback = callback
-	this._checkContent()
-}
-
-StreamReader.prototype._checkContent = function()
-{
-	switch (this.currentObject)
-	{
-		case "line":
-		{
-			// scan for a newline in the accumulated buffer
-			for (var i = 0; i < this.readingBuffer.length; i++)
-			{
-				if (this.readingBuffer[i] == '\n')
-				{
-					// extract line
-					var line = this.readingBuffer.slice(0, i).toString("utf8")
-					
-					// shrink reading buffer keeping only unread content
-					this.readingBuffer = this.readingBuffer.slice(i + 1)
-					
-					// save callback
-					var callback = this.callback
-					
-					// reset state
-					this.currentObject = null
-					this.callback = null
-					
-					// signal the line
-					callback(line)
-					
-					return
-				}
-			}
-			
-			break;
-		}
-		case "chunk":
-		{
-			// check if enough data were read
-			if (this.readingBuffer.length >= this.chunkSize)
-			{
-				// extract chunk
-				var chunk = this.readingBuffer.slice(0, this.chunkSize)
-				
-				// shrink reading buffer keeping only unused content
-				this.readingBuffer = this.readingBuffer.slice(this.chunkSize)
-				
-				// save callback
-				var callback = this.callback
-				
-				// reset state
-				this.currentObject = null
-				this.chunkSize = 0
-				this.callback = null
-				
-				// signal the chunk
-				callback(chunk)
-				
-				return
-			}
-			
-			break;
-		}
-	}
-}
+}*/

@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Wendy asset manager
- * Copyright (c) 2011 Remi Papillie
+ * Copyright (c) 2011-2012 Remi Papillie
  * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,7 +24,45 @@
  * 
  *****************************************************************************/
 
-process.once("message", function(config)
+var cache = new (require("../../cache.js").Cache)("d:/wendy-cache")
+var fs = require("fs")
+
+var filename = cache.createTemporaryFilename()
+
+console.log("tmp filename: " + filename)
+fs.open(filename, "w", 0666, function(err, fd)
+{
+	if (err) throw err
+	
+	fs.write(fd, new Buffer("plop"), 0, 4, 0, function(err, written, buffer)
+	{
+		if (err) throw err
+		
+		fs.close(fd, function(err)
+		{
+			if (err) throw err
+			console.log("file written!")
+			
+			cache.upgradeTemporary(filename, "cache", function(err, hash)
+			{
+				if (err) throw err
+				console.log("cached as " + hash)
+			})
+			
+			/*cache.deleteTemporary(filename, function(err)
+			{
+				if (err) throw err
+			})*/
+		})
+	})
+})
+
+cache.find("plop", function(location)
+{
+	console.log("plop found in: " + location)
+})
+
+/*process.once("message", function(config)
 {
 	var cache = new (require("../../cache.js").Cache)(config.cache.root)
 	
@@ -103,4 +141,4 @@ process.once("message", function(config)
 			})
 		})
 	})
-})
+})*/

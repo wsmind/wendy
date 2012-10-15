@@ -25,6 +25,7 @@
  *****************************************************************************/
 
 var fs = require("fs")
+var cradle = require("cradle")
 
 // read config file
 fs.readFile(__dirname + "/config.json", function(err, data)
@@ -33,9 +34,20 @@ fs.readFile(__dirname + "/config.json", function(err, data)
 	
 	var config = JSON.parse(data)
 	
-	// initialize daemon
-	var storage = new (require("./storage.js").CouchStorage)(config.storage.host, config.storage.port, config.storage.database)
+	// initialize subsystems
+	
+	// couch db connection (metadata)
+	var metadb = new (cradle.Connection)(config.meta.host, config.meta.port).database(config.meta.database)
+	
+	// data storage
+	var storage = new (require("./storage.js").Storage)(config.storage.host, config.storage.port)
+	
+	// local file cache
 	var cache = new (require("./cache.js").Cache)(config.cache.root)
-	var engine = new (require("./engine.js").Engine)(storage, cache)
-	var service = new (require("./service.js").Service)(engine)
+	
+	// management engine
+	var engine = new (require("./engine.js").Engine)(metadb, storage, cache)
+	
+	// local web service
+	var service = new (require("./webservice.js").WebService)(engine)
 })

@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Wendy asset manager
- * Copyright (c) 2011 Remi Papillie
+ * Copyright (c) 2011-2012 Remi Papillie
  * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -26,6 +26,7 @@
 
 var fs = require("fs")
 var path = require("path")
+var crypto = require("crypto")
 var assert = require("assert")
 
 /**
@@ -36,16 +37,17 @@ function Cache(root)
 {
 	this.root = root
 	
-	// create root cache directory (+tmp) if it doesn't exist
-	this._recursiveMkdir(this.root)
-	this._recursiveMkdir(path.join(this.root, "tmp"))
+	// create cache directories if they don't exist
+	this._recursiveMkdir(path.join(this.root, "cache"))
+	this._recursiveMkdir(path.join(this.root, "temp"))
+	this._recursiveMkdir(path.join(this.root, "wip"))
 	
-	// TODO: flush tmp directory
+	// TODO: flush temp directory
 }
 exports.Cache = Cache
 
 // callback will be called with (id, blobs)
-Cache.prototype.dump = function(callback)
+/*Cache.prototype.dump = function(callback)
 {
 	fs.readdir(this.root, function(err, files)
 	{
@@ -76,39 +78,108 @@ Cache.prototype.dump = function(callback)
 			callback(blobs)
 		}
 	})
+}*/
+
+// callback(location, filePath) location will be either "cache", "wip", or null (if not found)
+Cache.prototype.find = function(hash, callback)
+{
+	var self = this
+	
+	// search in the cache first
+	var cachePath = path.join(self.root, "cache", hash)
+	fs.exists(cachePath, function(exists)
+	{
+		if (exists)
+		{
+			callback("cache", cachePath)
+		}
+		else
+		{
+			// not found in cache, try wip
+			var wipPath = path.join(self.root, "wip", hash)
+			fs.exists(wipPath, function(exists)
+			{
+				if (exists)
+				{
+					callback("wip", wipPath)
+				}
+				else
+				{
+					// not found
+					callback(null, null)
+				}
+			})
+		}
+	})
 }
 
-// mode must be "r" or "w"
-Cache.prototype.open = function(id, blob, mode, callback)
+Cache.prototype.createTemporaryFilename = function()
 {
-	assert((mode == "r") || (mode == "w"))
-	
-	var assetFolder = this.root
-	
-	// always write to temporary folder
-	if (mode == "w")
-		assetFolder = path.join(assetFolder, "tmp")
+	return path.join(this.root, "temp", Math.floor(Math.random() * 1000000000000000).toString())
+}
+
+// destination must be "cache" or "wip"
+// callback(err, hash)
+Cache.prototype.upgradeTemporary = function(tempFilename, destination, callback)
+{
+	assert((destination == "cache") || (destination == "wip"))
 	
 	var self = this
-	var assetPath = path.join(assetFolder, id + "-" + blob)
-	fs.open(assetPath, mode, 0666, function(err, fd)
+	
+	// compute hash (will become the file name)
+	this._computeHash(tempFilename, function(err, hash)
 	{
-		// TODO: handle error
-		if (err) throw err
-		
-		// path where to move the asset upon close
-		var targetPath = null
-		if (mode == "w")
+		if (err)
 		{
-			targetPath = path.join(self.root, id + "-" + blob)
-			
-			// if the target file already exists, delete it
-			if (path.existsSync(targetPath))
-				fs.unlinkSync(targetPath)
+			callback(err)
+			return
 		}
 		
-		var file = new AssetFile(fd, assetPath, targetPath)
-		callback(file)
+		// move the file out of temp/
+		fs.rename(tempFilename, path.join(self.root, destination, hash), function(err)
+		{
+			if (err)
+				callback(err, hash)
+			else
+				callback(null, hash)
+		})
+	})
+}
+
+// source and destination must be "cache" or "wip"
+// callback(err)
+Cache.prototype.move = function(hash, source, destination, callback)
+{
+	assert((source == "cache") || (source == "wip"))
+	assert((destination == "cache") || (destination == "wip"))
+	
+	var self = this
+	var sourcePath = path.join(self.root, source, hash)
+	var destinationPath = path.join(self.root, destination, hash)
+	
+	fs.exists(sourcePath, function(exists)
+	{
+		if (!exists)
+		{
+			callback(new Error("Source file does not exist: '" + sourcePath + "'"))
+			return
+		}
+		
+		// move the file
+		fs.rename(sourcePath, destinationPath, callback)
+	})
+}
+
+// callback(err)
+Cache.prototype.deleteTemporary = function(tempFilename, callback)
+{
+	fs.exists(tempFilename, function(exists)
+	{
+		// do not try to remove temporary file if it was not created
+		if (exists)
+			fs.unlink(tempFilename, callback)
+		else
+			callback()
 	})
 }
 
@@ -116,7 +187,7 @@ Cache.prototype.open = function(id, blob, mode, callback)
 Cache.prototype.readLocalMetadata = function(callback)
 {
 	var metadataPath = path.join(this.root, "local.json")
-	path.exists(metadataPath, function(exists)
+	fs.exists(metadataPath, function(exists)
 	{
 		if (exists)
 		{
@@ -160,77 +231,32 @@ Cache.prototype._recursiveMkdir = function(directory)
 	{
 		currentPath += fragments[i] + "/"
 		
-		if (!path.existsSync(currentPath))
+		if (!fs.existsSync(currentPath))
 			fs.mkdirSync(currentPath, 0777)
 	}
 }
 
-function AssetFile(fd, path, targetPath)
+// callback(err, hash)
+Cache.prototype._computeHash = function(filename, callback)
 {
-	this.fd = fd
-	this.path = path
-	this.targetPath = targetPath
-}
-
-AssetFile.prototype.stat = function(callback)
-{
-	fs.fstat(this.fd, function(err, stats)
-	{
-		if (err) throw err
-		
-		callback(err, {
-			size: stats.size
-		})
-	})
-}
-
-AssetFile.prototype.read = function(buffer, position, callback)
-{
-	// avoid using the legacy fs.read implementation
-	assert(Buffer.isBuffer(buffer))
+	var md5sum = crypto.createHash("md5")
 	
-	fs.read(this.fd, buffer, 0, buffer.length, position, function(err, bytesRead, buffer)
+	// stream hashing
+	var stream = fs.createReadStream(filename)
+	stream.on("data", function(chunk)
 	{
-		// TODO: handle error
-		if (err) throw err
-		
-		callback(err, bytesRead, buffer)
+		md5sum.update(chunk)
 	})
-}
-
-AssetFile.prototype.write = function(buffer, position, callback)
-{
-	// avoid using the legacy fs.write implementation
-	assert(Buffer.isBuffer(buffer))
 	
-	fs.write(this.fd, buffer, 0, buffer.length, position, function(err, written, buffer)
+	// handle errors
+	stream.on("error", function(err)
 	{
-		// TODO: handle error
-		if (err) throw err
-		
-		callback(err, written, buffer)
+		callback(err)
 	})
-}
-
-// callback(err)
-AssetFile.prototype.close = function(callback)
-{
-	var self = this
-	fs.close(self.fd, function(err)
+	
+	// hashing done
+	stream.on("close", function()
 	{
-		if (err)
-		{
-			callback(err)
-		}
-		else
-		{
-			// move the asset to another location
-			if (self.targetPath)
-			{
-				fs.renameSync(self.path, self.targetPath)
-			}
-			
-			callback(null)
-		}
+		callback(null, md5sum.digest("hex"))
 	})
 }
