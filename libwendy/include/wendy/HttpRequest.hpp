@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Wendy asset manager
- * Copyright (c) 2011 Remi Papillie
+ * Copyright (c) 2011-2012 Remi Papillie
  * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,40 +24,55 @@
  * 
  *****************************************************************************/
 
-#include <iostream>
-#include <wendy/Project.hpp>
-#include <wendy/ProjectListener.hpp>
+#ifndef __WENDY_HTTPREQUEST_HPP__
+#define __WENDY_HTTPREQUEST_HPP__
 
-class TestPlop: public wendy::ProjectListener
+#include <wendy/common.hpp>
+
+#include <string>
+
+namespace wendy {
+
+class HttpWriter;
+
+/**
+ * \struct HttpRequest
+ */
+struct WENDYAPI HttpRequest
 {
-	public:
-		virtual void assetChanged(const wendy::Asset &asset)
-		{
-			std::cout << "Changed: " << asset.id << " at " << asset.path << std::endl;
-		}
+	// input parameters
+	std::string method;
+	std::string path;
+	long timeoutMilliseconds;
+	HttpWriter *writer;
+	
+	/// termination state, will be set to true when the request finishes
+	bool finished;
+	
+	/// output status (set after the request has finished)
+	/// will be 0 if the request is not finished, or if it was aborted (e.g timeout)
+	long status;
+	
+	/// \internal curl handle associated to this request, will be setup by the http engine
+	void *curlHandle;
+	
+	/**
+	 * \brief Constructor
+	 * Initialize all members to a reasonable default.
+	 */
+	HttpRequest()
+	{
+		this->method = "GET";
+		this->path = "/";
+		this->writer = NULL;
+		
+		this->finished = false;
+		this->status = 0;
+		
+		this->curlHandle = NULL;
+	}
 };
 
-int main()
-{
-	TestPlop *listener = new TestPlop;
-	wendy::Project *project = new wendy::Project(listener);
-	
-	project->connect();
-	
-	if (!project->isConnected())
-		std::cout << "Connection failed!" << std::endl;
-	
-	project->createAsset("test/newassets/plop.txt");
-	project->createAsset("test/fake/otherasset.txt");
-	project->createAsset("test/dafyduck.pdf");
-	
-	while (project->isConnected())
-	{
-		project->waitChanges();
-	}
-	
-	project->disconnect();
-	
-	delete listener;
-	delete project;
-}
+} // wendy namespace
+
+#endif // __WENDY_HTTPREQUEST_HPP__

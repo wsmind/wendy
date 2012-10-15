@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Wendy asset manager
- * Copyright (c) 2011 Remi Papillie
+ * Copyright (c) 2011-2012 Remi Papillie
  * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,57 +24,41 @@
  * 
  *****************************************************************************/
 
-#include <wendy/Thread.hpp>
+#ifndef __WENDY_REQUESTSTATE_HPP__
+#define __WENDY_REQUESTSTATE_HPP__
 
-#include <wendy/Runnable.hpp>
+#include <wendy/common.hpp>
 
 namespace wendy {
 
-Thread::Thread(Runnable *runnable)
+/**
+ * \class RequestState
+ * \brief Asynchronous call information block
+ */
+class WENDYAPI RequestState
 {
-#	ifdef _WIN32
-		this->winHandle = CreateThread(0, 0, Thread::winThreadRunner, (void *)runnable, 0, NULL);
-#	else
-		pthread_create(&this->posixThread, NULL, Thread::posixThreadRunner, (void *)runnable);
-#	endif
-}
-
-Thread::~Thread()
-{
-#	ifdef _WIN32
-		WaitForSingleObject(this->winHandle, INFINITE);
-		CloseHandle(this->winHandle);
-#	else
-		pthread_join(this->posixThread, NULL);
-#	endif
-}
-
-void Thread::sleepSeconds(unsigned int seconds)
-{
-#	ifdef _WIN32
-		Sleep(seconds * 1000);
-#	else
-		sleep(seconds);
-#	endif
-}
-
-#ifdef _WIN32
-DWORD WINAPI Thread::winThreadRunner(LPVOID lpParameter)
-{
-	Runnable *runnable = (Runnable *)lpParameter;
-	runnable->run();
-	
-	return 0;
-}
-#else
-void *Thread::posixThreadRunner(void *data)
-{
-	Runnable *runnable = (Runnable *)data;
-	runnable->run();
-	
-	return NULL;
-}
-#endif
+	public:
+		RequestState();
+		~RequestState();
+		
+		bool isFinished() const;
+		bool isSuccess() const;
+		
+		void start();
+		void succeed();
+		void fail();
+		
+	private:
+		enum State
+		{
+			NOT_STARTED,
+			IN_PROGRESS,
+			SUCCEEDED,
+			FAILED
+		};
+		State state;
+};
 
 } // wendy namespace
 
+#endif // __WENDY_REQUESTSTATE_HPP__

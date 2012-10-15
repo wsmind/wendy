@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Wendy asset manager
- * Copyright (c) 2011 Remi Papillie
+ * Copyright (c) 2011-2012 Remi Papillie
  * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -39,4 +39,3 @@
 #endif
 
 #endif // __WENDY_COMMON_HPP__
-

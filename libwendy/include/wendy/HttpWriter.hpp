@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Wendy asset manager
- * Copyright (c) 2011 Remi Papillie
+ * Copyright (c) 2011-2012 Remi Papillie
  * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,32 +24,26 @@
  * 
  *****************************************************************************/
 
-#ifndef __WENDY_RUNNABLE_HPP__
-#define __WENDY_RUNNABLE_HPP__
+#ifndef __WENDY_HTTPWRITER_HPP__
+#define __WENDY_HTTPWRITER_HPP__
 
 #include <wendy/common.hpp>
+
+#include <string>
 
 namespace wendy {
 
 /**
- * \interface Runnable
- * \brief Asynchronous processing
+ * \interface HttpWriter
  */
-class WENDYAPI Runnable
+class WENDYAPI HttpWriter
 {
 	public:
-		/**
-		 * \brief Destructor
-		 */
-		virtual ~Runnable() {}
+		virtual ~HttpWriter() {}
 		
-		/**
-		 * \brief Processing method
-		 */
-		virtual void run() {}
+		virtual void writeHttpData(const char *buffer, unsigned int size) {}
 };
 
 } // wendy namespace
 
-#endif //  __WENDY_RUNNABLE_HPP__
-
+#endif // __WENDY_HTTPWRITER_HPP__

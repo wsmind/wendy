@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Wendy asset manager
- * Copyright (c) 2011 Remi Papillie
+ * Copyright (c) 2011-2012 Remi Papillie
  * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,44 +24,48 @@
  * 
  *****************************************************************************/
 
-#ifndef __WENDY_CONDITIONVARIABLE_HPP__
-#define __WENDY_CONDITIONVARIABLE_HPP__
+#ifndef __WENDY_LISTREQUEST_HPP__
+#define __WENDY_LISTREQUEST_HPP__
 
 #include <wendy/common.hpp>
 
-#ifdef _WIN32
-#	include <windows.h>
-#else
-#	include <pthread.h>
-#endif
+#include <string>
+#include <vector>
+
+#include <wendy/Request.hpp>
+#include <wendy/HttpRequest.hpp>
+#include <wendy/HttpWriter.hpp>
 
 namespace wendy {
 
-class WENDYAPI ConditionVariable
+class HttpEngine;
+
+/**
+ * \class ListRequest
+ */
+class WENDYAPI ListRequest: public Request, public HttpWriter
 {
 	public:
-#		ifdef WIN32
-			ConditionVariable(CRITICAL_SECTION *criticalSection);
-#		else
-			ConditionVariable(pthread_mutex_t *posixMutex);
-#		endif
+		typedef std::vector<std::string> PathList;
 		
-		~ConditionVariable();
+		ListRequest(HttpEngine *httpEngine, const std::string &filter, PathList *pathList);
+		virtual ~ListRequest();
 		
-		void wait();
-		void signal();
+		virtual void update(RequestState *state);
 		
+		virtual void writeHttpData(const char *buffer, unsigned int size);
+	
 	private:
-#		ifdef _WIN32
-			CRITICAL_SECTION *criticalSection;
-			HANDLE event;
-#		else
-			pthread_mutex_t *posixMutex;
-			pthread_cond_t posixCondition;
-#		endif
+		// extract path list from JSON data
+		void parsePathList(const std::string &json, PathList *pathList);
+		
+		HttpRequest request;
+		std::string json;
+		
+		// result
+		PathList *pathList;
 };
 
 } // wendy namespace
 
-#endif //  __WENDY_CONDITIONVARIABLE_HPP__
-
+#endif // __WENDY_LISTREQUEST_HPP__

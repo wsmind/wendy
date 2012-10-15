@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Wendy asset manager
- * Copyright (c) 2011 Remi Papillie
+ * Copyright (c) 2011-2012 Remi Papillie
  * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,22 +24,26 @@
  * 
  *****************************************************************************/
 
-#include <wendy/ScopeLock.hpp>
+#ifndef __WENDY_REQUEST_HPP__
+#define __WENDY_REQUEST_HPP__
 
-#include <wendy/Mutex.hpp>
+#include <wendy/common.hpp>
 
 namespace wendy {
 
-ScopeLock::ScopeLock(Mutex *mutex)
-{
-	this->mutex = mutex;
-	this->mutex->acquire();
-}
+class RequestState;
 
-ScopeLock::~ScopeLock()
+/**
+ * \interface Request
+ */
+class WENDYAPI Request
 {
-	this->mutex->release();
-}
+	public:
+		virtual ~Request() {}
+		
+		virtual void update(RequestState *state) {}
+};
 
 } // wendy namespace
 
+#endif // __WENDY_REQUEST_HPP__
