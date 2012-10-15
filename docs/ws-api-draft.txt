@@ -1,0 +1,102 @@
+/***************
+ * /assets API
+ ***************/
+
+GET /assets/path/to/asset
+
+{
+	"type": "file",
+	"lock": {
+		"user": "MrPlop",
+		"application": "notepad"
+	},
+	"history": [
+		{
+			"version": "20121221-084200",
+			"deleted": true,
+			"comment": "deleted old unused files"
+		},
+		{
+			"version": "20121010-124042"
+			"sync": {
+				"status": "fetching", // could be "stopped", "fetching", "complete"
+				"progress": 42 // percent
+			},
+			"size": 424242,
+			"comment": "changed logo"
+		}
+	]
+}
+
+GET /assets/path/to
+
+{
+	"type": "folder",
+	"history": [
+		{
+			"version": "20121221-084200",
+			"comment": "deleted old unused files"
+		},
+		{
+			"version": "20121010-124042",
+			"sync": {
+				"status": "fetching", // could be "stopped", "fetching", "complete"
+				"progress": 10 // percent
+			},
+			"size": 424242,
+			"comment": "changed logo"
+		},
+		{
+			"version": "20121010-124042",
+			"sync": {
+				"status": "stopped", // could be "stopped", "fetching", "complete"
+				"progress": 5 // percent
+			},
+			"size": 454545,
+			"comment": "changed music"
+		}
+	],
+	"children": {
+		"asset": {
+			"version": "20121221-084200",
+			"deleted": true,
+			"comment": "deleted old unused files"
+		},
+		"song": {
+			"version": "20121010-124042",
+			"sync": {
+				"status": "stopped", // could be "stopped", "fetching", "complete"
+				"progress": 5 // percent
+			},
+			"size": 454545,
+			"comment": "changed music"
+		},
+		"more": "folder"
+	}
+}
+
+GET /assets/path/to/asset/data [?version=20121010-124042]
+
+PUT /assets/path/to/asset/data
+
+PUT /assets/path/to/asset/lock&application=yop
+DELETE /assets/path/to/asset/lock
+
+/***************
+ * /versions API
+ ***************/
+
+GET /versions/20121010-124042
+
+{
+	<couch content>
+	(more or less :p)
+}
+
+/***************
+ * /tools API
+ ***************/
+
+/***************
+ * /config API
+ ***************/
