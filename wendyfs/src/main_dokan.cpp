@@ -34,13 +34,18 @@
 #include <dokan.h>
 #include <iostream>
 
-#include <wendy/Mutex.hpp>
+/*#include <wendy/Mutex.hpp>
 #include <wendy/Project.hpp>
 #include <wendy/ProjectFileSystem.hpp>
-#include <wendy/ScopeLock.hpp>
+#include <wendy/ScopeLock.hpp>*/
 
-static wendy::ProjectFileSystem *fs = NULL;
-static wendy::Mutex mutex;
+#include <wendy/Client.hpp>
+#include <wendy/RequestState.hpp>
+
+//static wendy::ProjectFileSystem *fs = NULL;
+//static wendy::Mutex mutex;
+
+static wendy::Client *client = NULL;
 
 static std::string wideToUtf8(std::wstring wide)
 {
@@ -105,12 +110,12 @@ static FILETIME unixTimeToFileTime(unsigned long long unixTimestamp)
 
 static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DWORD shareMode, DWORD creationDisposition, DWORD flagsAndAttributes, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"CreateFile: %s\n", filename);
 	
 	std::string path = makePathStandard(filename);
 	
-	wendy::ProjectFileSystem::FileAttributes attributes;
+	/*wendy::ProjectFileSystem::FileAttributes attributes;
 	bool exists = fs->stat(path, &attributes);
 	
 	// cases when the file MUST exist
@@ -159,14 +164,14 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 			return -ERROR_PATH_NOT_FOUND;
 		
 		info->Context = (ULONG64)fd;
-	}
+	}*/
 	
 	return 0;
 }
 
-static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
+/*static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"OpenDir %s\n", filename);
 	
 	std::string path = makePathStandard(filename);
@@ -183,7 +188,7 @@ static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO 
 
 static int DOKAN_CALLBACK WendyCreateDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"CreateDirectory %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
@@ -194,11 +199,11 @@ static int DOKAN_CALLBACK WendyCreateDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 	fs->mkdir(path);
 	
 	return 0;
-}
+}*/
 
-static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
+/*static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"Cleanup %s\n", filename);
 	
 	if (!info->IsDirectory)
@@ -208,19 +213,19 @@ static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 	}
 	
 	return 0;
-}
+}*/
 
 int DOKAN_CALLBACK WendyCloseFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"CloseFile %s\n", filename);
 	
 	return 0;
 }
 
-int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOfBytesToRead, LPDWORD numberOfBytesRead, LONGLONG offset, PDOKAN_FILE_INFO info)
+/*int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOfBytesToRead, LPDWORD numberOfBytesRead, LONGLONG offset, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"ReadFile %s\n", filename);
 	
 	std::string path = makePathStandard(filename);
@@ -254,26 +259,26 @@ int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOf
 
 int DOKAN_CALLBACK WendyWriteFile(LPCWSTR filename, LPCVOID buffer, DWORD numberOfBytesToWrite, LPDWORD numberOfBytesWritten, LONGLONG offset, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"WriteFile %s\n", filename);
 	
 	return 0;
-}
+}*/
 
 static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_FILE_INFORMATION buffer, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"GetFileInformation %s\n", filename);
 	
 	std::string path = makePathStandard(filename);
 	
-	wendy::ProjectFileSystem::FileAttributes attributes;
+	/*wendy::ProjectFileSystem::FileAttributes attributes;
 	if (!fs->stat(path, &attributes))
-		return -ERROR_PATH_NOT_FOUND;
+		return -ERROR_PATH_NOT_FOUND;*/
 	
 	ZeroMemory(buffer, sizeof(BY_HANDLE_FILE_INFORMATION));
 	
-	if (attributes.folder)
+	/*if (attributes.folder)
 	{
 		buffer->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM; // system enables Desktop.ini customization
 	}
@@ -282,14 +287,18 @@ static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_
 		buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
 		buffer->nFileSizeLow = attributes.length;
 		buffer->ftLastWriteTime = unixTimeToFileTime(attributes.date);
-	}
+	}*/
+	
+	buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+	buffer->nFileSizeLow = 42;
+	buffer->ftLastWriteTime = unixTimeToFileTime(42);
 	
 	return 0;
 }
 
 static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFindData, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"FindFiles %s\n", filename);
 	
 	WIN32_FIND_DATAW entry;
@@ -304,7 +313,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 	
 	std::string path = makePathStandard(filename);
 	
-	std::vector<std::string> files;
+	/*std::vector<std::string> files;
 	fs->readdir(path, &files);
 	for (unsigned int i = 0; i < files.size(); ++i)
 	{
@@ -325,14 +334,40 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		
 		// send item back to caller
 		fillFindData(&entry, info);
+	}*/
+	
+	wendy::RequestState listState;
+	wendy::Client::PathList files;
+	client->list(&listState, "*", &files);
+	while (!listState.isFinished())
+		client->waitUpdate();
+	
+	if (listState.isSuccess())
+	{
+		for (unsigned int i = 0; i < files.size(); i++)
+		{
+			std::cout << "Found file: " << files[i] << std::endl;
+			
+			// filename
+			const std::string &filename = files[i];
+			std::wstring wfilename = utf8ToWide(filename);
+			wcsncpy(entry.cFileName, wfilename.c_str(), MAX_PATH - 1);
+			
+			// other attributes
+			entry.dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+			entry.nFileSizeLow = 42;
+			entry.ftLastWriteTime = unixTimeToFileTime(42);
+			
+			fillFindData(&entry, info);
+		}
 	}
 	
 	return 0;
 }
 
-static int DOKAN_CALLBACK WendyDeleteFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
+/*static int DOKAN_CALLBACK WendyDeleteFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"DeleteFile %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
@@ -348,7 +383,7 @@ static int DOKAN_CALLBACK WendyDeleteFile(LPCWSTR filename, PDOKAN_FILE_INFO inf
 
 static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	wprintf(L"DeleteDirectory %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
@@ -360,11 +395,11 @@ static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 		return -ERROR_DIR_NOT_EMPTY;
 	
 	return 0;
-}
+}*/
 
 static int DOKAN_CALLBACK WendyGetDiskFreeSpace(PULONGLONG freeBytesAvailable, PULONGLONG totalNumberOfBytes, PULONGLONG totalNumberOfFreeBytes, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	
 	*freeBytesAvailable = 16106127360UL; // specific to the calling user, if quotas are used
 	*totalNumberOfBytes = 21474836480UL;
@@ -374,7 +409,7 @@ static int DOKAN_CALLBACK WendyGetDiskFreeSpace(PULONGLONG freeBytesAvailable, P
 
 static int DOKAN_CALLBACK WendyGetVolumeInformation(LPWSTR volumeNameBuffer, DWORD volumeNameSize, LPDWORD volumeSerialNumber, LPDWORD maximumComponentLength, LPDWORD fileSystemFlags, LPWSTR fileSystemNameBuffer, DWORD fileSystemNameSize, PDOKAN_FILE_INFO info)
 {
-	wendy::ScopeLock lock(&mutex);
+	//wendy::ScopeLock lock(&mutex);
 	
 	wcsncpy(volumeNameBuffer, L"Wendy", volumeNameSize / sizeof(WCHAR));
 	*volumeSerialNumber = 0x42;
@@ -405,24 +440,26 @@ int main(int argc, char **argv)
 	
 	ZeroMemory(&operations, sizeof(DOKAN_OPERATIONS));
 	operations.CreateFile = WendyCreateFile;
-	operations.OpenDirectory = WendyOpenDirectory;
-	operations.CreateDirectory = WendyCreateDirectory;
-	operations.Cleanup = WendyCleanup;
+	//operations.OpenDirectory = WendyOpenDirectory;
+	//operations.CreateDirectory = WendyCreateDirectory;
+	//operations.Cleanup = WendyCleanup;
 	operations.CloseFile = WendyCloseFile;
-	operations.ReadFile = WendyReadFile;
-	operations.WriteFile = WendyWriteFile;
+	//operations.ReadFile = WendyReadFile;
+	//operations.WriteFile = WendyWriteFile;
 	operations.GetFileInformation = WendyGetFileInformation;
 	operations.FindFiles = WendyFindFiles;
-	operations.DeleteFile = WendyDeleteFile;
-	operations.DeleteDirectory = WendyDeleteDirectory;
+	//operations.DeleteFile = WendyDeleteFile;
+	//operations.DeleteDirectory = WendyDeleteDirectory;
 	operations.GetDiskFreeSpace = WendyGetDiskFreeSpace;
 	operations.GetVolumeInformation = WendyGetVolumeInformation;
 	
-	fs = new wendy::ProjectFileSystem;
+	//fs = new wendy::ProjectFileSystem;
+	client = new wendy::Client;
 	
 	int result = DokanMain(&options, &operations);
 	
-	delete fs;
+	//delete fs;
+	delete client;
 	
 	return result;
 }
