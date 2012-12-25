@@ -1,0 +1,34 @@
+{
+	"name": "wendy",
+	"version": "0.0.1",
+	"author": {
+		"name": "Rémi Papillié",
+		"email": "remi.papillie@gmail.com"
+	},
+	"description": "Pervasive production asset management",
+	"dependencies": {
+		"cradle": "*",
+		"minimatch": "*",
+		"node-static": "*"
+	},
+	"devDependencies": {},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/wsmind/wendy.git"
+	},
+	"scripts": {
+		"start": "node ./wendyd"
+	},
+	"engines": {
+		"node": ">=0.8"
+	},
+	"bugs": {
+		"url": "https://github.com/wsmind/wendy/issues"
+	},
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "https://raw.github.com/wsmind/wendy/master/LICENSE"
+		}
+	]
+}
