@@ -27,7 +27,7 @@
 var fs = require("fs")
 var rimraf = require("rimraf")
 
-exports.test = function(name, callback)
+/*exports.test = function(name, callback)
 {
 	before(function(done)
 	{
@@ -43,7 +43,7 @@ exports.test = function(name, callback)
 	})
 	
 	describe(name, callback)
-}
+}*/
 
 /*console.log(">> Test DB: http://" + config.meta.host + ":" + config.meta.port + "/" + config.meta.database)
 console.log(">> Test storage: http://" + config.storage.host + ":" + config.storage.port)

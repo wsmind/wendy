@@ -24,37 +24,61 @@
  *****************************************************************************/
 
 var assert = require("assert")
+var cp = require("child_process")
+var fs = require("fs")
+var rimraf = require("rimraf")
 var utils = require("./utils.js")
 
-utils.test("Storage", function()
+var TEMP_DATA_STORAGE_DIRECTORY = __dirname + "/fixtures/temp-data-storage"
+var TEMP_DATA_STORAGE_PORT = 1234
+
+var storage = null
+var serverProcess = null
+
+before(function(done)
 {
-/*	var storage = new (require("../bin/storage.js").Storage)(config.storage.host, config.storage.port)
-	
-	return {
-		"uploading": {
-			topic: function() { storage.upload("51a52687284e55046bb7040f9732efff", "plop2.png", this.callback) },
-			"should not fail": function(err) { assert.isTrue(!err) }
-		}
-	}*/
-	
-	it("should work", function()
+	fs.mkdir(TEMP_DATA_STORAGE_DIRECTORY, function(err)
 	{
-		console.log(config.storage.port)
-		//assert(false)
+		serverProcess = cp.fork(__dirname + "/../../data-server/server.js", [TEMP_DATA_STORAGE_PORT, TEMP_DATA_STORAGE_DIRECTORY], {
+			silent: true
+		})
+		
+		serverProcess.on("exit", function(code, signal)
+		{
+			if (!code)
+				throw new Error("Data server crashed!")
+		})
+		
+		done()
 	})
 })
 
-/*storage.upload("51a52687284e55046bb7040f9732efff", "plop2.png", function(err)
+describe("storage", function()
 {
-	if (err) throw err
+	it("initializes", function()
+	{
+		storage = new (require("../bin/storage.js").Storage)("localhost", TEMP_DATA_STORAGE_PORT)
+	})
 	
-	console.log("upload complete!")
+	it("uploads correctly", function(done)
+	{
+		storage.upload("51a52687284e55046bb7040f9732efff", "test/fixtures/plop2.png", done)
+	})
+	
+	it("downloads correctly", function(done)
+	{
+		storage.download("51a52687284e55046bb7040f9732efff", "test/fixtures/downloaded.png", done)
+	})
 })
 
-storage.download("29314ecd127f3dbadde3a7172ad1baac", "plop.mpg", function(err)
+after(function(done)
 {
-	if (err)
-		console.log("error: " + err.message)
-	else
-		console.log("download complete!")
-})*/
+	serverProcess.kill()
+	
+	// remove test cache folder
+	rimraf(TEMP_DATA_STORAGE_DIRECTORY, function(err)
+	{
+		assert(!err)
+		done()
+	})
+})

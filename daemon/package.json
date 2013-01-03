@@ -25,7 +25,7 @@
 	},
 	"scripts": {
 		"start": "node bin/wendyd",
-		"test": "mocha"
+		"test": "mocha --reporter spec"
 	},
 	"engines": {
 		"node": ">=0.8"

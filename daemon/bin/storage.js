@@ -33,6 +33,7 @@ function Storage(host, port, database)
 }
 exports.Storage = Storage
 
+// callback(err)
 Storage.prototype.download = function(hash, filename, callback)
 {
 	var options = {
@@ -96,6 +97,7 @@ Storage.prototype.download = function(hash, filename, callback)
 	request.end()
 }
 
+// callback(err)
 Storage.prototype.upload = function(hash, filename, callback)
 {
 	var options = {
