@@ -23,36 +23,19 @@
  * 
  *****************************************************************************/
 
-var reader = new (require("../service.js").StreamReader)(process.stdin)
-
-process.stdin.resume()
-
-// read 3 lines
-reader.readLine(function(line)
+process.once("message", function(config)
 {
-	console.log("line: '" + line + "'")
-	reader.readLine(function(line)
+	/*var storage = new (require("../bin/storage.js").CouchStorage)(config.storage.host, config.storage.port, config.storage.database)
+	var cache = new (require("../bin/cache.js").Cache)(config.cache.root)
+	var engine = new (require("../bin/engine.js").Engine)(storage, cache)
+	
+	engine.on("changed", function(id, asset)
 	{
-		console.log("line: '" + line + "'")
-		reader.readLine(function(line)
-		{
-			console.log("line: '" + line + "'")
-			
-			// read a chunk of 42 bytes
-			reader.readChunk(42, function(chunk)
-			{
-				console.log("chunk of size " + chunk.length + ": '" + chunk.toString("utf8") + "'")
-				
-				// read 2 more lines
-				reader.readLine(function(line)
-				{
-					console.log("line: '" + line + "'")
-					reader.readLine(function(line)
-					{
-						console.log("line: '" + line + "'")
-					})
-				})
-			})
-		})
+		console.log("updated asset: " + id)
 	})
+	
+	storage.create(function(id)
+	{
+		console.log("created asset " + id)
+	})*/
 })

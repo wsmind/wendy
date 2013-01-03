@@ -52,7 +52,7 @@ var api = {
 	}
 }
 
-function WebService(engine)
+function WebService(engine, port)
 {
 	this.engine = engine
 	
@@ -82,9 +82,9 @@ function WebService(engine)
 		self[methodName](resource, url.query, request, response)
 	})
 	
-	server.listen(46288, function()
+	server.listen(port, function()
 	{
-		console.log("Server listening on port 46288")
+		console.log("Server listening on port " + port)
 	})
 }
 exports.WebService = WebService

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /******************************************************************************
  *
  * Wendy asset manager
@@ -23,12 +25,38 @@
  * 
  *****************************************************************************/
 
-var storage = new (require("../../storage.js").Storage)("localhost", 1234)
+var fs = require("fs")
+var cradle = require("cradle")
 
-storage.download("29314ecd127f3dbadde3a7172ad1baac", "plop.mpg", function(err)
+var configFilename = "config.json"
+if (process.argv[2])
+	configFilename = process.argv[2]
+
+// read config file
+fs.readFile(configFilename, function(err, data)
 {
 	if (err)
-		console.log("error: " + err.message)
-	else
-		console.log("download complete!")
+	{
+		console.log("Failed to open config file '" + configFilename + "'. You can provide another path for this file as the command argument.")
+		process.exit()
+	}
+	
+	var config = JSON.parse(data)
+	
+	// initialize subsystems
+	
+	// couch db connection (metadata)
+	var metadb = new (cradle.Connection)(config.meta.host, config.meta.port).database(config.meta.database)
+	
+	// data storage
+	var storage = new (require("./storage.js").Storage)(config.storage.host, config.storage.port)
+	
+	// local file cache
+	var cache = new (require("./cache.js").Cache)(config.cache.root)
+	
+	// management engine
+	var engine = new (require("./engine.js").Engine)(metadb, storage, cache)
+	
+	// local web service
+	var service = new (require("./webservice.js").WebService)(engine, config.service.port)
 })

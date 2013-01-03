@@ -45,40 +45,6 @@ function Cache(root)
 }
 exports.Cache = Cache
 
-// callback will be called with (id, blobs)
-/*Cache.prototype.dump = function(callback)
-{
-	fs.readdir(this.root, function(err, files)
-	{
-		if (err)
-		{
-			console.error("Failed to list files in cache directory (" + this.root + ")")
-		}
-		else
-		{
-			// build cross-reference id -> blob list
-			var blobs = {}
-			for (var i = 0; i < files.length; i++)
-			{
-				// skip special files
-				if ((files[i] == "tmp") || (files[i] == "local.json"))
-					continue
-				
-				var parts = files[i].split("-")
-				var id = parts[0]
-				var blob = parts[1]
-				
-				if (id in blobs)
-					blobs[id].push(blob)
-				else
-					blobs[id] = [blob]
-			}
-			
-			callback(blobs)
-		}
-	})
-}*/
-
 // callback(location, filePath) location will be either "cache", "wip", or null (if not found)
 Cache.prototype.find = function(hash, callback)
 {

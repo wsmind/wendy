@@ -28,7 +28,7 @@ var path = require("path")
 var child_process = require("child_process")
 var http = require("http")
 var assert = require("assert")
-var rimraf = require("./rimraf")
+var rimraf = require("rimraf")
 
 if (!process.argv[2])
 {
@@ -46,7 +46,7 @@ fs.readFile(__dirname + "/test-config.json", function(err, data)
 	
 	var config = JSON.parse(data)
 	
-	console.log(">> Test DB: http://" + config.storage.host + ":" + config.storage.port + "/" + config.storage.database)
+	console.log(">> Test DB: http://" + config.meta.host + ":" + config.meta.port + "/" + config.meta.database)
 	console.log(">> Test cache root: " + config.cache.root)
 	
 	// run tests
@@ -96,9 +96,9 @@ function createEnvironment(config, callback)
 	// create test DB
 	var options = {
 		method: "PUT",
-		host: config.storage.host,
-		port: config.storage.port,
-		path: "/" + config.storage.database,
+		host: config.meta.host,
+		port: config.meta.port,
+		path: "/" + config.meta.database,
 	}
 	
 	var request = http.request(options, function(response)
@@ -109,7 +109,7 @@ function createEnvironment(config, callback)
 		// create test cache folder
 		fs.mkdir(config.cache.root, 0777, function(err)
 		{
-			if (err) throw err
+			assert(!err)
 			callback()
 		})
 	})
@@ -122,9 +122,9 @@ function destroyEnvironment(config, callback)
 	// destroy test DB
 	var options = {
 		method: "DELETE",
-		host: config.storage.host,
-		port: config.storage.port,
-		path: "/" + config.storage.database,
+		host: config.meta.host,
+		port: config.meta.port,
+		path: "/" + config.meta.database,
 	}
 	
 	var request = http.request(options, function(response)
@@ -132,6 +132,7 @@ function destroyEnvironment(config, callback)
 		// remove test cache folder
 		rimraf(config.cache.root, function(err)
 		{
+			assert(!err)
 			callback()
 		})
 	})

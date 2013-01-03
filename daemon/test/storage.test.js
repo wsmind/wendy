@@ -23,11 +23,38 @@
  * 
  *****************************************************************************/
 
-var storage = new (require("../../storage.js").Storage)("localhost", 1234)
+var assert = require("assert")
+var utils = require("./utils.js")
 
-storage.upload("51a52687284e55046bb7040f9732efff", "plop2.png", function(err)
+utils.test("Storage", function()
+{
+/*	var storage = new (require("../bin/storage.js").Storage)(config.storage.host, config.storage.port)
+	
+	return {
+		"uploading": {
+			topic: function() { storage.upload("51a52687284e55046bb7040f9732efff", "plop2.png", this.callback) },
+			"should not fail": function(err) { assert.isTrue(!err) }
+		}
+	}*/
+	
+	it("should work", function()
+	{
+		console.log(config.storage.port)
+		//assert(false)
+	})
+})
+
+/*storage.upload("51a52687284e55046bb7040f9732efff", "plop2.png", function(err)
 {
 	if (err) throw err
 	
 	console.log("upload complete!")
 })
+
+storage.download("29314ecd127f3dbadde3a7172ad1baac", "plop.mpg", function(err)
+{
+	if (err)
+		console.log("error: " + err.message)
+	else
+		console.log("download complete!")
+})*/
