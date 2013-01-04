@@ -23,9 +23,31 @@
  * 
  *****************************************************************************/
 
-//var vows = require("vows")
 var fs = require("fs")
+var crypto = require("crypto")
 var rimraf = require("rimraf")
+
+// callback(hash)
+// throws on error
+exports.createTemporary = function(filename, size, callback)
+{
+	fs.open(filename, "w", function(err, fd)
+	{
+		if (err) throw err
+		
+		var md5sum = crypto.createHash("md5")
+		
+		// write some random stuff (and compute hash at the same time)
+		for (var i = 0; i < size; i++)
+		{
+			var randomByte = new Buffer([Math.floor(Math.random() * 256)])
+			fs.writeSync(fd, randomByte, 0, 1, i)
+			md5sum.update(randomByte)
+		}
+		
+		callback(md5sum.digest("hex"))
+	})
+}
 
 /*exports.test = function(name, callback)
 {

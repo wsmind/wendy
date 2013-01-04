@@ -49,7 +49,11 @@ before(function(done)
 				throw new Error("Data server crashed!")
 		})
 		
-		done()
+		utils.createTemporary(__dirname + "/fixtures/small", 100, function(hash)
+		{
+			console.log("small hash: " + hash)
+			done()
+		})
 	})
 })
 
@@ -62,12 +66,40 @@ describe("storage", function()
 	
 	it("uploads correctly", function(done)
 	{
-		storage.upload("51a52687284e55046bb7040f9732efff", "test/fixtures/plop2.png", done)
+		storage.upload("small", __dirname + "/fixtures/small", done)
 	})
 	
 	it("downloads correctly", function(done)
 	{
-		storage.download("51a52687284e55046bb7040f9732efff", "test/fixtures/downloaded.png", done)
+		storage.download("small", __dirname + "/fixtures/small.downloaded", done)
+		// TODO: check md5 hash
+	})
+	
+	it("fails to upload non-existent file", function(done)
+	{
+		storage.upload("non_existent_file_name", "non_existent_file_name", function(err)
+		{
+			assert(err)
+			done()
+		})
+	})
+	
+	it("fails to download non-existent file", function(done)
+	{
+		storage.download("non_existent_file_name", "non_existent_file_name", function(err)
+		{
+			assert(err)
+			done()
+		})
+	})
+	
+	it("fails to erase a local directory", function(done)
+	{
+		storage.download("small", __dirname + "/fixtures", function(err)
+		{
+			assert(err)
+			done()
+		})
 	})
 })
 

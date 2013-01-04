@@ -107,25 +107,39 @@ Storage.prototype.upload = function(hash, filename, callback)
 		path: "/" + hash
 	}
 	
+	function signalResult(err)
+	{
+		if (callback)
+			callback(err)
+		callback = null
+	}
+	
 	var request = http.request(options, function(response)
 	{
 		if (response.statusCode != 200)
 		{
-			callback(new Error("Wrong answer from server: " + response.statusCode))
+			signalResult(new Error("Wrong answer from server: " + response.statusCode))
 			return;
 		}
 		
 		// successful upload
-		callback()
+		signalResult()
 	})
 	
 	// stream asset file
 	var fileStream = fs.createReadStream(filename)
-	fileStream.pipe(request)
+	fileStream.on("error", function(err)
+	{
+		// error with local file
+		signalResult(err)
+	})
 	
 	request.on("error", function(err)
 	{
-		// upload failed
-		callback(err)
+		// socket error
+		signalResult(err)
 	})
+	
+	// actual upload
+	fileStream.pipe(request)
 }
