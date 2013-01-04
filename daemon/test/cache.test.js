@@ -23,128 +23,190 @@
  * 
  *****************************************************************************/
 
-process.once("message", function(config)
+var assert = require("assert")
+var fs = require("fs")
+var rimraf = require("rimraf")
+var utils = require("./utils.js")
+
+var TEMP_CACHE_DIRECTORY = __dirname + "/fixtures/cache"
+
+var cache = null
+
+before(function(done)
 {
-	console.log(config.storage.host)
-	process.removeAllListeners()
-	
-	/*var cache = new (require("../bin/cache.js").Cache)(config.cache.root)
-	var fs = require("fs")
-	var assert = require("assert")
-	
-	var filename = cache.createTemporaryFilename()
-	
-	console.log("tmp filename: " + filename)
-	fs.open(filename, "w", 0666, function(err, fd)
+	fs.mkdir(TEMP_CACHE_DIRECTORY, function(err)
 	{
-		assert(!err)
+		done()
+	})
+})
+
+describe("cache", function()
+{
+	it("initializes", function()
+	{
+		cache = new (require("../bin/cache.js").Cache)(TEMP_CACHE_DIRECTORY)
+	})
+	
+	describe("metadata", function()
+	{
+		var testMetadata = {
+			"12": {author: "swingy", date: 100, tag: "you're it"},
+			"25": {path: "this-is-25.txt"}
+		}
 		
-		fs.write(fd, new Buffer("plop"), 0, 4, 0, function(err, written, buffer)
+		it("are initially empty", function(done)
 		{
-			assert(!err)
-			
-			fs.close(fd, function(err)
+			cache.readLocalMetadata(function(err, object)
 			{
 				assert(!err)
-				console.log(filename + " written!")
-				
-				cache.upgradeTemporary(filename, "cache", function(err, hash)
-				{
-					assert(!err)
-					console.log("cached as " + hash)
-				})
-				
-				/*cache.deleteTemporary(filename, function(err)
-				{
-					if (err) throw err
-				})*/
-			/*})
+				assert.deepEqual(object, {})
+				done()
+			})
+		})
+		
+		it("saves successfully", function(done)
+		{
+			cache.writeLocalMetadata(testMetadata, done)
+		})
+		
+		it("reloads successfully", function(done)
+		{
+			cache.readLocalMetadata(function(err, object)
+			{
+				assert(!err)
+				assert.deepEqual(object, testMetadata)
+				done()
+			})
 		})
 	})
 	
-	cache.find("plop", function(location)
+	describe("content", function()
 	{
-		console.log("plop found in: " + location)
-	})*/
-
-	/*process.once("message", function(config)
-	{
-		var cache = new (require("../../cache.js").Cache)(config.cache.root)
-		
-		cache.open("plop", 42, "w", function(file)
+		it("can be added as temporary", function(done)
 		{
-			file.write(new Buffer("yeahha"), 0, function(err, written, buffer)
+			var filename = cache.createTemporaryFilename()
+			utils.createTemporary(filename, 1000, function(hash)
 			{
-				if (err) throw err
-				
-				file.close(function(err)
+				done()
+			})
+		})
+		
+		it("can be removed while still temporary", function(done)
+		{
+			var filename = cache.createTemporaryFilename()
+			utils.createTemporary(filename, 1000, function(hash)
+			{
+				cache.deleteTemporary(filename, done)
+			})
+		})
+		
+		it("can be upgraded to cache", function(done)
+		{
+			var filename = cache.createTemporaryFilename()
+			utils.createTemporary(filename, 1000, function(realHash)
+			{
+				cache.upgradeTemporary(filename, "cache", function(err, hash)
 				{
-					if (err) throw err
+					assert(!err)
+					assert(hash === realHash)
 					
-					// read back what was written
-					cache.open("plop", 42, "r", function(file2)
+					cache.find(hash, function(location, filePath)
 					{
-						var buf = new Buffer(500)
-						file2.read(buf, 0, function(err, bytesRead, buffer)
+						assert(location === "cache")
+						assert(filePath !== null)
+						done()
+					})
+				})
+			})
+		})
+		
+		it("can be upgraded to wip", function(done)
+		{
+			var filename = cache.createTemporaryFilename()
+			utils.createTemporary(filename, 1000, function(realHash)
+			{
+				cache.upgradeTemporary(filename, "wip", function(err, hash)
+				{
+					assert(!err)
+					assert(hash === realHash)
+					
+					cache.find(hash, function(location, filePath)
+					{
+						assert(location === "wip")
+						assert(filePath !== null)
+						done()
+					})
+				})
+			})
+		})
+		
+		it("can be moved between cache to wip", function(done)
+		{
+			var filename = cache.createTemporaryFilename()
+			utils.createTemporary(filename, 1000, function(realHash)
+			{
+				cache.upgradeTemporary(filename, "cache", function(err, hash)
+				{
+					assert(!err)
+					assert(hash === realHash)
+					
+					cache.move(hash, "cache", "wip", function(err)
+					{
+						assert(!err)
+						cache.find(hash, function(location, filePath)
 						{
-							if (err) throw err
-							
-							console.log("read " + bytesRead + " bytes:")
-							console.log(buf.slice(0, bytesRead).toString("utf8"))
-							
-							file2.close(function(err)
-							{
-								if (err) throw err
-							})
+							assert(location === "wip")
+							assert(filePath !== null)
+							done()
 						})
 					})
 				})
 			})
 		})
 		
-		cache.open(new Buffer("plop"), 47, "w", function(file)
+		it("canot be moved the wrong way", function(done)
 		{
-			file.write(new Buffer("yopyop"), 0, function(err, written, buffer)
+			var filename = cache.createTemporaryFilename()
+			utils.createTemporary(filename, 1000, function(realHash)
 			{
-				file.close(function(err)
+				cache.upgradeTemporary(filename, "wip", function(err, hash)
 				{
+					assert(!err)
+					assert(hash === realHash)
+					
+					cache.move(hash, "cache", "wip", function(err)
+					{
+						assert(err)
+						cache.find(hash, function(location, filePath)
+						{
+							// should have stayed in wip
+							assert(location === "wip")
+							assert(filePath !== null)
+							done()
+						})
+					})
 				})
 			})
 		})
 		
-		cache.open(new Buffer("noplop"), 12, "w", function(file)
+		it("is not found when non-existent", function(done)
 		{
-			file.write(new Buffer("wendy rules :p"), 0, function(err, written, buffer)
+			cache.find("plop", function(location, filePath)
 			{
-				file.close(function(err)
-				{
-				})
+				assert(location === null)
+				assert(filePath === null)
+				done()
 			})
 		})
-		
-		cache.dump(function(blobs)
-		{
-			for (var id in blobs)
-				console.log("blobs for " + id + ": " + blobs[id])
-		})
-		
-		cache.readLocalMetadata(function(err, metadata)
-		{
-			console.log("current local metadata: " + JSON.stringify(metadata))
-			
-			metadata = {
-				"12": {author: "swingy", date: 100, tag: "you're it"},
-				"25": {path: "this-is-25.txt"}
-			}
-			cache.writeLocalMetadata(metadata, function(err)
-			{
-				if (err) throw err
-				
-				cache.readLocalMetadata(function(err, metadata)
-				{
-					console.log("new metadata: " + JSON.stringify(metadata))
-				})
-			})
-		})
-	})*/
+	})
+})
+
+after(function(done)
+{
+	// remove test cache folder
+	rimraf(TEMP_CACHE_DIRECTORY, function(err)
+	{
+		assert(!err)
+		done()
+	})
 })

@@ -45,7 +45,11 @@ exports.createTemporary = function(filename, size, callback)
 			md5sum.update(randomByte)
 		}
 		
-		callback(md5sum.digest("hex"))
+		fs.close(fd, function(err)
+		{
+			if (err) throw err
+			callback(md5sum.digest("hex"))
+		})
 	})
 }
 

@@ -29,7 +29,7 @@ var fs = require("fs")
 var rimraf = require("rimraf")
 var utils = require("./utils.js")
 
-var TEMP_DATA_STORAGE_DIRECTORY = __dirname + "/fixtures/temp-data-storage"
+var TEMP_DATA_STORAGE_DIRECTORY = __dirname + "/fixtures/data-storage"
 var TEMP_DATA_STORAGE_PORT = 1234
 
 var storage = null
@@ -51,8 +51,8 @@ before(function(done)
 		
 		utils.createTemporary(__dirname + "/fixtures/small", 100, function(hash)
 		{
-			console.log("small hash: " + hash)
-			done()
+			// give some time for data server to initialize
+			setTimeout(done, 1000)
 		})
 	})
 })
