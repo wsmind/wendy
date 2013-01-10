@@ -8,13 +8,14 @@ env.Append(CPPDEFINES = ["BUILDING_WENDY"])
 if env["CC"] == "cl":
 	env.Append(CPPFLAGS = ["/Z7", "/W2", "/wd4251", "/EHsc"])
 else:
-	env.Append(CPPFLAGS = ["-O2", "-Wall"])
+	env.Append(CPPFLAGS = ["-g", "-Wall"])
 
 if os.name == "nt":
 	env.Append(CPPPATH = ["$BINARYDEPS/curl/include"])
 	env.Append(LIBPATH = ["$BINARYDEPS/curl/lib"])
 	env.Append(CPPPATH = ["$BINARYDEPS/cJSON"])
 	env.Append(LIBPATH = ["$BINARYDEPS/cJSON"])
+	env.Append(CPPDEFINES = ["UNICODE", "_UNICODE"])
 	env.Append(LIBS = ["ws2_32"])
 
 if os.name == "posix":

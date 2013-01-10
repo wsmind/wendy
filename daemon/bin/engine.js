@@ -207,7 +207,7 @@ Engine.prototype.save = function(path, stream, callback)
 // callback(err, pathList)
 Engine.prototype.list = function(filter, callback)
 {
-	callback(null, minimatch.match(Object.keys(this.assets), filter, {nonull: true}))
+	callback(null, minimatch.match(Object.keys(this.assets), filter, {}))
 }
 
 // commit everything to servers

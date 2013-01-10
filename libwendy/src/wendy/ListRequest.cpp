@@ -28,6 +28,7 @@
 #include <wendy/HttpEngine.hpp>
 #include <wendy/RequestState.hpp>
 
+#include <cassert>
 #include <cJSON.h>
 
 #include <iostream>
@@ -52,9 +53,9 @@ ListRequest::~ListRequest()
 
 void ListRequest::update(RequestState *state)
 {
-	if (request.finished)
+	if (this->request.finished)
 	{
-		if (request.status == 200)
+		if (this->request.status == 200)
 		{
 			this->parsePathList(this->json, this->pathList);
 			state->succeed();
@@ -76,6 +77,7 @@ void ListRequest::writeHttpData(const char *buffer, unsigned int size)
 void ListRequest::parsePathList(const std::string &json, PathList *pathList)
 {
 	cJSON *root = cJSON_Parse(json.c_str());
+	assert(root);
 	
 	for (int i = 0; i < cJSON_GetArraySize(root); i++)
 	{

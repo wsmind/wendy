@@ -161,6 +161,9 @@ void HttpEngine::pollCurlMessages()
 			
 			// expose the resulting status code
 			curl_easy_getinfo(message->easy_handle, CURLINFO_RESPONSE_CODE, &request->status);
+			
+			// detach the finished request
+			curl_multi_remove_handle(this->curlMulti, request->curlHandle);
 		}
 	}
 }

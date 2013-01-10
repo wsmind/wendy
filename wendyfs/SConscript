@@ -10,7 +10,7 @@ env.Append(LIBS = ["wendy"])
 if env["CC"] == "cl":
 	env.Append(CPPFLAGS = ["/Z7", "/W2", "/wd4251", "/EHsc"])
 else:
-	env.Append(CPPFLAGS = ["-O2", "-Wall"])
+	env.Append(CPPFLAGS = ["-g", "-Wall"])
 
 if os.name == "nt":
 	env.Append(CPPPATH = ["$BINARYDEPS/dokan"])
@@ -22,6 +22,11 @@ else:
 	env.Append(CPPDEFINES = "FUSE_USE_VERSION=28")
 
 progNode = env.Program("bin/wendyfs", env.Glob("src/*.cpp"))
+
+if os.name == "nt":
+	env.Command("bin/wendy.dll", "../libwendy/lib/wendy.dll", Copy("$TARGET", "$SOURCE"))
+	env.Command("bin/libcurl.dll", "$BINARYDEPS/curl/lib/libcurl.dll", Copy("$TARGET", "$SOURCE"))
+	env.Command("bin/libcJSON.dll", "$BINARYDEPS/cjson/libcJSON.dll", Copy("$TARGET", "$SOURCE"))
 
 distItems = [
 	("wendyfs${PROGSUFFIX}", progNode)

@@ -57,11 +57,13 @@ void RequestState::start()
 
 void RequestState::succeed()
 {
+	assert((this->state == NOT_STARTED) || (this->state == IN_PROGRESS));
 	this->state = SUCCEEDED;
 }
 
 void RequestState::fail()
 {
+	assert((this->state == NOT_STARTED) || (this->state == IN_PROGRESS));
 	this->state = FAILED;
 }
 

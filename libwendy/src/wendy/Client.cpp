@@ -69,7 +69,20 @@ void Client::updateRequests()
 	{
 		RequestDescriptor &descriptor = *it;
 		descriptor.request->update(descriptor.state);
-		it++;
+		
+		// if request is done, destroy it
+		if (descriptor.state->isFinished())
+		{
+			Request *request = descriptor.request;
+			
+			it = this->requests.erase(it);
+			
+			delete request;
+		}
+		else
+		{
+			it++;
+		}
 	}
 }
 

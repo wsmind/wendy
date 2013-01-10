@@ -43,6 +43,30 @@ int main()
 			std::cout << "Found file: " << files[i] << std::endl;
 	}
 	
+	wendy::RequestState listState2;
+	wendy::Client::PathList files2;
+	client->list(&listState2, "non-existent-file", &files2);
+	while (!listState2.isFinished())
+		client->waitUpdate();
+	
+	if (listState2.isSuccess())
+	{
+		for (unsigned int i = 0; i < files2.size(); i++)
+			std::cout << "Found file: " << files2[i] << std::endl;
+	}
+	
+	wendy::RequestState listState3;
+	wendy::Client::PathList files3;
+	client->list(&listState3, "lapins/**", &files3);
+	while (!listState3.isFinished())
+		client->waitUpdate();
+	
+	if (listState3.isSuccess())
+	{
+		for (unsigned int i = 0; i < files3.size(); i++)
+			std::cout << "Found file: " << files3[i] << std::endl;
+	}
+	
 	delete client;
 	
 	return 0;
