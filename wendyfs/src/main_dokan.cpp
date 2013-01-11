@@ -213,7 +213,7 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	return 0;
 }
 
-/*static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
+static int DOKAN_CALLBACK WendyOpenDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
 	ScopeLock lock;
 	wprintf(L"OpenDir %s\n", filename);
@@ -243,21 +243,21 @@ static int DOKAN_CALLBACK WendyCreateDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 	fs->mkdir(path);
 	
 	return 0;
-}*/
+}
 
-/*static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
+static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
 	ScopeLock lock;
 	wprintf(L"Cleanup %s\n", filename);
 	
 	if (!info->IsDirectory)
 	{
-		long fd = (long)info->Context;
-		fs->close(fd);
+		//long fd = (long)info->Context;
+		//fs->close(fd);
 	}
 	
 	return 0;
-}*/
+}
 
 int DOKAN_CALLBACK WendyCloseFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
@@ -376,56 +376,6 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		fillFindData(&entry, info);
 	}
 	
-	/*wendy::RequestState listState;
-	wendy::Client::PathList files;
-	client->list(&listState, path + "/*", &files);
-	while (!listState.isFinished())
-		client->waitUpdate();
-	
-	if (listState.isSuccess())
-	{
-		for (unsigned int i = 0; i < files.size(); i++)
-		{
-			std::cout << "Found file: " << files[i] << std::endl;
-			
-			// filename
-			const std::string &filename = files[i].substr(1);
-			std::wstring wfilename = utf8ToWide(filename);
-			wcsncpy(entry.cFileName, wfilename.c_str(), MAX_PATH - 1);
-			
-			// other attributes
-			entry.dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
-			entry.nFileSizeLow = 42;
-			entry.ftLastWriteTime = unixTimeToFileTime(42);
-			
-			fillFindData(&entry, info);
-		}
-	}
-	
-	wendy::RequestState folderState;
-	wendy::Client::PathList folderList;
-	client->list(&folderState, path + "**", &folderList);
-	while (!folderState.isFinished())
-		client->waitUpdate();
-	
-	if (folderState.isSuccess())
-	{
-		for (unsigned int i = 0; i < folderList.size(); i++)
-		{
-			std::cout << "Found folder: " << folderList[i] << std::endl;
-			
-			// filename
-			const std::string &filename = folderList[i].substr(1);
-			std::wstring wfilename = utf8ToWide(filename);
-			wcsncpy(entry.cFileName, wfilename.c_str(), MAX_PATH - 1);
-			
-			// other attributes
-			entry.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
-			
-			fillFindData(&entry, info);
-		}
-	}*/
-	
 	return 0;
 }
 
@@ -443,7 +393,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		return -ERROR_ACCESS_DENIED;
 	
 	return 0;
-}
+}*/
 
 static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
@@ -459,7 +409,7 @@ static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 		return -ERROR_DIR_NOT_EMPTY;
 	
 	return 0;
-}*/
+}
 
 static int DOKAN_CALLBACK WendyGetDiskFreeSpace(PULONGLONG freeBytesAvailable, PULONGLONG totalNumberOfBytes, PULONGLONG totalNumberOfFreeBytes, PDOKAN_FILE_INFO info)
 {
@@ -504,16 +454,16 @@ int main(int argc, char **argv)
 	
 	ZeroMemory(&operations, sizeof(DOKAN_OPERATIONS));
 	operations.CreateFile = WendyCreateFile;
-	//operations.OpenDirectory = WendyOpenDirectory;
-	//operations.CreateDirectory = WendyCreateDirectory;
-	//operations.Cleanup = WendyCleanup;
+	operations.OpenDirectory = WendyOpenDirectory;
+	operations.CreateDirectory = WendyCreateDirectory;
+	operations.Cleanup = WendyCleanup;
 	operations.CloseFile = WendyCloseFile;
 	//operations.ReadFile = WendyReadFile;
 	//operations.WriteFile = WendyWriteFile;
 	operations.GetFileInformation = WendyGetFileInformation;
 	operations.FindFiles = WendyFindFiles;
 	//operations.DeleteFile = WendyDeleteFile;
-	//operations.DeleteDirectory = WendyDeleteDirectory;
+	operations.DeleteDirectory = WendyDeleteDirectory;
 	operations.GetDiskFreeSpace = WendyGetDiskFreeSpace;
 	operations.GetVolumeInformation = WendyGetVolumeInformation;
 	
