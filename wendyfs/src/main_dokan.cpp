@@ -37,7 +37,9 @@
 #include <wendy/Client.hpp>
 #include <wendy/RequestState.hpp>
 
-//static wendy::ProjectFileSystem *fs = NULL;
+#include <FileSystem.hpp>
+
+static FileSystem *fs = NULL;
 
 static CRITICAL_SECTION wendyMutex;
 
@@ -56,7 +58,7 @@ class ScopeLock
 		}
 };
 
-static wendy::Client *client = NULL;
+//static wendy::Client *client = NULL;
 
 static std::string wideToUtf8(std::wstring wide)
 {
@@ -129,7 +131,7 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	std::string path = makePathStandard(filename);
 	
 	// hack
-	if (path == "")
+	/*if (path == "")
 	{
 		// flag as directory
 		info->IsDirectory = TRUE;
@@ -152,10 +154,10 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	for (unsigned int i = 0; i < files.size(); i++)
 		printf("  file: %s\n", files[i].c_str());
 	
-	bool exists = files.size() == 1;
+	bool exists = files.size() == 1;*/
 	
-	/*wendy::ProjectFileSystem::FileAttributes attributes;
-	bool exists = fs->stat(path, &attributes);*/
+	FileSystem::FileAttributes attributes;
+	bool exists = fs->stat(path, &attributes);
 	
 	// cases when the file MUST exist
 	if (!exists && ((creationDisposition == OPEN_EXISTING) || (creationDisposition == TRUNCATE_EXISTING)))
@@ -165,8 +167,7 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	if (exists && (creationDisposition == CREATE_NEW))
 		return -ERROR_FILE_EXISTS;
 	
-	//if (attributes.folder)
-	if (false)
+	if (attributes.folder)
 	{
 		// flag as directory
 		info->IsDirectory = TRUE;
@@ -193,12 +194,12 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 		wprintf(L"%s opened by %s\n", filename, processNameWide.c_str());
 		
 		// translate access mode
-		/*wendy::ProjectFileSystem::OpenMode mode = wendy::ProjectFileSystem::READING;
+		/*FileSystem::OpenMode mode = FileSystem::READING;
 		
-		if ((accessMode & FILE_GENERIC_READ) == FILE_GENERIC_READ) mode = wendy::ProjectFileSystem::READING;
-		if ((accessMode & FILE_GENERIC_WRITE) == FILE_GENERIC_WRITE) mode = wendy::ProjectFileSystem::WRITING;
+		if ((accessMode & FILE_GENERIC_READ) == FILE_GENERIC_READ) mode = FileSystem::READING;
+		if ((accessMode & FILE_GENERIC_WRITE) == FILE_GENERIC_WRITE) mode = FileSystem::WRITING;
 		
-		if (mode == wendy::ProjectFileSystem::WRITING)
+		if (mode == FileSystem::WRITING)
 			return -ERROR_ACCESS_DENIED;
 		
 		// open asset
@@ -219,7 +220,7 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	
 	std::string path = makePathStandard(filename);
 	
-	wendy::ProjectFileSystem::FileAttributes attributes;
+	FileSystem::FileAttributes attributes;
 	if (!fs->stat(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
@@ -235,7 +236,7 @@ static int DOKAN_CALLBACK WendyCreateDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 	wprintf(L"CreateDirectory %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
-	wendy::ProjectFileSystem::FileAttributes attributes;
+	FileSystem::FileAttributes attributes;
 	if (fs->stat(path, &attributes))
 		return -ERROR_ALREADY_EXISTS;
 	
@@ -273,7 +274,7 @@ int DOKAN_CALLBACK WendyCloseFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
 	
 	std::string path = makePathStandard(filename);
 	
-	wendy::ProjectFileSystem::FileAttributes attributes;
+	FileSystem::FileAttributes attributes;
 	if (!fs->stat(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
@@ -315,21 +316,13 @@ static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_
 	
 	std::string path = makePathStandard(filename);
 	
-	/*wendy::ProjectFileSystem::FileAttributes attributes;
+	FileSystem::FileAttributes attributes;
 	if (!fs->stat(path, &attributes))
-		return -ERROR_PATH_NOT_FOUND;*/
+		return -ERROR_PATH_NOT_FOUND;
 	
 	ZeroMemory(buffer, sizeof(BY_HANDLE_FILE_INFORMATION));
 	
-	// hack
-	if (path == "")
-	{
-		// flag as directory
-		buffer->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
-		return 0;
-	}
-	
-	/*if (attributes.folder)
+	if (attributes.folder)
 	{
 		buffer->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM; // system enables Desktop.ini customization
 	}
@@ -338,11 +331,7 @@ static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_
 		buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
 		buffer->nFileSizeLow = attributes.length;
 		buffer->ftLastWriteTime = unixTimeToFileTime(attributes.date);
-	}*/
-	
-	buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
-	buffer->nFileSizeLow = 42;
-	buffer->ftLastWriteTime = unixTimeToFileTime(42);
+	}
 	
 	return 0;
 }
@@ -364,7 +353,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 	
 	std::string path = makePathStandard(filename);
 	
-	/*std::vector<std::string> files;
+	std::vector<std::string> files;
 	fs->readdir(path, &files);
 	for (unsigned int i = 0; i < files.size(); ++i)
 	{
@@ -374,7 +363,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		wcsncpy(entry.cFileName, wfilename.c_str(), MAX_PATH - 1);
 		
 		// other attributes
-		wendy::ProjectFileSystem::FileAttributes attributes;
+		FileSystem::FileAttributes attributes;
 		std::string fullChildPath = files[i];
 		if (path.size() > 0)
 			fullChildPath = path + "/" + files[i];
@@ -385,11 +374,11 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		
 		// send item back to caller
 		fillFindData(&entry, info);
-	}*/
+	}
 	
-	wendy::RequestState listState;
+	/*wendy::RequestState listState;
 	wendy::Client::PathList files;
-	client->list(&listState, "*", &files);
+	client->list(&listState, path + "/*", &files);
 	while (!listState.isFinished())
 		client->waitUpdate();
 	
@@ -400,7 +389,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 			std::cout << "Found file: " << files[i] << std::endl;
 			
 			// filename
-			const std::string &filename = files[i];
+			const std::string &filename = files[i].substr(1);
 			std::wstring wfilename = utf8ToWide(filename);
 			wcsncpy(entry.cFileName, wfilename.c_str(), MAX_PATH - 1);
 			
@@ -413,6 +402,30 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		}
 	}
 	
+	wendy::RequestState folderState;
+	wendy::Client::PathList folderList;
+	client->list(&folderState, path + "**", &folderList);
+	while (!folderState.isFinished())
+		client->waitUpdate();
+	
+	if (folderState.isSuccess())
+	{
+		for (unsigned int i = 0; i < folderList.size(); i++)
+		{
+			std::cout << "Found folder: " << folderList[i] << std::endl;
+			
+			// filename
+			const std::string &filename = folderList[i].substr(1);
+			std::wstring wfilename = utf8ToWide(filename);
+			wcsncpy(entry.cFileName, wfilename.c_str(), MAX_PATH - 1);
+			
+			// other attributes
+			entry.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+			
+			fillFindData(&entry, info);
+		}
+	}*/
+	
 	return 0;
 }
 
@@ -422,7 +435,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 	wprintf(L"DeleteFile %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
-	wendy::ProjectFileSystem::FileAttributes attributes;
+	FileSystem::FileAttributes attributes;
 	if (!fs->stat(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
@@ -438,7 +451,7 @@ static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INF
 	wprintf(L"DeleteDirectory %s\n", filename);
 	std::string path = makePathStandard(filename);
 	
-	wendy::ProjectFileSystem::FileAttributes attributes;
+	FileSystem::FileAttributes attributes;
 	if (!fs->stat(path, &attributes))
 		return -ERROR_PATH_NOT_FOUND;
 	
@@ -504,8 +517,8 @@ int main(int argc, char **argv)
 	operations.GetDiskFreeSpace = WendyGetDiskFreeSpace;
 	operations.GetVolumeInformation = WendyGetVolumeInformation;
 	
-	//fs = new wendy::ProjectFileSystem;
-	client = new wendy::Client;
+	fs = new FileSystem;
+	//client = new wendy::Client;
 	
 	InitializeCriticalSection(&wendyMutex);
 	
@@ -513,8 +526,8 @@ int main(int argc, char **argv)
 	
 	DeleteCriticalSection(&wendyMutex);
 	
-	//delete fs;
-	delete client;
+	//delete client;
+	delete fs;
 	
 	return result;
 }

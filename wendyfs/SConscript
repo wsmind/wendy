@@ -4,7 +4,7 @@ Import("baseEnvironment")
 
 env = baseEnvironment.Clone()
 
-env.Append(CPPPATH = ["../libwendy/src"])
+env.Append(CPPPATH = ["src", "../libwendy/src"])
 env.Append(LIBPATH = ["../libwendy/lib"])
 env.Append(LIBS = ["wendy"])
 if env["CC"] == "cl":
