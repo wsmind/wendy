@@ -27,6 +27,7 @@
 
 #include <wendy/HttpEngine.hpp>
 #include <wendy/ListRequest.hpp>
+#include <wendy/ReadRequest.hpp>
 
 namespace wendy {
 
@@ -52,9 +53,25 @@ void Client::waitUpdate()
 	this->updateRequests();
 }
 
+void Client::waitRequest(RequestState *state)
+{
+	while (!state->isFinished())
+		this->waitUpdate();
+}
+
 void Client::list(RequestState *state, const std::string &filter, PathList *paths)
 {
 	Request *request = new ListRequest(this->httpEngine, filter, paths);
+	
+	RequestDescriptor descriptor;
+	descriptor.request = request;
+	descriptor.state = state;
+	this->requests.push_back(descriptor);
+}
+
+void Client::read(RequestState *state, const std::string &path, AssetWriter *writer)
+{
+	Request *request = new ReadRequest(this->httpEngine, path, writer);
 	
 	RequestDescriptor descriptor;
 	descriptor.request = request;

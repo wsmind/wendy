@@ -25,12 +25,15 @@
 
 #include <FileSystem.hpp>
 
+#include <File.hpp>
 #include <FileSystemNode.hpp>
+
 #include <wendy/Client.hpp>
 #include <wendy/RequestState.hpp>
 
 #include <iostream>
 #include <cstring>
+#include <cassert>
 
 FileSystem::FileSystem()
 {
@@ -42,8 +45,7 @@ FileSystem::FileSystem()
 	wendy::RequestState listState;
 	wendy::Client::PathList files;
 	client->list(&listState, "**", &files);
-	while (!listState.isFinished())
-		client->waitUpdate();
+	client->waitRequest(&listState);
 	
 	if (listState.isSuccess())
 	{
@@ -72,12 +74,12 @@ bool FileSystem::stat(const std::string &path, FileAttributes *attributes)
 	attributes->date = 0;
 	attributes->length = 0;
 	
-	/*if (!attributes->folder)
+	if (!attributes->folder)
 	{
-		Asset &asset = this->assets[node->getId()];
-		attributes->date = asset.date;
-		attributes->length = asset.length;
-	}*/
+		//Asset &asset = this->assets[node->getId()];
+		attributes->date = 42;
+		attributes->length = 10 * 1024 * 1024;
+	}
 	
 	return true;
 }
@@ -95,17 +97,26 @@ bool FileSystem::unlink(const std::string &path)
 	return true;
 }
 
-long FileSystem::open(const std::string &path, OpenMode mode, const std::string &applicationName)
+File *FileSystem::open(const std::string &path, bool reading, bool writing, bool truncate, const std::string &applicationName)
 {
-	/*this->project->checkChanges();
+	//this->project->checkChanges();
+	
+	// must open at least for one of the modes
+	assert(reading || writing);
 	
 	// check if file exists
 	FileSystemNode *node = this->root->find(path);
 	if (!node)
-		return -1;
+		return NULL;
+	
+	File *file = new File(this->client, path);
+	
+	file->open(reading, writing, truncate);
+	
+	return file;
 	
 	// initialize operation data
-	this->openData.id = node->getId();
+	/*this->openData.id = node->getId();
 	this->openData.fd = -1;
 	
 	// check if directory
@@ -151,16 +162,24 @@ long FileSystem::open(const std::string &path, OpenMode mode, const std::string 
 	return 0;
 }
 
-void FileSystem::close(long fd)
+bool FileSystem::close(File *file)
 {
+	bool result = file->close();
+	
+	delete file;
+	
+	return result;
+	
 	/*this->project->checkChanges();
 	
 	if (fd >= 0)
 		this->project->closeAsset((unsigned long)fd);*/
 }
 
-bool FileSystem::read(long fd, unsigned long offset, void *buffer, unsigned long length)
+bool FileSystem::read(File *file, unsigned long offset, void *buffer, unsigned long length)
 {
+	return file->read(offset, buffer, length);
+	
 	/*if (fd < 0)
 		return false; // BAD FD
 	
@@ -192,7 +211,12 @@ bool FileSystem::read(long fd, unsigned long offset, void *buffer, unsigned long
 	}*/
 	
 	// read succeeded
-	return true;
+	//return true;
+}
+
+bool FileSystem::write(File *file, unsigned long offset, const void *buffer, unsigned long length)
+{
+	return file->write(offset, buffer, length);
 }
 
 bool FileSystem::mkdir(const std::string &path)

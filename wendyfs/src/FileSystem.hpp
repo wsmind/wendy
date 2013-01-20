@@ -30,6 +30,7 @@
 #include <vector>
 #include <map>
 
+class File;
 class FileSystemNode;
 
 namespace wendy { class Client; }
@@ -54,16 +55,18 @@ class FileSystem
 		
 		bool unlink(const std::string &path);
 		
-		enum OpenMode
+		/*enum OpenMode
 		{
 			READING,
 			WRITING,
 		};
-		long open(const std::string &path, OpenMode mode, const std::string &applicationName);
+		long open(const std::string &path, OpenMode mode, const std::string &applicationName);*/
+		File *open(const std::string &path, bool reading, bool writing, bool truncate, const std::string &applicationName);
 		
-		void close(long fd);
+		bool close(File *file);
 		
-		bool read(long fd, unsigned long offset, void *buffer, unsigned long length);
+		bool read(File *file, unsigned long offset, void *buffer, unsigned long length);
+		bool write(File *file, unsigned long offset, const void *buffer, unsigned long length);
 		
 		bool mkdir(const std::string &path);
 		

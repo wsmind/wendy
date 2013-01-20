@@ -10,7 +10,7 @@ env.Append(LIBS = ["wendy"])
 if env["CC"] == "cl":
 	env.Append(CPPFLAGS = ["/Z7", "/W2", "/wd4251", "/EHsc"])
 else:
-	env.Append(CPPFLAGS = ["-g", "-Wall"])
+	env.Append(CPPFLAGS = ["-g", "-Wall", "-Werror"])
 
 if os.name == "nt":
 	env.Append(CPPPATH = ["$BINARYDEPS/dokan"])

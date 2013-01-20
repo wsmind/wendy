@@ -24,8 +24,22 @@
  *****************************************************************************/
 
 #include <iostream>
+#include <cassert>
+#include <wendy/AssetWriter.hpp>
 #include <wendy/Client.hpp>
 #include <wendy/RequestState.hpp>
+
+class TestWriter: public wendy::AssetWriter
+{
+	public:
+		virtual ~TestWriter() {}
+		
+		virtual void writeAssetData(unsigned long long offset, const char *buffer, unsigned long long size)
+		{
+			for (unsigned long long i = 0; i < size; i++)
+				std::cout << buffer[i];
+		}
+};
 
 int main()
 {
@@ -34,8 +48,7 @@ int main()
 	wendy::RequestState listState;
 	wendy::Client::PathList files;
 	client->list(&listState, "*", &files);
-	while (!listState.isFinished())
-		client->waitUpdate();
+	client->waitRequest(&listState);
 	
 	if (listState.isSuccess())
 	{
@@ -46,8 +59,7 @@ int main()
 	wendy::RequestState listState2;
 	wendy::Client::PathList files2;
 	client->list(&listState2, "non-existent-file", &files2);
-	while (!listState2.isFinished())
-		client->waitUpdate();
+	client->waitRequest(&listState2);
 	
 	if (listState2.isSuccess())
 	{
@@ -58,14 +70,20 @@ int main()
 	wendy::RequestState listState3;
 	wendy::Client::PathList files3;
 	client->list(&listState3, "lapins/**", &files3);
-	while (!listState3.isFinished())
-		client->waitUpdate();
+	client->waitRequest(&listState3);
 	
 	if (listState3.isSuccess())
 	{
 		for (unsigned int i = 0; i < files3.size(); i++)
 			std::cout << "Found file: " << files3[i] << std::endl;
 	}
+	
+	wendy::RequestState readState;
+	TestWriter writer;
+	client->read(&readState, "engine.js", &writer);
+	client->waitRequest(&readState);
+	
+	assert(readState.isSuccess());
 	
 	delete client;
 	

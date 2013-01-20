@@ -35,6 +35,7 @@
 
 namespace wendy {
 
+class AssetWriter;
 class HttpEngine;
 class Request;
 
@@ -69,8 +70,21 @@ class WENDYAPI Client
 		 */
 		void waitUpdate();
 		
+		/**
+		 * \brief Block until a particular request if finished
+		 *
+		 * This method will block the current thread until the given request
+		 * attains the finished state.
+		 *
+		 * It is basically a shortcut for calling waitUpdate() repeatedly until
+		 * the request is finished.
+		 */
+		void waitRequest(RequestState *state);
+		
 		typedef std::vector<std::string> PathList;
 		void list(RequestState *state, const std::string &filter, PathList *paths);
+		
+		void read(RequestState *state, const std::string &path, AssetWriter *writer);
 		
 	private:
 		void updateRequests();

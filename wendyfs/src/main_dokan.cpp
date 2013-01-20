@@ -58,8 +58,6 @@ class ScopeLock
 		}
 };
 
-//static wendy::Client *client = NULL;
-
 static std::string wideToUtf8(std::wstring wide)
 {
 	// passing no output buffer return required buffer size
@@ -125,36 +123,9 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 {
 	ScopeLock lock;
 	
-	static int count = 0;
-	wprintf(L"(%d) CreateFile: %s\n", ++count, filename);
+	wprintf(L"CreateFile: %s\n", filename);
 	
 	std::string path = makePathStandard(filename);
-	
-	// hack
-	/*if (path == "")
-	{
-		// flag as directory
-		info->IsDirectory = TRUE;
-		count--;
-		return 0;
-	}
-	
-	wendy::RequestState listState;
-	wendy::Client::PathList files;
-	client->list(&listState, path, &files);
-	while (!listState.isFinished())
-		client->waitUpdate();
-	
-	count--;
-	
-	if (!listState.isSuccess())
-		return -ERROR_NOT_READY;
-	
-	wprintf(L"found %d results\n", files.size());
-	for (unsigned int i = 0; i < files.size(); i++)
-		printf("  file: %s\n", files[i].c_str());
-	
-	bool exists = files.size() == 1;*/
 	
 	FileSystem::FileAttributes attributes;
 	bool exists = fs->stat(path, &attributes);
@@ -194,20 +165,23 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 		wprintf(L"%s opened by %s\n", filename, processNameWide.c_str());
 		
 		// translate access mode
-		/*FileSystem::OpenMode mode = FileSystem::READING;
+		bool reading = false;
+		bool writing = false;
 		
-		if ((accessMode & FILE_GENERIC_READ) == FILE_GENERIC_READ) mode = FileSystem::READING;
-		if ((accessMode & FILE_GENERIC_WRITE) == FILE_GENERIC_WRITE) mode = FileSystem::WRITING;
+		//if ((accessMode & FILE_GENERIC_READ) == FILE_GENERIC_READ) reading = true;
+		//if ((accessMode & FILE_GENERIC_WRITE) == FILE_GENERIC_WRITE) writing = true;
+		reading = true;
 		
-		if (mode == FileSystem::WRITING)
+		if (writing)
 			return -ERROR_ACCESS_DENIED;
 		
 		// open asset
-		long fd = fs->open(path, mode, processName);
-		if (fd == -1)
-			return -ERROR_PATH_NOT_FOUND;*/
+		File *file = fs->open(path, reading, writing, false, processName);
+		if (!file)
+			return -ERROR_PATH_NOT_FOUND;
 		
-		info->Context = (ULONG64)0; // fd
+		info->Context = (ULONG64)file; // file descriptor
+		wprintf(L"CreateFile succeeded (handle = 0x%x\n", file);
 	}
 	
 	return 0;
@@ -252,8 +226,9 @@ static int DOKAN_CALLBACK WendyCleanup(LPCWSTR filename, PDOKAN_FILE_INFO info)
 	
 	if (!info->IsDirectory)
 	{
-		//long fd = (long)info->Context;
-		//fs->close(fd);
+		File *file = (File *)info->Context;
+		if (!fs->close(file))
+			return -ERROR_ACCESS_DENIED;
 	}
 	
 	return 0;
@@ -267,7 +242,7 @@ int DOKAN_CALLBACK WendyCloseFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
 	return 0;
 }
 
-/*int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOfBytesToRead, LPDWORD numberOfBytesRead, LONGLONG offset, PDOKAN_FILE_INFO info)
+int DOKAN_CALLBACK WendyReadFile(LPCWSTR filename, LPVOID buffer, DWORD numberOfBytesToRead, LPDWORD numberOfBytesRead, LONGLONG offset, PDOKAN_FILE_INFO info)
 {
 	ScopeLock lock;
 	wprintf(L"ReadFile %s\n", filename);
@@ -289,8 +264,8 @@ int DOKAN_CALLBACK WendyCloseFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
 	
 	if (numberOfBytesToRead > 0)
 	{
-		long fd = (long)info->Context;
-		if (!fs->read(fd, (long)offset, buffer, numberOfBytesToRead)) // TODO: take a long long as offset
+		File *file = (File *)info->Context;
+		if (!fs->read(file, offset, buffer, numberOfBytesToRead))
 			return -ERROR_READ_FAULT;
 	}
 	*numberOfBytesRead = numberOfBytesToRead;
@@ -307,7 +282,7 @@ int DOKAN_CALLBACK WendyWriteFile(LPCWSTR filename, LPCVOID buffer, DWORD number
 	wprintf(L"WriteFile %s\n", filename);
 	
 	return 0;
-}*/
+}
 
 static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_FILE_INFORMATION buffer, PDOKAN_FILE_INFO info)
 {
@@ -328,7 +303,7 @@ static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_
 	}
 	else
 	{
-		buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+		buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_READONLY;
 		buffer->nFileSizeLow = attributes.length;
 		buffer->ftLastWriteTime = unixTimeToFileTime(attributes.date);
 	}
@@ -379,10 +354,12 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 	return 0;
 }
 
-/*static int DOKAN_CALLBACK WendyDeleteFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
+static int DOKAN_CALLBACK WendyDeleteFile(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
 	ScopeLock lock;
+	
 	wprintf(L"DeleteFile %s\n", filename);
+	
 	std::string path = makePathStandard(filename);
 	
 	FileSystem::FileAttributes attributes;
@@ -393,7 +370,7 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 		return -ERROR_ACCESS_DENIED;
 	
 	return 0;
-}*/
+}
 
 static int DOKAN_CALLBACK WendyDeleteDirectory(LPCWSTR filename, PDOKAN_FILE_INFO info)
 {
@@ -450,7 +427,7 @@ int main(int argc, char **argv)
 	options.ThreadCount = 0; // use default
 	std::wstring mountPoint = utf8ToWide(argv[1]);
 	options.MountPoint = mountPoint.c_str();
-	options.Options = /*DOKAN_OPTION_DEBUG | DOKAN_OPTION_STDERR |*/ DOKAN_OPTION_KEEP_ALIVE;
+	options.Options = DOKAN_OPTION_DEBUG | DOKAN_OPTION_STDERR | DOKAN_OPTION_KEEP_ALIVE;
 	
 	ZeroMemory(&operations, sizeof(DOKAN_OPERATIONS));
 	operations.CreateFile = WendyCreateFile;
@@ -458,17 +435,16 @@ int main(int argc, char **argv)
 	operations.CreateDirectory = WendyCreateDirectory;
 	operations.Cleanup = WendyCleanup;
 	operations.CloseFile = WendyCloseFile;
-	//operations.ReadFile = WendyReadFile;
-	//operations.WriteFile = WendyWriteFile;
+	operations.ReadFile = WendyReadFile;
+	operations.WriteFile = WendyWriteFile;
 	operations.GetFileInformation = WendyGetFileInformation;
 	operations.FindFiles = WendyFindFiles;
-	//operations.DeleteFile = WendyDeleteFile;
+	operations.DeleteFile = WendyDeleteFile;
 	operations.DeleteDirectory = WendyDeleteDirectory;
 	operations.GetDiskFreeSpace = WendyGetDiskFreeSpace;
 	operations.GetVolumeInformation = WendyGetVolumeInformation;
 	
 	fs = new FileSystem;
-	//client = new wendy::Client;
 	
 	InitializeCriticalSection(&wendyMutex);
 	
@@ -476,7 +452,6 @@ int main(int argc, char **argv)
 	
 	DeleteCriticalSection(&wendyMutex);
 	
-	//delete client;
 	delete fs;
 	
 	return result;
