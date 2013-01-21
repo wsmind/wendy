@@ -171,8 +171,8 @@ Cache.prototype.readLocalMetadata = function(callback)
 		}
 		else
 		{
-			// no metadata, return an empty object
-			callback(null, {})
+			// no metadata, return a default object
+			callback(null, {cache: {}, wip: {}})
 		}
 	})
 }

@@ -59,7 +59,7 @@ describe("cache", function()
 			cache.readLocalMetadata(function(err, object)
 			{
 				assert(!err)
-				assert.deepEqual(object, {})
+				assert.deepEqual(object, {cache: {}, wip: {}})
 				done()
 			})
 		})

@@ -103,6 +103,41 @@ WebService.prototype._api = {
 			},
 			handler: function(resource, parameters, request, response)
 			{
+				// extract requested range if present
+				if (request.headers.range)
+				{
+					var ranges = require("range-parser")(1000, request.headers.range)
+					
+					if (ranges == -1)
+					{
+						response.writeHead(416, "Range not satisfiable")
+						response.end()
+						return
+					}
+					
+					if (ranges == -2)
+					{
+						response.writeHead(400, "Bad request (invalid Range header)")
+						response.end()
+						return
+					}
+					
+					if (ranges.type != "bytes")
+					{
+						response.writeHead(400, "Bad request (Range unit not supported)", {
+							"Accept-Ranges": "bytes"
+						})
+						response.end()
+						return
+					}
+					
+					// ignore all ranges but the first
+					if (ranges.length > 1)
+						console.log("warning: multiple byte ranges were specified in request, only the first will be used")
+					var range = ranges[0]
+					console.log(range)
+				}
+				
 				// try to read asset
 				this.engine.read(resource, function(err, stream)
 				{

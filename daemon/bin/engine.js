@@ -78,7 +78,7 @@ function Engine(metadb, storage, cache)
 	// currently sharing (includes multiple uploads)
 	this.currentShares = {}
 	
-	// first, read information about assets locally modified
+	// first, read information about assets stored locally
 	var self = this
 	self.cache.readLocalMetadata(function(err, localMetadata)
 	{
@@ -182,7 +182,8 @@ Engine.prototype.save = function(path, stream, callback)
 				self.cache.deleteTemporary(tempFilename, function(deleteErr)
 				{
 					// double error; just log
-					console.log("cannot remove temporary file '" + tempFilename + "': " + deleteErr.message)
+					if (deleteErr)
+						console.log("cannot remove temporary file '" + tempFilename + "': " + deleteErr.message)
 				})
 				
 				// signal the move error

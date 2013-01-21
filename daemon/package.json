@@ -13,7 +13,8 @@
 	"dependencies": {
 		"cradle": "*",
 		"minimatch": "*",
-		"node-static": "*"
+		"node-static": "*",
+		"range-parser": "*"
 	},
 	"devDependencies": {
 		"rimraf": "*",
