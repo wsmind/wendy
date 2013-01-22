@@ -58,8 +58,11 @@ function Engine(metadb, storage, cache)
 	//
 	// Blobs
 	// {<id>: [<int array>]}
-	this.assets = {}
+	//this.assets = {}
 	//this.blobs = {}
+	
+	// path -> [versions]
+	this.requiredVersions = {}
 	
 	// waiting (not started) downloads
 	this.downloadQueue = []
