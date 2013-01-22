@@ -31,6 +31,8 @@ var utils = require("./utils.js")
 
 var TEMP_DATA_STORAGE_DIRECTORY = __dirname + "/fixtures/data-storage"
 var TEMP_DATA_STORAGE_PORT = 1234
+var MAX_PARALLEL_DOWNLOADS = 4
+var MAX_PARALLEL_UPLOADS = 4
 
 var storage = null
 var serverProcess = null
@@ -61,7 +63,7 @@ describe("storage", function()
 {
 	it("initializes", function()
 	{
-		storage = new (require("../bin/storage.js").Storage)("localhost", TEMP_DATA_STORAGE_PORT)
+		storage = new (require("../bin/storage.js").Storage)("localhost", TEMP_DATA_STORAGE_PORT, MAX_PARALLEL_DOWNLOADS, MAX_PARALLEL_UPLOADS)
 	})
 	
 	it("uploads correctly", function(done)

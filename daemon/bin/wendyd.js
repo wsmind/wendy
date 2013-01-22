@@ -49,7 +49,7 @@ fs.readFile(configFilename, function(err, data)
 	var metadb = new (cradle.Connection)(config.meta.host, config.meta.port).database(config.meta.database)
 	
 	// data storage
-	var storage = new (require("./storage.js").Storage)(config.storage.host, config.storage.port)
+	var storage = new (require("./storage.js").Storage)(config.storage.host, config.storage.port, config.storage.maxParallelDownloads, config.storage.maxParallelUploads)
 	
 	// local file cache
 	var cache = new (require("./cache.js").Cache)(config.cache.root)

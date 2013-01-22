@@ -26,10 +26,15 @@
 var fs = require("fs")
 var http = require("http")
 
-function Storage(host, port, database)
+var ProcessingQueue = require("../bin/processingqueue").ProcessingQueue
+
+function Storage(host, port, maxParallelDownloads, maxParallelUploads)
 {
 	this.host = host
 	this.port = port
+	
+	this.downloadQueue = new ProcessingQueue(maxParallelDownloads)
+	this.uploadQueue = new ProcessingQueue(maxParallelUploads)
 }
 exports.Storage = Storage
 
@@ -43,58 +48,61 @@ Storage.prototype.download = function(hash, filename, callback)
 		path: "/" + hash
 	}
 	
-	function signalResult(err)
+	this.downloadQueue.process(callback, function(callback)
 	{
-		if (callback)
-			callback(err)
-		callback = null
-	}
-	
-	var request = http.request(options, function(response)
-	{
-		if (response.statusCode != 200)
+		function signalResult(err)
 		{
-			signalResult(new Error("Wrong answer from server: " + response.statusCode))
-			return;
+			if (callback)
+				callback(err)
+			callback = null
 		}
 		
-		response.on("error", function(err)
+		var request = http.request(options, function(response)
 		{
-			signalResult(err)
+			if (response.statusCode != 200)
+			{
+				signalResult(new Error("Wrong answer from server: " + response.statusCode))
+				return;
+			}
+			
+			response.on("error", function(err)
+			{
+				signalResult(err)
+			})
+			
+			response.on("close", function()
+			{
+				// if the stream is still readable, the connection was abnormaly closed
+				if (response.readable)
+					signalResult(new Error("Connection lost"))
+			})
+			
+			var fileStream = fs.createWriteStream(filename)
+			
+			fileStream.on("error", function(err)
+			{
+				// error during transfer
+				signalResult(err)
+			})
+			
+			fileStream.on("close", function()
+			{
+				// successful termination (if nothing else failed before)
+				signalResult()
+			})
+			
+			response.pipe(fileStream)
 		})
 		
-		response.on("close", function()
-		{
-			// if the stream is still readable, the connection was abnormaly closed
-			if (response.readable)
-				signalResult(new Error("Connection lost"))
-		})
-		
-		var fileStream = fs.createWriteStream(filename)
-		
-		fileStream.on("error", function(err)
+		// handle errors during connection
+		request.on("error", function(err)
 		{
 			// error during transfer
 			signalResult(err)
 		})
 		
-		fileStream.on("close", function()
-		{
-			// successful termination (if nothing else failed before)
-			signalResult()
-		})
-		
-		response.pipe(fileStream)
+		request.end()
 	})
-	
-	// handle errors during connection
-	request.on("error", function(err)
-	{
-		// error during transfer
-		signalResult(err)
-	})
-	
-	request.end()
 }
 
 // callback(err)
@@ -107,39 +115,42 @@ Storage.prototype.upload = function(hash, filename, callback)
 		path: "/" + hash
 	}
 	
-	function signalResult(err)
+	this.uploadQueue.process(callback, function(callback)
 	{
-		if (callback)
-			callback(err)
-		callback = null
-	}
-	
-	var request = http.request(options, function(response)
-	{
-		if (response.statusCode != 200)
+		function signalResult(err)
 		{
-			signalResult(new Error("Wrong answer from server: " + response.statusCode))
-			return;
+			if (callback)
+				callback(err)
+			callback = null
 		}
 		
-		// successful upload
-		signalResult()
+		var request = http.request(options, function(response)
+		{
+			if (response.statusCode != 200)
+			{
+				signalResult(new Error("Wrong answer from server: " + response.statusCode))
+				return;
+			}
+			
+			// successful upload
+			signalResult()
+		})
+		
+		// stream asset file
+		var fileStream = fs.createReadStream(filename)
+		fileStream.on("error", function(err)
+		{
+			// error with local file
+			signalResult(err)
+		})
+		
+		request.on("error", function(err)
+		{
+			// socket error
+			signalResult(err)
+		})
+		
+		// actual upload
+		fileStream.pipe(request)
 	})
-	
-	// stream asset file
-	var fileStream = fs.createReadStream(filename)
-	fileStream.on("error", function(err)
-	{
-		// error with local file
-		signalResult(err)
-	})
-	
-	request.on("error", function(err)
-	{
-		// socket error
-		signalResult(err)
-	})
-	
-	// actual upload
-	fileStream.pipe(request)
 }

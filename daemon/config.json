@@ -1,7 +1,9 @@
 {
 	"storage": {
 		"host": "localhost",
-		"port": 1234
+		"port": 1234,
+		"maxParallelDownloads": 4,
+		"maxParallelUploads": 4
 	},
 	
 	"meta": {
