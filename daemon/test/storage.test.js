@@ -24,9 +24,6 @@
  *****************************************************************************/
 
 var assert = require("assert")
-var cp = require("child_process")
-var fs = require("fs")
-var rimraf = require("rimraf")
 var utils = require("./utils.js")
 
 var TEMP_DATA_STORAGE_DIRECTORY = __dirname + "/fixtures/data-storage"
@@ -35,32 +32,20 @@ var MAX_PARALLEL_DOWNLOADS = 4
 var MAX_PARALLEL_UPLOADS = 4
 
 var storage = null
-var serverProcess = null
-
-before(function(done)
-{
-	fs.mkdir(TEMP_DATA_STORAGE_DIRECTORY, function(err)
-	{
-		serverProcess = cp.fork(__dirname + "/../../data-server/server.js", [TEMP_DATA_STORAGE_PORT, TEMP_DATA_STORAGE_DIRECTORY], {
-			silent: true
-		})
-		
-		serverProcess.on("exit", function(code, signal)
-		{
-			if (!code)
-				throw new Error("Data server crashed!")
-		})
-		
-		utils.createTemporary(__dirname + "/fixtures/small", 100, function(hash)
-		{
-			// give some time for data server to initialize
-			setTimeout(done, 1000)
-		})
-	})
-})
 
 describe("storage", function()
 {
+	before(function(done)
+	{
+		utils.startDataServer(TEMP_DATA_STORAGE_DIRECTORY, TEMP_DATA_STORAGE_PORT, function()
+		{
+			utils.createTemporary(__dirname + "/fixtures/small", 100, function(hash)
+			{
+				done()
+			})
+		})
+	})
+	
 	it("initializes", function()
 	{
 		storage = new (require("../bin/storage.js").Storage)("localhost", TEMP_DATA_STORAGE_PORT, MAX_PARALLEL_DOWNLOADS, MAX_PARALLEL_UPLOADS)
@@ -103,16 +88,9 @@ describe("storage", function()
 			done()
 		})
 	})
-})
-
-after(function(done)
-{
-	serverProcess.kill()
 	
-	// remove test cache folder
-	rimraf(TEMP_DATA_STORAGE_DIRECTORY, function(err)
+	after(function(done)
 	{
-		assert(!err)
-		done()
+		utils.stopDataServer(done)
 	})
 })

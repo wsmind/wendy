@@ -23,19 +23,50 @@
  * 
  *****************************************************************************/
 
-process.once("message", function(config)
+var assert = require("assert")
+var cradle = require("cradle")
+var utils = require("./utils.js")
+
+var metadb = null
+var DB_HOST = "localhost"
+var DB_PORT = 5984
+var DB_NAME = "wendy-test"
+
+var storage = null
+var TEMP_DATA_STORAGE_DIRECTORY = __dirname + "/fixtures/data-storage"
+var TEMP_DATA_STORAGE_PORT = 1234
+var MAX_PARALLEL_DOWNLOADS = 4
+var MAX_PARALLEL_UPLOADS = 4
+
+var cache = null
+var TEMP_CACHE_DIRECTORY = __dirname + "/fixtures/cache"
+
+describe("engine", function()
 {
-	/*var storage = new (require("../bin/storage.js").CouchStorage)(config.storage.host, config.storage.port, config.storage.database)
-	var cache = new (require("../bin/cache.js").Cache)(config.cache.root)
-	var engine = new (require("../bin/engine.js").Engine)(storage, cache)
-	
-	engine.on("changed", function(id, asset)
+	before(function(done)
 	{
-		console.log("updated asset: " + id)
+		utils.startDataServer(TEMP_DATA_STORAGE_DIRECTORY, TEMP_DATA_STORAGE_PORT, function()
+		{
+			utils.createCacheFolder(TEMP_CACHE_DIRECTORY, function()
+			{
+				metadb = new (cradle.Connection)(DB_HOST, DB_PORT).database(DB_NAME)
+				storage = new (require("../bin/storage.js").Storage)("localhost", TEMP_DATA_STORAGE_PORT, MAX_PARALLEL_DOWNLOADS, MAX_PARALLEL_UPLOADS)
+				cache = new (require("../bin/cache.js").Cache)(TEMP_CACHE_DIRECTORY)
+				done()
+			})
+		})
 	})
 	
-	storage.create(function(id)
+	it("initializes", function()
 	{
-		console.log("created asset " + id)
-	})*/
+		//engine = new (require("../bin/engine.js").Engine)(metadb, storage, cache)
+	})
+	
+	after(function(done)
+	{
+		utils.destroyCacheFolder(function()
+		{
+			utils.stopDataServer(done)
+		})
+	})
 })

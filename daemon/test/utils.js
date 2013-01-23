@@ -26,6 +26,86 @@
 var fs = require("fs")
 var crypto = require("crypto")
 var rimraf = require("rimraf")
+var cp = require("child_process")
+var assert = require("assert")
+
+var dataServerProcess = null
+var dataServerRoot = null
+
+// callback()
+exports.startDataServer = function(root, port, callback)
+{
+	assert(!dataServerProcess)
+	
+	dataServerRoot = root
+	fs.mkdir(root, function(err)
+	{
+		//assert(!err)
+		
+		dataServerProcess = cp.fork(__dirname + "/../../data-server/server.js", [port, root], {
+			silent: true
+		})
+		
+		dataServerProcess.on("exit", function(code, signal)
+		{
+			throw new Error("Data server crashed!")
+		})
+		
+		// give some time for data server to initialize
+		setTimeout(callback, 1000)
+	})
+}
+
+// callback()
+exports.stopDataServer = function(callback)
+{
+	assert(dataServerProcess)
+	
+	dataServerProcess.removeAllListeners("exit") // kill signal is no crash
+	dataServerProcess.kill()
+	
+	// remove test cache folder
+	assert(dataServerRoot)
+	rimraf(dataServerRoot, function(err)
+	{
+		assert(!err)
+		
+		dataServerProcess = null
+		dataServerRoot = null
+		
+		// give some time for data server to shutdown
+		setTimeout(callback, 1000)
+	})
+}
+
+var cacheRoot = null
+
+// callback()
+exports.createCacheFolder = function(root, callback)
+{
+	assert(!cacheRoot)
+	
+	cacheRoot = root
+	fs.mkdir(root, function(err)
+	{
+		//assert(!err)
+		callback()
+	})
+}
+
+// callback()
+exports.destroyCacheFolder = function(callback)
+{
+	assert(cacheRoot)
+	rimraf(cacheRoot, function(err)
+	{
+		assert(!err)
+		
+		cacheRoot = null
+		
+		callback()
+	})
+}
 
 // callback(hash)
 // throws on error

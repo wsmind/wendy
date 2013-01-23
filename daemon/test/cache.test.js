@@ -24,24 +24,19 @@
  *****************************************************************************/
 
 var assert = require("assert")
-var fs = require("fs")
-var rimraf = require("rimraf")
 var utils = require("./utils.js")
 
 var TEMP_CACHE_DIRECTORY = __dirname + "/fixtures/cache"
 
 var cache = null
 
-before(function(done)
-{
-	fs.mkdir(TEMP_CACHE_DIRECTORY, function(err)
-	{
-		done()
-	})
-})
-
 describe("cache", function()
 {
+	before(function(done)
+	{
+		utils.createCacheFolder(TEMP_CACHE_DIRECTORY, done)
+	})
+	
 	it("initializes", function()
 	{
 		cache = new (require("../bin/cache.js").Cache)(TEMP_CACHE_DIRECTORY)
@@ -199,14 +194,9 @@ describe("cache", function()
 			})
 		})
 	})
-})
-
-after(function(done)
-{
-	// remove test cache folder
-	rimraf(TEMP_CACHE_DIRECTORY, function(err)
+	
+	after(function(done)
 	{
-		assert(!err)
-		done()
+		utils.destroyCacheFolder(done)
 	})
 })
