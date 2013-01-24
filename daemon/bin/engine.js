@@ -61,7 +61,7 @@ function Engine(metadb, storage, cache)
 	//this.assets = {}
 	//this.blobs = {}
 	
-	// path -> [versions]
+	// path -> {version -> {hash, size}}
 	this.requiredVersions = {}
 	
 	// waiting (not started) downloads
@@ -384,24 +384,81 @@ Engine.prototype._pollChanges = function()
 		result.forEach(function(path, latestVersion)
 		{
 			console.log(path)
-			self.assets[path] = latestVersion
-			self._checkAssetState(path)
+			//self.assets[path] = latestVersion
+			if (!self.requiredVersions[path])
+				self.requiredVersions[path] = {}
+			
+			var version = Object.keys(latestVersion)[0]
+			self.requiredVersions[path][version] = latestVersion[version]
+			self._checkAssetLocalContent(path)
 		})
 		
 		var feed = self.metadb.changes({since: result.json.update_seq, include_docs: true})
 		feed.on("change", function(change)
 		{
-			console.log(change)
+			var version = change._id
+			var assets = change.doc.assets
+			
+			for (var path in assets)
+			{
+				console.log("updated " + path)
+				self.requiredVersions[path][version] = assets[path]
+				self._checkAssetLocalContent(path)
+			}
 		})
 	})
 }
 
-// Determine asset state, and take necessary actions
-// to get it up to date
-Engine.prototype._checkAssetState = function(path)
+// Compare asset local state to the required state
+Engine.prototype._checkAssetLocalContent = function(path)
 {
 	var self = this
-	var asset = this.assets[path]
+	
+	if (!self.requiredVersions[path])
+		return // if nothing is required, we are up to date
+	
+	// check that we have all required versions
+	var required = self.requiredVersions[path]
+	for (var version in required)
+	{
+		var hash = required[version].hash
+		
+		// if hash is null, the asset was deleted
+		if (hash)
+		{
+			// look for the version in the local cache
+			self.cache.find(hash, function(location)
+			{
+				if (location != "cache")
+				{
+					// the latest version was not found, start download
+					var tempFilename = self.cache.createTemporaryFilename()
+					self.storage.download(hash, tempFilename, function(err)
+					{
+						if (err)
+						{
+							// remove temporary file
+							self.cache.deleteTemporary(tempFilename, function(deleteErr)
+							{
+								// double error; just print
+								if (deleteErr)
+									console.log("unable to remove temporary file " + tempFilename + " (because of failed download): " + deleteErr.message)
+							})
+							return
+						}
+						
+						// download finished, save in cache
+						self.cache.upgradeTemporary(tempFilename, "cache", function(err)
+						{
+							if (err) throw err
+						})
+					})
+				}
+			})
+		}
+	}
+	
+	/*var asset = this.assets[path]
 	var latest = asset[Object.keys(asset)[0]]
 	
 	// look for the latest version in the local cache
@@ -412,7 +469,7 @@ Engine.prototype._checkAssetState = function(path)
 			// the latest version was not found, start download
 			self._download(latest.hash)
 		}
-	})
+	})*/
 	
 	/*asset.state = "outdated"
 	
@@ -440,86 +497,7 @@ Engine.prototype._checkAssetState = function(path)
 	
 	console.log("STATE of " + id + " -> " + asset.state)*/
 	
-	this.emit("changed", path, latest)
-}
-
-Engine.prototype._downloadCallback = function(err, hash)
-{
-	if (err)
-	{
-		console.log("download of " + hash + " failed: " + err.message)
-		return
-	}
-	
-	console.log("download finished: " + hash)
-}
-
-Engine.prototype._download = function(hash)
-{
-	// check if already planned for downloading
-	if (this.downloadQueue.indexOf(hash) != -1)
-		return
-	
-	// check if already downloading
-	if (this.currentDownloads.indexOf(hash) != -1)
-		return
-	
-	// start actual download
-	this.downloadQueue.push(hash)
-	this._processDownloads()
-}
-
-Engine.prototype._processDownloads = function()
-{
-	while ((this.downloadQueue.length > 0) && (this.currentDownloads.length < this.MAX_DOWNLOADS))
-	{
-		var hash = this.downloadQueue.shift()
-		this.currentDownloads.push(hash)
-		
-		console.log("starting download: " + hash)
-		
-		var self = this
-		
-		var tempFilename = self.cache.createTemporaryFilename()
-		this.storage.download(hash, tempFilename, function(err)
-		{
-			// remove from current downloads
-			self.currentDownloads.splice(self.currentDownloads.indexOf(hash), 1)
-			
-			// start next downloads (if any)
-			self._processDownloads()
-			
-			//if (err) throw err
-			if (err)
-			{
-				// remove temporary file
-				self.cache.deleteTemporary(tempFilename, function(deleteErr)
-				{
-					// double error; just print
-					if (deleteErr)
-						console.log("unable to remove temporary file " + tempFilename + " (because of failed download): " + deleteErr.message)
-					
-					// signal download error
-					self._downloadCallback(err, hash)
-				})
-				return
-			}
-			
-			// download finished, save in cache
-			self.cache.upgradeTemporary(tempFilename, "cache", function(err)
-			{
-				//if (err) throw err
-				if (err)
-				{
-					self._downloadCallback(err, hash)
-					return
-				}
-				
-				// download complete
-				self._downloadCallback(null, hash)
-			})
-		})
-	}
+	//this.emit("changed", path, latest)
 }
 
 Engine.prototype._uploadCallback = function(err, hash)
