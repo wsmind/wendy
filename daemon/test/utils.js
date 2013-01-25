@@ -26,6 +26,7 @@
 var fs = require("fs")
 var crypto = require("crypto")
 var rimraf = require("rimraf")
+var cradle = require("cradle")
 var cp = require("child_process")
 var assert = require("assert")
 
@@ -105,6 +106,77 @@ exports.destroyCacheFolder = function(callback)
 		
 		callback()
 	})
+}
+
+var db = null
+
+// callback()
+exports.createDB = function(host, port, name, callback)
+{
+	assert(!db)
+	
+	db = new (cradle.Connection)(host, port).database(name)
+	db.exists(function(err, exists)
+	{
+		assert(!err)
+		//assert(!exists)
+		
+		db.destroy(function(err)
+		{
+			db.create(function(err)
+			{
+				assert(!err)
+				
+				// create views
+				db.save("_design/wendy", {
+					latest: {
+						map: function(doc)
+						{
+							for (var path in doc.assets)
+							{
+								var asset = doc.assets[path]
+								
+								var history = {}
+								history[doc._id] = {hash: asset.hash}
+								emit(path, history);
+							}
+						},
+						reduce: function(key, values, rereduce)
+						{
+							var mostRecent = Object.keys(values[0])[0]
+							var index = 0
+							for (var i = 1; i < values.length; i++)
+							{
+								var time = Object.keys(values[i])[0]
+								if (time > mostRecent)
+								{
+									mostRecent = time
+									index = i
+								}
+							}
+							return values[index]
+						}
+					}
+				}, callback)
+			})
+		})
+	})
+}
+
+// callback()
+exports.destroyDB = function(callback)
+{
+	assert(db)
+	
+	/*db.destroy(function(err)
+	{
+		assert(!err)
+		
+		db = null
+		callback()
+	})*/
+	db = null
+	callback()
 }
 
 // callback(hash)

@@ -64,13 +64,6 @@ function Engine(metadb, storage, cache)
 	// path -> {version -> {hash, size}}
 	this.requiredVersions = {}
 	
-	// waiting (not started) downloads
-	this.downloadQueue = []
-	
-	// currently downloading
-	this.currentDownloads = []
-	this.MAX_DOWNLOADS = 4
-	
 	// waiting (not started) uploads
 	this.uploadQueue = []
 	
@@ -80,21 +73,37 @@ function Engine(metadb, storage, cache)
 	
 	// currently sharing (includes multiple uploads)
 	this.currentShares = {}
-	
+}
+util.inherits(Engine, events.EventEmitter)
+exports.Engine = Engine
+
+// callback(err)
+Engine.prototype.start = function(callback)
+{
 	// first, read information about assets stored locally
 	var self = this
 	self.cache.readLocalMetadata(function(err, localMetadata)
 	{
-		if (err) throw err
+		if (err)
+		{
+			callback(err)
+			return
+		}
 		
 		self.local = localMetadata
 		
 		// start polling latest state continuously
-		self._pollChanges()
+		self._startPollingChanges(callback)
 	})
 }
-util.inherits(Engine, events.EventEmitter)
-exports.Engine = Engine
+
+// callback(err)
+Engine.prototype.stop = function(callback)
+{
+	// stop the change feed
+	this._stopPollingChanges()
+	callback()
+}
 
 // callback(err, stream)
 Engine.prototype.read = function(path, callback)
@@ -374,12 +383,17 @@ Engine.prototype.open = function(id, mode, callback)
 }*/
 
 // Continuously check latest changes from meta db
-Engine.prototype._pollChanges = function()
+Engine.prototype._startPollingChanges = function(callback)
 {
 	var self = this
-	this.metadb.view("history/latest", {group: true, update_seq: true}, function(err, result)
+	this.metadb.view("wendy/latest", {group: true, update_seq: true}, function(err, result)
 	{
-		if (err) throw err
+		if (err)
+		{
+			console.log(err)
+			callback(err)
+			return
+		}
 		
 		result.forEach(function(path, latestVersion)
 		{
@@ -393,20 +407,33 @@ Engine.prototype._pollChanges = function()
 			self._checkAssetLocalContent(path)
 		})
 		
-		var feed = self.metadb.changes({since: result.json.update_seq, include_docs: true})
-		feed.on("change", function(change)
+		self.changeFeed = self.metadb.changes({since: result.json.update_seq, include_docs: true})
+		self.changeFeed.addListener("change", function(change)
 		{
-			var version = change._id
-			var assets = change.doc.assets
-			
-			for (var path in assets)
-			{
-				console.log("updated " + path)
-				self.requiredVersions[path][version] = assets[path]
-				self._checkAssetLocalContent(path)
-			}
+			self._onChange(change)
 		})
+		
+		callback()
 	})
+}
+
+Engine.prototype._stopPollingChanges = function()
+{
+	this.changeFeed.removeAllListeners("change")
+	this.changeFeed.stop()
+}
+
+Engine.prototype._onChange = function(change)
+{
+	var version = change._id
+	var assets = change.doc.assets
+	
+	for (var path in assets)
+	{
+		console.log("updated " + path)
+		this.requiredVersions[path][version] = assets[path]
+		this._checkAssetLocalContent(path)
+	}
 }
 
 // Compare asset local state to the required state

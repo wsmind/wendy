@@ -25,6 +25,7 @@
 
 var assert = require("assert")
 var cradle = require("cradle")
+var fs = require("fs")
 var utils = require("./utils.js")
 
 var metadb = null
@@ -41,32 +42,60 @@ var MAX_PARALLEL_UPLOADS = 4
 var cache = null
 var TEMP_CACHE_DIRECTORY = __dirname + "/fixtures/cache"
 
+var engine = null
+
 describe("engine", function()
 {
 	before(function(done)
 	{
-		utils.startDataServer(TEMP_DATA_STORAGE_DIRECTORY, TEMP_DATA_STORAGE_PORT, function()
+		utils.createDB(DB_HOST, DB_PORT, DB_NAME, function()
 		{
 			utils.createCacheFolder(TEMP_CACHE_DIRECTORY, function()
 			{
-				metadb = new (cradle.Connection)(DB_HOST, DB_PORT).database(DB_NAME)
-				storage = new (require("../bin/storage.js").Storage)("localhost", TEMP_DATA_STORAGE_PORT, MAX_PARALLEL_DOWNLOADS, MAX_PARALLEL_UPLOADS)
-				cache = new (require("../bin/cache.js").Cache)(TEMP_CACHE_DIRECTORY)
-				done()
+				utils.startDataServer(TEMP_DATA_STORAGE_DIRECTORY, TEMP_DATA_STORAGE_PORT, function()
+				{
+					metadb = new (cradle.Connection)(DB_HOST, DB_PORT).database(DB_NAME)
+					storage = new (require("../bin/storage.js").Storage)("localhost", TEMP_DATA_STORAGE_PORT, MAX_PARALLEL_DOWNLOADS, MAX_PARALLEL_UPLOADS)
+					cache = new (require("../bin/cache.js").Cache)(TEMP_CACHE_DIRECTORY)
+					done()
+				})
 			})
 		})
 	})
 	
 	it("initializes", function()
 	{
-		//engine = new (require("../bin/engine.js").Engine)(metadb, storage, cache)
+		engine = new (require("../bin/engine.js").Engine)(metadb, storage, cache)
+	})
+	
+	it("starts", function(done)
+	{
+		engine.start(done)
+	})
+	
+	it("stops", function(done)
+	{
+		engine.stop(done)
+	})
+	
+	it("saves a new asset", function(done)
+	{
+		var tempFilename = __dirname + "/fixtures/plop";
+		utils.createTemporary(tempFilename, 100, function(hash)
+		{
+			var stream = fs.createReadStream(tempFilename)
+			engine.save("/plop", stream, done)
+		})
 	})
 	
 	after(function(done)
 	{
-		utils.destroyCacheFolder(function()
+		utils.destroyDB(function()
 		{
-			utils.stopDataServer(done)
+			utils.destroyCacheFolder(function()
+			{
+				utils.stopDataServer(done)
+			})
 		})
 	})
 })
