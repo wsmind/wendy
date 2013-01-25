@@ -37,30 +37,6 @@ function Engine(metadb, storage, cache)
 	this.storage = storage
 	this.cache = cache
 	
-	// Asset structure
-	// {
-	//    lock: {user: <string>, application: <string>},
-	//    revisions: {<int>: {rev}, <int>: {rev2}, ...},
-	//    state: "outofdate" | "downloading" | "uptodate"
-	// }
-	//
-	// Revision structure
-	// (path and blob will be undefined if the asset was deleted in this revision)
-	// {
-	//    author: <string>,
-	//    date: <unix timestamp>
-	//    //tag: <string>
-	//    [path: <string>,]
-	//    [blob: <int>,]
-	//    [type: <mime>]
-	//    [length: <int>]
-	// }
-	//
-	// Blobs
-	// {<id>: [<int array>]}
-	//this.assets = {}
-	//this.blobs = {}
-	
 	// path -> {version -> {hash, size}}
 	this.requiredVersions = {}
 	
@@ -111,13 +87,14 @@ Engine.prototype.read = function(path, callback)
 	var hash = null
 	
 	// check for a local version first
-	if (path in this.local)
+	if (path in this.local.wip)
 	{
-		hash = this.local[path].hash
+		hash = this.local.wip[path].hash
 	}
 	else
 	{
 		// if nothing local, check downloaded revisions
+		assert(false, "TODO: reimplement")
 		var asset = this.assets[path]
 		
 		// check asset existence
@@ -256,18 +233,22 @@ Engine.prototype.readVersion = function(version, callback)
 {
 	if (version == "local")
 	{
-		callback(null, this.local)
+		callback(null, {
+			author: "CurrentUser",
+			description: "The description does not exist",
+			assets: this.local.wip
+		})
 	}
 	else
 	{
-		callback(new Error("Not implemented (yet)"))
+		this.metadb.read(version, callback)
 	}
 }
 
 Engine.prototype._updateMetadata = function(path, hash)
 {
 	// save new local revision
-	this.local[path] = {hash: hash}
+	this.local.wip[path] = {hash: hash}
 	
 	// write metadata
 	this.cache.writeLocalMetadata(this.local, function(err)

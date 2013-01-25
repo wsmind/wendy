@@ -43,6 +43,8 @@ var cache = null
 var TEMP_CACHE_DIRECTORY = __dirname + "/fixtures/cache"
 
 var engine = null
+var firstHash = null
+var secondHash = null
 
 describe("engine", function()
 {
@@ -83,8 +85,90 @@ describe("engine", function()
 		var tempFilename = __dirname + "/fixtures/plop";
 		utils.createTemporary(tempFilename, 100, function(hash)
 		{
+			firstHash = hash
+			
 			var stream = fs.createReadStream(tempFilename)
 			engine.save("/plop", stream, done)
+		})
+	})
+	
+	it("references the new asset in the local version", function(done)
+	{
+		engine.readVersion("local", function(err, version)
+		{
+			assert(!err)
+			assert("/plop" in version.assets)
+			assert(version.assets["/plop"].hash == firstHash)
+			
+			done()
+		})
+	})
+	
+	it("reads back the new asset", function(done)
+	{
+		var tempFilename = __dirname + "/fixtures/plop.read";
+		var fileStream = fs.createWriteStream(tempFilename)
+		engine.read("/plop", function(err, stream)
+		{
+			assert(!err)
+			
+			stream.pipe(fileStream)
+			
+			fileStream.on("close", function()
+			{
+				// check the resulting file
+				utils.computeHash(tempFilename, function(hash)
+				{
+					assert(hash == firstHash)
+					done()
+				})
+			})
+		})
+	})
+	
+	it("overwrites the same asset", function(done)
+	{
+		var tempFilename = __dirname + "/fixtures/plop2";
+		utils.createTemporary(tempFilename, 100, function(hash)
+		{
+			secondHash = hash
+			
+			var stream = fs.createReadStream(tempFilename)
+			engine.save("/plop", stream, done)
+		})
+	})
+	
+	it("updates hash in local version", function(done)
+	{
+		engine.readVersion("local", function(err, version)
+		{
+			assert(!err)
+			assert("/plop" in version.assets)
+			assert(version.assets["/plop"].hash == secondHash)
+			
+			done()
+		})
+	})
+	
+	it("reads back the overwrited version", function(done)
+	{
+		var tempFilename = __dirname + "/fixtures/plop2.read";
+		var fileStream = fs.createWriteStream(tempFilename)
+		engine.read("/plop", function(err, stream)
+		{
+			assert(!err)
+			
+			stream.pipe(fileStream)
+			
+			fileStream.on("close", function()
+			{
+				// check the resulting file
+				utils.computeHash(tempFilename, function(hash)
+				{
+					assert(hash == secondHash)
+					done()
+				})
+			})
 		})
 	})
 	

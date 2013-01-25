@@ -185,7 +185,7 @@ exports.createTemporary = function(filename, size, callback)
 {
 	fs.open(filename, "w", function(err, fd)
 	{
-		if (err) throw err
+		assert(!err)
 		
 		var md5sum = crypto.createHash("md5")
 		
@@ -199,9 +199,30 @@ exports.createTemporary = function(filename, size, callback)
 		
 		fs.close(fd, function(err)
 		{
-			if (err) throw err
+			assert(!err)
 			callback(md5sum.digest("hex"))
 		})
+	})
+}
+
+exports.computeHash = function(filename, callback)
+{
+	var md5sum = crypto.createHash("md5")
+	var stream = fs.createReadStream(filename)
+	
+	stream.on("data", function(chunk)
+	{
+		md5sum.update(chunk)
+	})
+	
+	stream.on("end", function()
+	{
+		callback(md5sum.digest("hex"))
+	})
+	
+	stream.on("error", function(err)
+	{
+		assert(!err)
 	})
 }
 
