@@ -80,6 +80,22 @@ describe("engine", function()
 		engine.stop(done)
 	})
 	
+	it("restarts", function(done)
+	{
+		engine.start(done)
+	})
+	
+	it("lists nothing", function(done)
+	{
+		engine.list("**", function(err, list)
+		{
+			assert(!err)
+			assert.deepEqual(list, [])
+			
+			done()
+		})
+	})
+	
 	it("saves a new asset", function(done)
 	{
 		var tempFilename = __dirname + "/fixtures/plop";
@@ -99,6 +115,17 @@ describe("engine", function()
 			assert(!err)
 			assert("/plop" in version.assets)
 			assert(version.assets["/plop"].hash == firstHash)
+			
+			done()
+		})
+	})
+	
+	it("lists the new asset", function(done)
+	{
+		engine.list("**", function(err, list)
+		{
+			assert(!err)
+			assert.deepEqual(list, ["/plop"])
 			
 			done()
 		})
@@ -150,7 +177,7 @@ describe("engine", function()
 		})
 	})
 	
-	it("reads back the overwrited version", function(done)
+	it("reads back the overwritten version", function(done)
 	{
 		var tempFilename = __dirname + "/fixtures/plop2.read";
 		var fileStream = fs.createWriteStream(tempFilename)
@@ -170,6 +197,42 @@ describe("engine", function()
 				})
 			})
 		})
+	})
+	
+	it("shares the pending changes", function(done)
+	{
+		engine.share("always comment your changes before sharing", function(err, sharedVersion)
+		{
+			assert(!err)
+			
+			// check the resulting versions
+			engine.readVersion("local", function(err, localVersion)
+			{
+				assert(!err)
+				//assert.deepEqual(localVersion.assets, {})
+				
+				engine.readVersion(sharedVersion, function(err, version)
+				{
+					assert(!err)
+					assert.deepEqual(version, {
+						description: "always comment your changes before sharing",
+						author: "Mr Plop",
+						assets: {
+							"/plop": {
+								hash: secondHash
+							}
+						}
+					})
+					
+					done()
+				})
+			})
+		})
+	})
+	
+	it("stops", function(done)
+	{
+		engine.stop(done)
 	})
 	
 	after(function(done)

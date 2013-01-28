@@ -56,7 +56,15 @@ fs.readFile(configFilename, function(err, data)
 	
 	// management engine
 	var engine = new (require("./engine.js").Engine)(metadb, storage, cache)
-	
-	// local web service
-	var service = new (require("./webservice.js").WebService)(engine, config.service.port)
+	engine.start(function(err)
+	{
+		if (err)
+		{
+			console.log("Engine failed to start: " + err.message)
+			return
+		}
+		
+		// local web service
+		var service = new (require("./webservice.js").WebService)(engine, config.service.port)
+	})
 })

@@ -192,12 +192,12 @@ Engine.prototype.save = function(path, stream, callback)
 	stream.pipe(writeStream)
 }
 
-// enumerate assets
+// enumerate assets available locally
 // the filter is in glob format
 // callback(err, pathList)
 Engine.prototype.list = function(filter, callback)
 {
-	callback(null, minimatch.match(Object.keys(this.assets), filter, {}))
+	callback(null, minimatch.match(Object.keys(this.local.wip), filter, {}))
 }
 
 // commit everything to servers
@@ -212,14 +212,14 @@ Engine.prototype.share = function(description, callback)
 		meta: {
 			description: description,
 			author: "Mr Plop",
-			assets: this.local
+			assets: this.local.wip
 		}
 	}
 	
 	// upload all locally modified assets
-	for (var name in this.local)
+	for (var name in this.local.wip)
 	{
-		var asset = this.local[name]
+		var asset = this.local.wip[name]
 		this._upload(asset.hash)
 		shareDescription.hashes.push(asset.hash)
 	}
@@ -241,7 +241,21 @@ Engine.prototype.readVersion = function(version, callback)
 	}
 	else
 	{
-		this.metadb.read(version, callback)
+		this.metadb.get(version, function(err, document)
+		{
+			if (err)
+			{
+				callback(err)
+			}
+			else
+			{
+				callback(null, {
+					author: document.author,
+					description: document.description,
+					assets: document.assets,
+				})
+			}
+		})
 	}
 }
 
@@ -371,8 +385,7 @@ Engine.prototype._startPollingChanges = function(callback)
 	{
 		if (err)
 		{
-			console.log(err)
-			callback(err)
+			callback(new Error("Cannot read view wendy/latest in metadb: " + JSON.stringify(err)))
 			return
 		}
 		
@@ -552,7 +565,7 @@ Engine.prototype._uploadCallback = function(err, hash)
 						}
 						
 						// finally, update local metadata
-						self.local = {}
+						self.local.wip = {}
 						self.cache.writeLocalMetadata(self.local, function(err)
 						{
 							share.callback(err, version)
