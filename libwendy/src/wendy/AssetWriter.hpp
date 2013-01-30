@@ -28,8 +28,6 @@
 
 #include <wendy/common.hpp>
 
-#include <string>
-
 namespace wendy {
 
 /**

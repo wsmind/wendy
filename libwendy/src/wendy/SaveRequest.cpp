@@ -23,58 +23,57 @@
  * 
  *****************************************************************************/
 
-#ifndef __WENDY_HTTPREQUEST_HPP__
-#define __WENDY_HTTPREQUEST_HPP__
+#include <wendy/SaveRequest.hpp>
 
-#include <wendy/common.hpp>
+#include <wendy/AssetReader.hpp>
+#include <wendy/HttpEngine.hpp>
+#include <wendy/RequestState.hpp>
 
-#include <string>
+#include <cassert>
 
 namespace wendy {
 
-class HttpReader;
-class HttpWriter;
-
-/**
- * \struct HttpRequest
- */
-struct WENDYAPI HttpRequest
+SaveRequest::SaveRequest(HttpEngine *httpEngine, const std::string &path, AssetReader *reader)
 {
-	// input parameters
-	std::string method;
-	std::string path;
-	long timeoutMilliseconds;
-	HttpReader *reader;
-	HttpWriter *writer;
+	this->offset = 0;
+	this->reader = reader;
 	
-	/// termination state, will be set to true when the request finishes
-	bool finished;
+	this->request.method = "PUT";
+	this->request.path = "/data/" + path;
+	this->request.timeoutMilliseconds = 10000;
+	this->request.reader = this;
 	
-	/// output status (set after the request has finished)
-	/// will be 0 if the request is not finished, or if it was aborted (e.g timeout)
-	long status;
-	
-	/// \internal curl handle associated to this request, will be setup by the http engine
-	void *curlHandle;
-	
-	/**
-	 * \brief Constructor
-	 * Initialize all members to a reasonable default.
-	 */
-	HttpRequest()
+	httpEngine->startRequest(&this->request);
+}
+
+SaveRequest::~SaveRequest()
+{
+}
+
+void SaveRequest::update(RequestState *state)
+{
+	if (this->request.finished)
 	{
-		this->method = "GET";
-		this->path = "/";
-		this->reader = NULL;
-		this->writer = NULL;
-		
-		this->finished = false;
-		this->status = 0;
-		
-		this->curlHandle = NULL;
+		if (this->request.status == 200)
+		{
+			state->succeed();
+		}
+		else
+		{
+			state->fail();
+		}
 	}
-};
+}
+
+unsigned int SaveRequest::readHttpData(char *buffer, unsigned int size)
+{
+	// send to client reader
+	unsigned long long readBytes = this->reader->readAssetData(this->offset, buffer, size);
+	
+	// update current offset
+	this->offset += readBytes;
+	
+	return readBytes;
+}
 
 } // wendy namespace
-
-#endif // __WENDY_HTTPREQUEST_HPP__

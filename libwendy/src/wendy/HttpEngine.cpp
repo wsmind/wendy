@@ -28,6 +28,7 @@
 #include <curl/curl.h>
 
 #include <wendy/HttpRequest.hpp>
+#include <wendy/HttpReader.hpp>
 #include <wendy/HttpWriter.hpp>
 
 #include <sstream>
@@ -125,12 +126,30 @@ void HttpEngine::startRequest(HttpRequest *request)
 	// timeout
 	curl_easy_setopt(request->curlHandle, CURLOPT_TIMEOUT_MS, request->timeoutMilliseconds);
 	
+	// read callback
+	curl_easy_setopt(request->curlHandle, CURLOPT_READFUNCTION, HttpEngine::readCallback);
+	curl_easy_setopt(request->curlHandle, CURLOPT_READDATA, request);
+	
 	// write callback
 	curl_easy_setopt(request->curlHandle, CURLOPT_WRITEFUNCTION, HttpEngine::writeCallback);
 	curl_easy_setopt(request->curlHandle, CURLOPT_WRITEDATA, request);
 	
 	// start executing the new request
 	curl_multi_add_handle(this->curlMulti, request->curlHandle);
+}
+
+size_t HttpEngine::readCallback(void *ptr, size_t size, size_t nmemb, void *userdata)
+{
+	HttpRequest *request = (HttpRequest *)userdata;
+	
+	// if no reader is set, we cannot send anything
+	if (!request->reader)
+		return 0;
+	
+	size_t result = request->reader->readHttpData((char *)ptr, size * nmemb);
+	for (int i = 0; i < result; i++)
+		std::cout << "sending: " << ((char *)ptr)[i] << std::endl;
+	return result;
 }
 
 size_t HttpEngine::writeCallback(char *ptr, size_t size, size_t nmemb, void *userdata)

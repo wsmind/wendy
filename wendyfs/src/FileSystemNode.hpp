@@ -63,6 +63,7 @@ class FileSystemNode
 		
 		bool isEmpty() const;
 		
+		void setSize(unsigned long long size);
 		unsigned long long getSize() const;
 		
 		/**

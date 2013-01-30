@@ -57,8 +57,9 @@ void File::open(bool reading, bool writing, bool truncate)
 	this->cacheFilename = this->makeTemporaryFilename();
 	this->cacheFile = fopen(this->cacheFilename.c_str(), "w+b");
 	
-	if (this->cacheFile)
+	if (this->cacheFile && !truncate)
 	{
+		// if not truncating, download the existing asset to temporary file
 		wendy::RequestState readState;
 		CacheFileWriter writer(this->cacheFile);
 		client->read(&readState, this->path, &writer);
@@ -73,7 +74,10 @@ bool File::close()
 		if (this->writing)
 		{
 			// upload the modified file
-			//this->client->save()
+			wendy::RequestState saveState;
+			CacheFileReader reader(this->cacheFile);
+			client->save(&saveState, this->path, &reader);
+			client->waitRequest(&saveState);
 		}
 		
 		// delete temporary file
@@ -111,6 +115,23 @@ bool File::write(unsigned long offset, const void *buffer, unsigned long length)
 	return false;
 }
 
+const std::string &File::getPath() const
+{
+	return this->path;
+}
+
+unsigned long long File::getSize() const
+{
+	if (this->cacheFile)
+	{
+		fseek(this->cacheFile, 0, SEEK_END);
+		long size = ftell(this->cacheFile);
+		return (unsigned long long)size;
+	}
+	
+	return 0;
+}
+
 std::string File::makeTemporaryFilename() const
 {
 	#if defined(_WIN32)
@@ -129,5 +150,11 @@ std::string File::makeTemporaryFilename() const
 void File::CacheFileWriter::writeAssetData(unsigned long long offset, const char *buffer, unsigned long long size)
 {
 	fseek(this->file, offset, SEEK_SET);
-	fwrite(buffer, size, 1, this->file);
+	fwrite(buffer, 1, size, this->file);
+}
+
+unsigned long long File::CacheFileReader::readAssetData(unsigned long long offset, char *buffer, unsigned long long size)
+{
+	fseek(this->file, offset, SEEK_SET);
+	return fread(buffer, 1, size, this->file);
 }

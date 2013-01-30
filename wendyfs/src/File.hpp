@@ -26,6 +26,7 @@
 #ifndef __WENDY_FILE_HPP__
 #define __WENDY_FILE_HPP__
 
+#include <wendy/AssetReader.hpp>
 #include <wendy/AssetWriter.hpp>
 
 #include <string>
@@ -53,6 +54,9 @@ class File: public wendy::AssetWriter
 		bool read(unsigned long offset, void *buffer, unsigned long length);
 		bool write(unsigned long offset, const void *buffer, unsigned long length);
 		
+		const std::string &getPath() const;
+		unsigned long long getSize() const;
+		
 	private:
 		std::string makeTemporaryFilename() const;
 		
@@ -75,6 +79,19 @@ class File: public wendy::AssetWriter
 				virtual ~CacheFileWriter() {}
 				
 				virtual void writeAssetData(unsigned long long offset, const char *buffer, unsigned long long size);
+			
+			private:
+				FILE *file;
+		};
+		
+		// reader for an actual disk file
+		class CacheFileReader: public wendy::AssetReader
+		{
+			public:
+				CacheFileReader(FILE *file): file(file) {}
+				virtual ~CacheFileReader() {}
+				
+				virtual unsigned long long readAssetData(unsigned long long offset, char *buffer, unsigned long long size);
 			
 			private:
 				FILE *file;

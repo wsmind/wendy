@@ -28,6 +28,7 @@
 #include <wendy/HttpEngine.hpp>
 #include <wendy/ListRequest.hpp>
 #include <wendy/ReadRequest.hpp>
+#include <wendy/SaveRequest.hpp>
 
 namespace wendy {
 
@@ -72,6 +73,16 @@ void Client::list(RequestState *state, const std::string &filter, PathList *path
 void Client::read(RequestState *state, const std::string &path, AssetWriter *writer)
 {
 	Request *request = new ReadRequest(this->httpEngine, path, writer);
+	
+	RequestDescriptor descriptor;
+	descriptor.request = request;
+	descriptor.state = state;
+	this->requests.push_back(descriptor);
+}
+
+void Client::save(RequestState *state, const std::string &path, AssetReader *reader)
+{
+	Request *request = new SaveRequest(this->httpEngine, path, reader);
 	
 	RequestDescriptor descriptor;
 	descriptor.request = request;

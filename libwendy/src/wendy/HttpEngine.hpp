@@ -75,6 +75,9 @@ class WENDYAPI HttpEngine
 		void startRequest(HttpRequest *request);
 		
 	private:
+		// curl read callback
+		static size_t readCallback(void *ptr, size_t size, size_t nmemb, void *userdata);
+		
 		// curl write callback
 		static size_t writeCallback(char *ptr, size_t size, size_t nmemb, void *userdata);
 		

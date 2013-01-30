@@ -25,9 +25,34 @@
 
 #include <iostream>
 #include <cassert>
+#include <wendy/AssetReader.hpp>
 #include <wendy/AssetWriter.hpp>
 #include <wendy/Client.hpp>
 #include <wendy/RequestState.hpp>
+
+class TestReader: public wendy::AssetReader
+{
+	public:
+		unsigned long long currentOffset;
+		
+		TestReader() : currentOffset(0) {}
+		
+		virtual ~TestReader() {}
+		
+		virtual unsigned long long readAssetData(unsigned long long offset, char *buffer, unsigned long long size)
+		{
+			unsigned long long read = 0;
+			while ((currentOffset < 42) && (size > 0))
+			{
+				buffer[read] = (char)(currentOffset + 0x41);
+				currentOffset++;
+				read++;
+				size--;
+			}
+			
+			return read;
+		}
+};
 
 class TestWriter: public wendy::AssetWriter
 {
@@ -78,12 +103,19 @@ int main()
 			std::cout << "Found file: " << files3[i].path << std::endl;
 	}
 	
-	/*wendy::RequestState readState;
+	wendy::RequestState saveState;
+	TestReader reader;
+	client->save(&saveState, "fake.plop", &reader);
+	client->waitRequest(&saveState);
+	
+	assert(saveState.isSuccess());
+	
+	wendy::RequestState readState;
 	TestWriter writer;
-	client->read(&readState, "engine.js", &writer);
+	client->read(&readState, "fake.plop", &writer);
 	client->waitRequest(&readState);
 	
-	assert(readState.isSuccess());*/
+	assert(readState.isSuccess());
 	
 	delete client;
 	

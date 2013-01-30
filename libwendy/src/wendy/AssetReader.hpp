@@ -23,58 +23,24 @@
  * 
  *****************************************************************************/
 
-#ifndef __WENDY_HTTPREQUEST_HPP__
-#define __WENDY_HTTPREQUEST_HPP__
+#ifndef __WENDY_ASSETREADER_HPP__
+#define __WENDY_ASSETREADER_HPP__
 
 #include <wendy/common.hpp>
 
-#include <string>
-
 namespace wendy {
 
-class HttpReader;
-class HttpWriter;
-
 /**
- * \struct HttpRequest
+ * \interface AssetReader
  */
-struct WENDYAPI HttpRequest
+class WENDYAPI AssetReader
 {
-	// input parameters
-	std::string method;
-	std::string path;
-	long timeoutMilliseconds;
-	HttpReader *reader;
-	HttpWriter *writer;
-	
-	/// termination state, will be set to true when the request finishes
-	bool finished;
-	
-	/// output status (set after the request has finished)
-	/// will be 0 if the request is not finished, or if it was aborted (e.g timeout)
-	long status;
-	
-	/// \internal curl handle associated to this request, will be setup by the http engine
-	void *curlHandle;
-	
-	/**
-	 * \brief Constructor
-	 * Initialize all members to a reasonable default.
-	 */
-	HttpRequest()
-	{
-		this->method = "GET";
-		this->path = "/";
-		this->reader = NULL;
-		this->writer = NULL;
+	public:
+		virtual ~AssetReader() {}
 		
-		this->finished = false;
-		this->status = 0;
-		
-		this->curlHandle = NULL;
-	}
+		virtual unsigned long long readAssetData(unsigned long long offset, char *buffer, unsigned long long size) { return 0; }
 };
 
 } // wendy namespace
 
-#endif // __WENDY_HTTPREQUEST_HPP__
+#endif // __WENDY_ASSETREADER_HPP__

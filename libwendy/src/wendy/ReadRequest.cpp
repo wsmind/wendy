@@ -68,7 +68,7 @@ void ReadRequest::update(RequestState *state)
 void ReadRequest::writeHttpData(const char *buffer, unsigned int size)
 {
 	// send to client writer
-	writer->writeAssetData(this->offset, buffer, size);
+	this->writer->writeAssetData(this->offset, buffer, size);
 	
 	// update current offset
 	this->offset += size;

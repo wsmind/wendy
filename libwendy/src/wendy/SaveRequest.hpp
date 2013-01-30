@@ -23,58 +23,45 @@
  * 
  *****************************************************************************/
 
-#ifndef __WENDY_HTTPREQUEST_HPP__
-#define __WENDY_HTTPREQUEST_HPP__
+#ifndef __WENDY_SAVEREQUEST_HPP__
+#define __WENDY_SAVEREQUEST_HPP__
 
 #include <wendy/common.hpp>
 
 #include <string>
 
+#include <wendy/Request.hpp>
+#include <wendy/HttpRequest.hpp>
+#include <wendy/HttpReader.hpp>
+
 namespace wendy {
 
-class HttpReader;
-class HttpWriter;
+class AssetReader;
+class HttpEngine;
 
 /**
- * \struct HttpRequest
+ * \class SaveRequest
  */
-struct WENDYAPI HttpRequest
+class WENDYAPI SaveRequest: public Request, public HttpReader
 {
-	// input parameters
-	std::string method;
-	std::string path;
-	long timeoutMilliseconds;
-	HttpReader *reader;
-	HttpWriter *writer;
-	
-	/// termination state, will be set to true when the request finishes
-	bool finished;
-	
-	/// output status (set after the request has finished)
-	/// will be 0 if the request is not finished, or if it was aborted (e.g timeout)
-	long status;
-	
-	/// \internal curl handle associated to this request, will be setup by the http engine
-	void *curlHandle;
-	
-	/**
-	 * \brief Constructor
-	 * Initialize all members to a reasonable default.
-	 */
-	HttpRequest()
-	{
-		this->method = "GET";
-		this->path = "/";
-		this->reader = NULL;
-		this->writer = NULL;
+	public:
+		SaveRequest(HttpEngine *httpEngine, const std::string &path, AssetReader *reader);
+		virtual ~SaveRequest();
 		
-		this->finished = false;
-		this->status = 0;
+		virtual void update(RequestState *state);
 		
-		this->curlHandle = NULL;
-	}
+		virtual unsigned int readHttpData(char *buffer, unsigned int size);
+	
+	private:
+		HttpRequest request;
+		
+		// current writing offset
+		unsigned long long offset;
+		
+		// client handler
+		AssetReader *reader;
 };
 
 } // wendy namespace
 
-#endif // __WENDY_HTTPREQUEST_HPP__
+#endif // __WENDY_SAVEREQUEST_HPP__

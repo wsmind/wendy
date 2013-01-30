@@ -52,6 +52,11 @@ bool FileSystemNode::isEmpty() const
 	return (this->subNodes.size() == 0);
 }
 
+void FileSystemNode::setSize(unsigned long long size)
+{
+	this->size = size;
+}
+
 unsigned long long FileSystemNode::getSize() const
 {
 	return this->size;

@@ -104,6 +104,8 @@ File *FileSystem::open(const std::string &path, bool reading, bool writing, bool
 	// must open at least for one of the modes
 	assert(reading || writing);
 	
+	std::cout << "///////////////////// OOOPEEEEN: " << path << ", reading = " << reading << ", writing = " << writing << ", truncate = " << truncate << std::endl;
+	
 	// check if file exists
 	FileSystemNode *node = this->root->find(path);
 	if (!node)
@@ -164,6 +166,10 @@ File *FileSystem::open(const std::string &path, bool reading, bool writing, bool
 
 bool FileSystem::close(File *file)
 {
+	// TEMP: update size in fs node
+	FileSystemNode *node = this->root->find(file->getPath());
+	node->setSize(file->getSize());
+	
 	bool result = file->close();
 	
 	delete file;

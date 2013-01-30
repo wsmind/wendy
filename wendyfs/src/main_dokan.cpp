@@ -124,6 +124,7 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	ScopeLock lock;
 	
 	wprintf(L"CreateFile: %s\n", filename);
+	wprintf(L"Access mode: %d\n", accessMode);
 	
 	std::string path = makePathStandard(filename);
 	
@@ -167,16 +168,14 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 		// translate access mode
 		bool reading = false;
 		bool writing = false;
+		bool truncate = false;
 		
-		//if ((accessMode & FILE_GENERIC_READ) == FILE_GENERIC_READ) reading = true;
-		//if ((accessMode & FILE_GENERIC_WRITE) == FILE_GENERIC_WRITE) writing = true;
-		reading = true;
-		
-		if (writing)
-			return -ERROR_ACCESS_DENIED;
+		if (accessMode & FILE_GENERIC_READ) reading = true;
+		if (accessMode &  FILE_GENERIC_WRITE) writing = true;
+		if ((creationDisposition == TRUNCATE_EXISTING) || (creationDisposition == CREATE_NEW) || (creationDisposition == CREATE_ALWAYS)) truncate = true;
 		
 		// open asset
-		File *file = fs->open(path, reading, writing, false, processName);
+		File *file = fs->open(path, reading, writing, truncate, processName);
 		if (!file)
 			return -ERROR_PATH_NOT_FOUND;
 		
@@ -281,6 +280,13 @@ int DOKAN_CALLBACK WendyWriteFile(LPCWSTR filename, LPCVOID buffer, DWORD number
 	ScopeLock lock;
 	wprintf(L"WriteFile %s\n", filename);
 	
+	File *file = (File *)info->Context;
+	if (!fs->write(file, (unsigned long long)offset, buffer, (unsigned long long)numberOfBytesToWrite))
+		return -ERROR_WRITE_FAULT;
+	
+	*numberOfBytesWritten = numberOfBytesToWrite;
+	wprintf(L"written %d bytes\n", *numberOfBytesWritten);
+	
 	return 0;
 }
 
@@ -303,7 +309,7 @@ static int DOKAN_CALLBACK WendyGetFileInformation(LPCWSTR filename, LPBY_HANDLE_
 	}
 	else
 	{
-		buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_READONLY;
+		buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
 		buffer->nFileSizeLow = attributes.length;
 		buffer->ftLastWriteTime = unixTimeToFileTime(attributes.date);
 	}

@@ -91,7 +91,7 @@ Engine.prototype.read = function(path, callback)
 	{
 		hash = this.local.wip[path].hash
 	}
-	else
+	/*else
 	{
 		// if nothing local, check downloaded revisions
 		assert(false, "TODO: reimplement")
@@ -107,7 +107,7 @@ Engine.prototype.read = function(path, callback)
 		// find latest blob
 		var latest = asset[Object.keys(asset)[0]]
 		var hash = latest.hash
-	}
+	}*/
 	
 	// check that this blob is available
 	this.cache.find(hash, function(location, filePath)

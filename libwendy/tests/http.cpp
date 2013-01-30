@@ -26,7 +26,36 @@
 #include <iostream>
 #include <wendy/HttpEngine.hpp>
 #include <wendy/HttpRequest.hpp>
+#include <wendy/HttpReader.hpp>
 #include <wendy/HttpWriter.hpp>
+
+class TestReader: public wendy::HttpReader
+{
+	public:
+		unsigned long long currentOffset;
+		std::string text;
+		
+		TestReader()
+			: currentOffset(0)
+			, text("{\"title\": \"this is simple JSON!\"}")
+		{}
+		
+		virtual ~TestReader() {}
+		
+		virtual unsigned int readHttpData(char *buffer, unsigned int size)
+		{
+			unsigned int read = 0;
+			while ((currentOffset < text.size()) && (size > 0))
+			{
+				buffer[read] = text[currentOffset];
+				currentOffset++;
+				read++;
+				size--;
+			}
+			
+			return read;
+		}
+};
 
 class TestWriter: public wendy::HttpWriter
 {
@@ -46,12 +75,27 @@ class TestWriter: public wendy::HttpWriter
 
 int main()
 {
-	wendy::HttpEngine *httpEngine = new wendy::HttpEngine("www.google.com", 80);
+	wendy::HttpEngine *httpEngine = new wendy::HttpEngine("localhost", 5984);
+	
+	TestReader *reader = new TestReader;
+	wendy::HttpRequest request2;
+	request2.method = "PUT";
+	request2.path = "/plop/http-test";
+	request2.timeoutMilliseconds = 5000;
+	request2.reader = reader;
+	httpEngine->startRequest(&request2);
+	
+	while (!request2.finished)
+		httpEngine->waitUpdate();
+	
+	std::cout << "request finished with status " << request2.status << std::endl;
+	
+	delete reader;
 	
 	TestWriter *writer = new TestWriter;
 	wendy::HttpRequest request;
 	request.method = "GET";
-	request.path = "/";
+	request.path = "/plop/http-test";
 	request.timeoutMilliseconds = 5000;
 	request.writer = writer;
 	httpEngine->startRequest(&request);

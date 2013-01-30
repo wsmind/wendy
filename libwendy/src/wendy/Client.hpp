@@ -36,6 +36,7 @@
 
 namespace wendy {
 
+class AssetReader;
 class AssetWriter;
 class HttpEngine;
 class Request;
@@ -85,6 +86,7 @@ class WENDYAPI Client
 		void list(RequestState *state, const std::string &filter, PathList *paths);
 		
 		void read(RequestState *state, const std::string &path, AssetWriter *writer);
+		void save(RequestState *state, const std::string &path, AssetReader *reader);
 		
 	private:
 		void updateRequests();
