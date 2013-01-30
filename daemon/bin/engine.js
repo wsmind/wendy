@@ -162,7 +162,7 @@ Engine.prototype.save = function(path, stream, callback)
 	writeStream.on("close", function()
 	{
 		// temporary file written successfully; now try to make it persistent
-		self.cache.upgradeTemporary(tempFilename, "wip", function(err, hash)
+		self.cache.upgradeTemporary(tempFilename, "wip", function(err, hash, size)
 		{
 			// check the file was moved correctly
 			if (err)
@@ -181,7 +181,7 @@ Engine.prototype.save = function(path, stream, callback)
 			}
 			
 			// tag the asset as modified locally
-			self._updateMetadata(path, hash)
+			self._updateMetadata(path, hash, size)
 			
 			// success!
 			signalResult()
@@ -197,7 +197,17 @@ Engine.prototype.save = function(path, stream, callback)
 // callback(err, pathList)
 Engine.prototype.list = function(filter, callback)
 {
-	callback(null, minimatch.match(Object.keys(this.local.wip), filter, {}))
+	var mm = minimatch.Minimatch(filter, {})
+	var result = {}
+	for (var path in this.local.wip)
+	{
+		if (mm.match(path))
+		{
+			result[path] = this.local.wip[path]
+		}
+	}
+	
+	callback(null, result)
 }
 
 // commit everything to servers
@@ -259,10 +269,10 @@ Engine.prototype.readVersion = function(version, callback)
 	}
 }
 
-Engine.prototype._updateMetadata = function(path, hash)
+Engine.prototype._updateMetadata = function(path, hash, size)
 {
 	// save new local revision
-	this.local.wip[path] = {hash: hash}
+	this.local.wip[path] = {hash: hash, size: size}
 	
 	// write metadata
 	this.cache.writeLocalMetadata(this.local, function(err)

@@ -57,8 +57,10 @@ void ListRequest::update(RequestState *state)
 	{
 		if (this->request.status == 200)
 		{
-			this->parsePathList(this->json, this->pathList);
-			state->succeed();
+			if (this->parsePathList(this->json, this->pathList))
+				state->succeed();
+			else
+				state->fail();
 		}
 		else
 		{
@@ -74,18 +76,33 @@ void ListRequest::writeHttpData(const char *buffer, unsigned int size)
 		this->json += buffer[i];
 }
 
-void ListRequest::parsePathList(const std::string &json, PathList *pathList)
+bool ListRequest::parsePathList(const std::string &json, PathList *pathList)
 {
 	cJSON *root = cJSON_Parse(json.c_str());
-	assert(root);
+	if (!root)
+		return false;
 	
-	for (int i = 0; i < cJSON_GetArraySize(root); i++)
+	cJSON *asset = root->child;
+	while (asset)
 	{
-		cJSON *path = cJSON_GetArrayItem(root, i);
-		pathList->push_back(path->valuestring);
+		cJSON *hash = cJSON_GetObjectItem(asset, "hash");
+		cJSON *size = cJSON_GetObjectItem(asset, "size");
+		
+		if (!hash || !size)
+			continue;
+		
+		FileInfo info;
+		info.path = std::string(asset->string);
+		info.hash = std::string(hash->valuestring);
+		info.size = size->valueint;
+		pathList->push_back(info);
+		
+		asset = asset->next;
 	}
 	
 	cJSON_Delete(root);
+	
+	return true;
 }
 
 } // wendy namespace

@@ -39,14 +39,20 @@ namespace wendy {
 
 class HttpEngine;
 
+struct FileInfo
+{
+	std::string path;
+	std::string hash;
+	unsigned long long size;
+};
+typedef std::vector<FileInfo> PathList;
+
 /**
  * \class ListRequest
  */
 class WENDYAPI ListRequest: public Request, public HttpWriter
 {
 	public:
-		typedef std::vector<std::string> PathList;
-		
 		ListRequest(HttpEngine *httpEngine, const std::string &filter, PathList *pathList);
 		virtual ~ListRequest();
 		
@@ -56,7 +62,7 @@ class WENDYAPI ListRequest: public Request, public HttpWriter
 	
 	private:
 		// extract path list from JSON data
-		void parsePathList(const std::string &json, PathList *pathList);
+		bool parsePathList(const std::string &json, PathList *pathList);
 		
 		HttpRequest request;
 		std::string json;

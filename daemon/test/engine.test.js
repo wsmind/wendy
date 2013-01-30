@@ -90,7 +90,7 @@ describe("engine", function()
 		engine.list("**", function(err, list)
 		{
 			assert(!err)
-			assert.deepEqual(list, [])
+			assert.deepEqual(list, {})
 			
 			done()
 		})
@@ -115,6 +115,7 @@ describe("engine", function()
 			assert(!err)
 			assert("/plop" in version.assets)
 			assert(version.assets["/plop"].hash == firstHash)
+			assert(version.assets["/plop"].size == 100)
 			
 			done()
 		})
@@ -125,7 +126,7 @@ describe("engine", function()
 		engine.list("**", function(err, list)
 		{
 			assert(!err)
-			assert.deepEqual(list, ["/plop"])
+			assert.deepEqual(list, {"/plop": {hash: firstHash, size: 100}})
 			
 			done()
 		})
@@ -219,7 +220,8 @@ describe("engine", function()
 						author: "Mr Plop",
 						assets: {
 							"/plop": {
-								hash: secondHash
+								hash: secondHash,
+								size: 100
 							}
 						}
 					})

@@ -46,44 +46,44 @@ int main()
 	wendy::Client *client = new wendy::Client;
 	
 	wendy::RequestState listState;
-	wendy::Client::PathList files;
+	wendy::PathList files;
 	client->list(&listState, "*", &files);
 	client->waitRequest(&listState);
 	
 	if (listState.isSuccess())
 	{
 		for (unsigned int i = 0; i < files.size(); i++)
-			std::cout << "Found file: " << files[i] << std::endl;
+			std::cout << "Found file: " << files[i].path << " (" << files[i].size << " bytes)" << std::endl;
 	}
 	
 	wendy::RequestState listState2;
-	wendy::Client::PathList files2;
+	wendy::PathList files2;
 	client->list(&listState2, "non-existent-file", &files2);
 	client->waitRequest(&listState2);
 	
 	if (listState2.isSuccess())
 	{
 		for (unsigned int i = 0; i < files2.size(); i++)
-			std::cout << "Found file: " << files2[i] << std::endl;
+			std::cout << "Found file: " << files2[i].path << std::endl;
 	}
 	
 	wendy::RequestState listState3;
-	wendy::Client::PathList files3;
+	wendy::PathList files3;
 	client->list(&listState3, "lapins/**", &files3);
 	client->waitRequest(&listState3);
 	
 	if (listState3.isSuccess())
 	{
 		for (unsigned int i = 0; i < files3.size(); i++)
-			std::cout << "Found file: " << files3[i] << std::endl;
+			std::cout << "Found file: " << files3[i].path << std::endl;
 	}
 	
-	wendy::RequestState readState;
+	/*wendy::RequestState readState;
 	TestWriter writer;
 	client->read(&readState, "engine.js", &writer);
 	client->waitRequest(&readState);
 	
-	assert(readState.isSuccess());
+	assert(readState.isSuccess());*/
 	
 	delete client;
 	

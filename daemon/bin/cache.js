@@ -84,7 +84,7 @@ Cache.prototype.createTemporaryFilename = function()
 }
 
 // destination must be "cache" or "wip"
-// callback(err, hash)
+// callback(err, hash, size)
 Cache.prototype.upgradeTemporary = function(tempFilename, destination, callback)
 {
 	assert((destination == "cache") || (destination == "wip"))
@@ -100,13 +100,23 @@ Cache.prototype.upgradeTemporary = function(tempFilename, destination, callback)
 			return
 		}
 		
-		// move the file out of temp/
-		fs.rename(tempFilename, path.join(self.root, destination, hash), function(err)
+		// find file size
+		fs.stat(tempFilename, function(err, stats)
 		{
 			if (err)
-				callback(err, hash)
-			else
-				callback(null, hash)
+			{
+				callback(err)
+				return
+			}
+			
+			// move the file out of temp/
+			fs.rename(tempFilename, path.join(self.root, destination, hash), function(err)
+			{
+				if (err)
+					callback(err, hash)
+				else
+					callback(null, hash, stats.size)
+			})
 		})
 	})
 }

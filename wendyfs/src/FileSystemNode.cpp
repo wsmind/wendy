@@ -27,10 +27,11 @@
 
 #include <iostream>
 
-FileSystemNode::FileSystemNode(const bool directory)
+FileSystemNode::FileSystemNode(const bool directory, unsigned long long size)
 {
 	std::cout << "creating node (directory = '" << directory << "'" << std::endl;
 	this->directory = directory;
+	this->size = size;
 }
 
 FileSystemNode::~FileSystemNode()
@@ -49,6 +50,11 @@ bool FileSystemNode::isDirectory() const
 bool FileSystemNode::isEmpty() const
 {
 	return (this->subNodes.size() == 0);
+}
+
+unsigned long long FileSystemNode::getSize() const
+{
+	return this->size;
 }
 
 std::vector<std::string> FileSystemNode::list() const
@@ -79,7 +85,7 @@ FileSystemNode *FileSystemNode::find(const std::string &path)
 	return it->second->find(childPath);
 }
 
-void FileSystemNode::insert(const std::string &path, const bool directory)
+void FileSystemNode::insert(const std::string &path, const bool directory, unsigned long long size)
 {
 	std::string childName;
 	std::string childPath;
@@ -88,7 +94,7 @@ void FileSystemNode::insert(const std::string &path, const bool directory)
 	if (childPath == "")
 	{
 		// leaf node creation
-		this->subNodes[childName] = new FileSystemNode(directory);
+		this->subNodes[childName] = new FileSystemNode(directory, size);
 	}
 	else
 	{
@@ -98,7 +104,7 @@ void FileSystemNode::insert(const std::string &path, const bool directory)
 			this->subNodes[childName] = new FileSystemNode(true);
 		
 		// insert asset into subfolder
-		this->subNodes[childName]->insert(childPath, directory);
+		this->subNodes[childName]->insert(childPath, directory, size);
 	}
 }
 

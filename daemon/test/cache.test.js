@@ -100,10 +100,11 @@ describe("cache", function()
 			var filename = cache.createTemporaryFilename()
 			utils.createTemporary(filename, 1000, function(realHash)
 			{
-				cache.upgradeTemporary(filename, "cache", function(err, hash)
+				cache.upgradeTemporary(filename, "cache", function(err, hash, size)
 				{
 					assert(!err)
 					assert(hash === realHash)
+					assert(size === 1000)
 					
 					cache.find(hash, function(location, filePath)
 					{
@@ -120,10 +121,11 @@ describe("cache", function()
 			var filename = cache.createTemporaryFilename()
 			utils.createTemporary(filename, 1000, function(realHash)
 			{
-				cache.upgradeTemporary(filename, "wip", function(err, hash)
+				cache.upgradeTemporary(filename, "wip", function(err, hash, size)
 				{
 					assert(!err)
 					assert(hash === realHash)
+					assert(size === 1000)
 					
 					cache.find(hash, function(location, filePath)
 					{
@@ -140,10 +142,11 @@ describe("cache", function()
 			var filename = cache.createTemporaryFilename()
 			utils.createTemporary(filename, 1000, function(realHash)
 			{
-				cache.upgradeTemporary(filename, "cache", function(err, hash)
+				cache.upgradeTemporary(filename, "cache", function(err, hash, size)
 				{
 					assert(!err)
 					assert(hash === realHash)
+					assert(size === 1000)
 					
 					cache.move(hash, "cache", "wip", function(err)
 					{
@@ -159,15 +162,16 @@ describe("cache", function()
 			})
 		})
 		
-		it("canot be moved the wrong way", function(done)
+		it("cannot be moved the wrong way", function(done)
 		{
 			var filename = cache.createTemporaryFilename()
 			utils.createTemporary(filename, 1000, function(realHash)
 			{
-				cache.upgradeTemporary(filename, "wip", function(err, hash)
+				cache.upgradeTemporary(filename, "wip", function(err, hash, size)
 				{
 					assert(!err)
 					assert(hash === realHash)
+					assert(size === 1000)
 					
 					cache.move(hash, "cache", "wip", function(err)
 					{

@@ -55,13 +55,15 @@ class FileSystemNode
 		 * \brief Constructor
 		 * \param id asset ID, or an empty string for folders
 		 */
-		FileSystemNode(const bool directory);
+		FileSystemNode(const bool directory, unsigned long long size = 0);
 		
 		~FileSystemNode();
 		
 		bool isDirectory() const;
 		
 		bool isEmpty() const;
+		
+		unsigned long long getSize() const;
 		
 		/**
 		 * \brief List nodes contained in this one (not recursive)
@@ -79,7 +81,7 @@ class FileSystemNode
 		 *
 		 * The given path is relative to this node.
 		 */
-		void insert(const std::string &path, const bool directory);
+		void insert(const std::string &path, const bool directory, unsigned long long size = 0);
 		
 		/**
 		 * \brief Remove a node from the tree
@@ -94,6 +96,7 @@ class FileSystemNode
 		void extractPathComponents(const std::string &path, std::string *childName, std::string *childPath) const;
 		
 		bool directory;
+		unsigned long long size;
 		
 		// child nodes
 		typedef std::map<std::string, FileSystemNode *> NodeMap;

@@ -43,7 +43,7 @@ FileSystem::FileSystem()
 	
 	// list all assets and insert them in the tree
 	wendy::RequestState listState;
-	wendy::Client::PathList files;
+	wendy::PathList files;
 	client->list(&listState, "**", &files);
 	client->waitRequest(&listState);
 	
@@ -51,8 +51,8 @@ FileSystem::FileSystem()
 	{
 		for (unsigned int i = 0; i < files.size(); i++)
 		{
-			std::cout << "Found file: " << files[i] << std::endl;
-			this->root->insert(files[i].substr(1), false);
+			std::cout << "Found file: " << files[i].path << std::endl;
+			this->root->insert(files[i].path.substr(1), false, files[i].size);
 		}
 	}
 }
@@ -78,7 +78,7 @@ bool FileSystem::stat(const std::string &path, FileAttributes *attributes)
 	{
 		//Asset &asset = this->assets[node->getId()];
 		attributes->date = 42;
-		attributes->length = 10 * 1024 * 1024;
+		attributes->length = node->getSize();
 	}
 	
 	return true;

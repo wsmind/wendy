@@ -28,6 +28,7 @@
 
 #include <wendy/common.hpp>
 #include <wendy/RequestState.hpp>
+#include <wendy/ListRequest.hpp>
 
 #include <string>
 #include <vector>
@@ -81,7 +82,6 @@ class WENDYAPI Client
 		 */
 		void waitRequest(RequestState *state);
 		
-		typedef std::vector<std::string> PathList;
 		void list(RequestState *state, const std::string &filter, PathList *paths);
 		
 		void read(RequestState *state, const std::string &path, AssetWriter *writer);
