@@ -2,8 +2,8 @@ import os
 
 # User input
 buildVariables = Variables("localconfig.py")
-if os.name == "nt":
-	buildVariables.Add(PathVariable("BINARYDEPS", "Folder containing Wendy binary dependencies (windows-only)", "../wendy-deps"))
+#if os.name == "nt":
+#	buildVariables.Add(PathVariable("BINARYDEPS", "Folder containing Wendy binary dependencies (windows-only)", "../wendy-deps"))
 
 # Parallel build
 SetOption('num_jobs', 4)
@@ -19,12 +19,15 @@ buildDir = "build-" + buildName + "/"
 
 # Common base environment
 toolchain = ["default"]
-if os.name == "nt":
-	toolchain = ["mingw"]
-baseEnvironment = Environment(tools = toolchain, BUILDDIR=buildDir, variables=buildVariables)
+#if os.name == "nt":
+#	toolchain = ["mingw"]
+#baseEnvironment = Environment(tools = toolchain, BUILDDIR=buildDir, variables=buildVariables)
+baseEnvironment = Environment(tools = toolchain, BUILDDIR = buildDir)
 
-if os.name == "nt":
-	baseEnvironment["BINARYDEPS"] = os.path.abspath(baseEnvironment["BINARYDEPS"])
+#if os.name == "nt":
+#	baseEnvironment["BINARYDEPS"] = os.path.abspath(baseEnvironment["BINARYDEPS"])
+#baseEnvironment["OBJPREFIX"] = "../$BUILDDIR/obj/"
+#baseEnvironment["SHOBJPREFIX"] = "../$BUILDDIR/obj/"
 Export("baseEnvironment")
 
 # Command line help
@@ -33,11 +36,11 @@ Help(buildVariables.GenerateHelpText(baseEnvironment))
 # Each SConscript return the deliverables to put in the dist/ folder
 # in the form of an item list: [ (path, SCons node), (path, SCons node), ... ]
 distItems = []
-distItems += baseEnvironment.SConscript("daemon/SConscript", variant_dir="$BUILDDIR/daemon", duplicate=0)
+#distItems += baseEnvironment.SConscript("daemon/SConscript", variant_dir="$BUILDDIR/daemon", duplicate=0)
 #distItems += baseEnvironment.SConscript("launcher/SConscript", variant_dir="$BUILDDIR/launcher", duplicate=1)
-distItems += baseEnvironment.SConscript("libwendy/SConscript", variant_dir="$BUILDDIR/libwendy", duplicate=0)
+distItems += baseEnvironment.SConscript("libwendy/SConscript")
 #distItems += baseEnvironment.SConscript("pywendy/SConscript", variant_dir="$BUILDDIR/pywendy", duplicate=0)
-distItems += baseEnvironment.SConscript("wendyfs/SConscript", variant_dir="$BUILDDIR/wendyfs", duplicate=0)
+#distItems += baseEnvironment.SConscript("wendyfs/SConscript", variant_dir="$BUILDDIR/wendyfs", duplicate=0)
 
 # Package in dist/ folder
 distEnv = Environment(BUILDDIR=buildDir)

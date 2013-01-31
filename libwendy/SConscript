@@ -11,32 +11,37 @@ else:
 	env.Append(CPPFLAGS = ["-g", "-Wall"])
 
 if os.name == "nt":
-	env.Append(CPPPATH = ["$BINARYDEPS/curl/include"])
-	env.Append(LIBPATH = ["$BINARYDEPS/curl/lib"])
-	env.Append(CPPPATH = ["$BINARYDEPS/cJSON"])
-	env.Append(LIBPATH = ["$BINARYDEPS/cJSON"])
+	#env.Append(CPPPATH = ["../dependencies/curl"])
+	#env.Append(LIBPATH = ["$BINARYDEPS/curl/lib"])
+	env.Append(CPPPATH = ["../dependencies/cJSON"])
+	env.Append(CPPPATH = ["../dependencies/curl/include"])
 	env.Append(CPPDEFINES = ["UNICODE", "_UNICODE"])
 	env.Append(LIBS = ["ws2_32"])
 
 if os.name == "posix":
 	env.Append(LIBS = ["pthread"])
 
-env.Append(LIBS = ["curl", "cJSON"])
-libNode = env.SharedLibrary("lib/wendy", env.Glob("src/wendy/*.cpp"))
+#env.Append(LIBS = ["curl"])
+sources = env.Glob("src/wendy/*.cpp") + ["../dependencies/cJSON/cJSON.c"]
+objects = []
+for file in sources:
+	print(file)
+	objects += [env.SharedObject("../$BUILDDIR/obj/" + os.path.splitext(str(file))[0], file)]
+libNode = env.SharedLibrary("../$BUILDDIR/bin/wendy", objects)
 
-if os.name == "nt":
-	env.Command("bin/tests/wendy.dll", libNode, Copy("$TARGET", "$SOURCE"))
-	env.Command("bin/tests/libcurl.dll", "$BINARYDEPS/curl/lib/libcurl.dll", Copy("$TARGET", "$SOURCE"))
-	env.Command("bin/tests/libcJSON.dll", "$BINARYDEPS/cjson/libcJSON.dll", Copy("$TARGET", "$SOURCE"))
+#if os.name == "nt":
+	#env.Command("bin/tests/wendy.dll", libNode, Copy("$TARGET", "$SOURCE"))
+	#env.Command("bin/tests/libcurl.dll", "$BINARYDEPS/curl/lib/libcurl.dll", Copy("$TARGET", "$SOURCE"))
+	#env.Command("bin/tests/libcJSON.dll", "$BINARYDEPS/cjson/libcJSON.dll", Copy("$TARGET", "$SOURCE"))
 
 testEnv = baseEnvironment.Clone()
 testEnv.Append(CPPPATH = ["src"])
-testEnv.Append(LIBPATH = ["lib"])
+testEnv.Append(LIBPATH = ["../$BUILDDIR/bin"])
 testEnv.Append(LIBS = ["wendy"])
 if testEnv["CC"] == "cl":
 	testEnv.Append(CPPFLAGS = ["/EHsc", "/Z7"])
-testEnv.Program("bin/tests/client", "tests/client.cpp")
-testEnv.Program("bin/tests/http", "tests/http.cpp")
+testEnv.Program("../$BUILDDIR/bin/test-client", env.SharedObject("../$BUILDDIR/obj/" + os.path.splitext("tests/client.cpp")[0], "tests/client.cpp"))
+#testEnv.Program("../$BUILDDIR/bin/test-http", "tests/http.cpp")
 
 distItems = [
 	("${SHLIBPREFIX}wendy${SHLIBSUFFIX}", libNode)

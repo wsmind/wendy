@@ -32,7 +32,7 @@
 
 namespace wendy {
 
-class HttpRequest;
+struct HttpRequest;
 
 /**
  * \class HttpEngine
