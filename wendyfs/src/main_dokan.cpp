@@ -139,10 +139,11 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 	if (exists && (creationDisposition == CREATE_NEW))
 		return -ERROR_FILE_EXISTS;
 	
-	if (attributes.folder)
+	if (exists && attributes.folder)
 	{
 		// flag as directory
 		info->IsDirectory = TRUE;
+		wprintf(L"Directory!\n");
 	}
 	else
 	{

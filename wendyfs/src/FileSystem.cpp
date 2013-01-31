@@ -109,7 +109,11 @@ File *FileSystem::open(const std::string &path, bool reading, bool writing, bool
 	// check if file exists
 	FileSystemNode *node = this->root->find(path);
 	if (!node)
-		return NULL;
+	{
+		// new file!
+		std::cout << "Creating new node: " << path << std::endl;
+		this->root->insert(path, false, 0);
+	}
 	
 	File *file = new File(this->client, path);
 	
@@ -117,50 +121,6 @@ File *FileSystem::open(const std::string &path, bool reading, bool writing, bool
 	
 	return file;
 	
-	// initialize operation data
-	/*this->openData.id = node->getId();
-	this->openData.fd = -1;
-	
-	// check if directory
-	if (this->openData.id == "")
-		return -1;
-	
-	Asset &asset = this->assets[this->openData.id];
-	
-	// check lock for write accesses
-	if ((mode == WRITING) && !(asset.rights & Asset::WRITE_ACCESS))
-	{
-		if (asset.lock.user == "")
-			this->project->lockAsset(this->openData.id, applicationName);
-		
-		// wait for lock
-		while (!(asset.rights & Asset::WRITE_ACCESS))
-		{
-			if (!this->project->isConnected())
-				return -1; // connection lost
-			
-			if ((asset.lock.user != "") && (asset.lock.user != "<you>"))
-				return -1; // asset was locked by someone else
-			
-			this->project->waitChanges();
-		}
-	}
-	
-	// start asynchronous operation
-	this->project->openAsset(this->openData.id, (mode == READING) ? Project::READING : Project::WRITING);
-	
-	while (this->openData.fd == -1)
-	{
-		if (!this->project->isConnected())
-			return -1; // connection lost
-		
-		// TODO: check errors on this->assets[asset.id]
-		
-		this->project->waitChanges();
-	}
-	
-	// open succeeded
-	return this->openData.fd;*/
 	return 0;
 }
 
@@ -175,49 +135,11 @@ bool FileSystem::close(File *file)
 	delete file;
 	
 	return result;
-	
-	/*this->project->checkChanges();
-	
-	if (fd >= 0)
-		this->project->closeAsset((unsigned long)fd);*/
 }
 
 bool FileSystem::read(File *file, unsigned long offset, void *buffer, unsigned long length)
 {
 	return file->read(offset, buffer, length);
-	
-	/*if (fd < 0)
-		return false; // BAD FD
-	
-	// TODO: check that offset < file length
-	
-	if (length == 0)
-		return false; // cannot read 0 bytes
-	
-	this->project->checkChanges();
-	
-	// initialize operation data
-	this->readData.fd = fd;
-	this->readData.offset = offset;
-	this->readData.buffer = buffer;
-	this->readData.length = length;
-	this->readData.sizeRead = 0;
-	
-	// start asynchronous operation
-	this->project->readAsset(this->readData.fd, offset, length);
-	
-	while (this->readData.sizeRead != length)
-	{
-		if (!this->project->isConnected())
-			return false; // connection lost
-		
-		// TODO: check errors on this->assets[asset.id]
-		
-		this->project->waitChanges();
-	}*/
-	
-	// read succeeded
-	//return true;
 }
 
 bool FileSystem::write(File *file, unsigned long offset, const void *buffer, unsigned long length)

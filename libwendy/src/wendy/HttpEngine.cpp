@@ -146,10 +146,7 @@ size_t HttpEngine::readCallback(void *ptr, size_t size, size_t nmemb, void *user
 	if (!request->reader)
 		return 0;
 	
-	size_t result = request->reader->readHttpData((char *)ptr, size * nmemb);
-	for (int i = 0; i < result; i++)
-		std::cout << "sending: " << ((char *)ptr)[i] << std::endl;
-	return result;
+	return request->reader->readHttpData((char *)ptr, size * nmemb);
 }
 
 size_t HttpEngine::writeCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
