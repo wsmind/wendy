@@ -6,7 +6,7 @@ env = baseEnvironment.Clone()
 
 env.Append(CPPPATH = ["src", "../libwendy/src"])
 env.Append(LIBPATH = ["../$BUILDDIR/bin"])
-env.Append(LIBS = ["wendy"])
+env.Append(LIBS = ["cJSON", "wendy"])
 
 if os.name == "nt":
 	env.Append(CPPPATH = ["../dependencies/dokan/dokan"])
