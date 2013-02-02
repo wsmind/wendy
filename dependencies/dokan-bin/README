@@ -1,0 +1,5 @@
+These files are commited in binary form for convenience: build Dokan requires the
+windows driver development kit, which is not something we can expect everyone
+to have.
+
+For source and licensing information, see the dependencies/dokan folder.

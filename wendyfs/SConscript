@@ -9,8 +9,8 @@ env.Append(LIBPATH = ["../$BUILDDIR/bin"])
 env.Append(LIBS = ["wendy"])
 
 if os.name == "nt":
-	#env.Append(CPPPATH = ["$BINARYDEPS/dokan"])
-	#env.Append(LIBPATH = ["$BINARYDEPS/dokan"])
+	env.Append(CPPPATH = ["../dependencies/dokan/dokan"])
+	env.Append(LIBPATH = ["../dependencies/dokan-bin"])
 	env.Append(CPPDEFINES = ["UNICODE", "_UNICODE"])
 	env.Append(LIBS = ["psapi", "dokan"])
 else:
