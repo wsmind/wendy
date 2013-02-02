@@ -30,9 +30,6 @@ else:
 
 Export("baseEnvironment")
 
-# Command line help
-#Help(buildVariables.GenerateHelpText(baseEnvironment))
-
 # Build win32 dependencies
 if os.name == "nt":
 	from subprocess import call

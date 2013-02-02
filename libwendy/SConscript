@@ -30,9 +30,8 @@ env.SharedLibrary("../$BUILDDIR/bin/wendy", objects)
 testEnv = baseEnvironment.Clone()
 testEnv.Append(CPPPATH = ["src"])
 testEnv.Append(LIBPATH = ["../$BUILDDIR/bin"])
-testEnv.Append(LIBS = ["wendy"])
+testEnv.Append(LIBS = ["cJSON", "wendy"])
 if testEnv["CC"] == "cl":
 	testEnv.Append(CPPFLAGS = ["/EHsc", "/Z7"])
 testEnv.Program("../$BUILDDIR/bin/test-client", env.SharedObject("../$BUILDDIR/obj/libwendy/" + os.path.splitext("tests/client.cpp")[0], "tests/client.cpp"))
 testEnv.Program("../$BUILDDIR/bin/test-http", env.SharedObject("../$BUILDDIR/obj/libwendy/" + os.path.splitext("tests/http.cpp")[0], "tests/http.cpp"))
-
