@@ -1,0 +1,4 @@
+This folder includes external libraries that are not part of the Wendy project.
+
+Each library has its own license (available in its respective subfolder),
+completely independent from Wendy's licensing policy.
