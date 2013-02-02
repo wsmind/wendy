@@ -5,31 +5,21 @@ Import("baseEnvironment")
 env = baseEnvironment.Clone()
 
 env.Append(CPPPATH = ["src", "../libwendy/src"])
-env.Append(LIBPATH = ["../libwendy/lib"])
-env.Append(LIBS = ["wendy"])
-if env["CC"] == "cl":
-	env.Append(CPPFLAGS = ["/Z7", "/W2", "/wd4251", "/EHsc"])
-else:
-	env.Append(CPPFLAGS = ["-g", "-Wall", "-Werror"])
+env.Append(LIBPATH = ["../$BUILDDIR/bin"])
+env.Append(LIBS = ["cJSON", "wendy"])
 
 if os.name == "nt":
-	env.Append(CPPPATH = ["$BINARYDEPS/dokan"])
-	env.Append(LIBPATH = ["$BINARYDEPS/dokan"])
+	env.Append(CPPPATH = ["../dependencies/dokan/dokan"])
+	env.Append(LIBPATH = ["../dependencies/dokan-bin"])
 	env.Append(CPPDEFINES = ["UNICODE", "_UNICODE"])
 	env.Append(LIBS = ["psapi", "dokan"])
 else:
 	env.ParseConfig("pkg-config --cflags --libs fuse")
 	env.Append(CPPDEFINES = "FUSE_USE_VERSION=28")
 
-progNode = env.Program("bin/wendyfs", env.Glob("src/*.cpp"))
+sources = env.Glob("src/*.cpp")
+objects = []
+for file in sources:
+	objects += [env.SharedObject("../$BUILDDIR/obj/wendyfs/" + os.path.splitext(str(file))[0], file)]
 
-if os.name == "nt":
-	env.Command("bin/wendy.dll", "../libwendy/lib/wendy.dll", Copy("$TARGET", "$SOURCE"))
-	env.Command("bin/libcurl.dll", "$BINARYDEPS/curl/lib/libcurl.dll", Copy("$TARGET", "$SOURCE"))
-	env.Command("bin/libcJSON.dll", "$BINARYDEPS/cjson/libcJSON.dll", Copy("$TARGET", "$SOURCE"))
-
-distItems = [
-	("wendyfs${PROGSUFFIX}", progNode)
-]
-Return("distItems")
-
+env.Program("../$BUILDDIR/bin/wendyfs", objects)

@@ -1,4 +1,13 @@
 build-*
-*.pyc
 .sconsign.dblite
 daemon/node_modules
+daemon/test/fixtures
+dependencies/curl/src/*.o
+dependencies/curl/src/curl.exe
+dependencies/curl/src/curl.res
+dependencies/curl/lib/*.o
+dependencies/curl/lib/libcurl.a
+dependencies/curl/lib/libcurl.def
+dependencies/curl/lib/libcurl.dll
+dependencies/curl/lib/libcurl.res
+dependencies/curl/lib/libcurldll.a

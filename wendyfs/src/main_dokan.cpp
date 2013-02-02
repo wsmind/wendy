@@ -32,10 +32,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dokan.h>
-#include <iostream>
-
-#include <wendy/Client.hpp>
-#include <wendy/RequestState.hpp>
 
 #include <FileSystem.hpp>
 

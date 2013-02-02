@@ -30,14 +30,14 @@
 #include <errno.h>
 #include <string.h>
 
-#include <wendy/ProjectFileSystem.hpp>
+#include <FileSystem.hpp>
 
 #include <iostream>
 
-static wendy::ProjectFileSystem *fs = NULL;
+static FileSystem *fs = NULL;
 
 // remove leading slash
-static std::string makePathStandard(const char *filename)
+/*static std::string makePathStandard(const char *filename)
 {
 	return std::string(filename).substr(1);
 }
@@ -129,21 +129,21 @@ static int wendy_readdir(const char *filename, void *buf, fuse_fill_dir_t filler
 	}
 	
 	return 0;
-}
+}*/
 
 int main(int argc, char **argv)
 {
 	fuse_operations operations;
 	memset(&operations, 0, sizeof(operations));
-	operations.getattr = wendy_getattr;
+	/*operations.getattr = wendy_getattr;
 	operations.readlink = wendy_readlink;
 	operations.mknod = wendy_mknod;
 	operations.mkdir = wendy_mkdir;
 	operations.unlink = wendy_unlink;
 	operations.rmdir = wendy_rmdir;
-	operations.readdir = wendy_readdir;
+	operations.readdir = wendy_readdir;*/
 	
-	fs = new wendy::ProjectFileSystem;
+	fs = new FileSystem;
 	
 	int fuse_stat = fuse_main(argc, argv, &operations, NULL);
 	
