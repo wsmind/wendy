@@ -88,14 +88,14 @@ bool ListRequest::parsePathList(const std::string &json, PathList *pathList)
 		cJSON *hash = cJSON_GetObjectItem(asset, "hash");
 		cJSON *size = cJSON_GetObjectItem(asset, "size");
 		
-		if (!hash || !size)
-			continue;
-		
-		FileInfo info;
-		info.path = std::string(asset->string);
-		info.hash = std::string(hash->valuestring);
-		info.size = size->valueint;
-		pathList->push_back(info);
+		if (hash && size)
+		{
+			FileInfo info;
+			info.path = std::string(asset->string);
+			info.hash = std::string(hash->valuestring);
+			info.size = size->valueint;
+			pathList->push_back(info);
+		}
 		
 		asset = asset->next;
 	}

@@ -232,6 +232,17 @@ describe("engine", function()
 		})
 	})
 	
+	it("lists the asset from shared version", function(done)
+	{
+		engine.list("**", function(err, list)
+		{
+			assert(!err)
+			assert.deepEqual(list, {"/plop": {hash: secondHash, size: 100}})
+			
+			done()
+		})
+	})
+	
 	it("stops", function(done)
 	{
 		engine.stop(done)

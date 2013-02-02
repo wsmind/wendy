@@ -91,11 +91,10 @@ Engine.prototype.read = function(path, callback)
 	{
 		hash = this.local.wip[path].hash
 	}
-	/*else
+	else
 	{
-		// if nothing local, check downloaded revisions
-		assert(false, "TODO: reimplement")
-		var asset = this.assets[path]
+		// if nothing wip, check cached revisions
+		var asset = this.local.cache[path]
 		
 		// check asset existence
 		if (!asset)
@@ -105,9 +104,13 @@ Engine.prototype.read = function(path, callback)
 		}
 		
 		// find latest blob
-		var latest = asset[Object.keys(asset)[0]]
-		var hash = latest.hash
-	}*/
+		var latest = Math.max.apply(Math, Object.keys(asset))
+		console.log(asset)
+		console.log(latest)
+		var version = asset[latest]
+		console.log(version)
+		var hash = version.hash
+	}
 	
 	// check that this blob is available
 	this.cache.find(hash, function(location, filePath)
@@ -197,13 +200,23 @@ Engine.prototype.save = function(path, stream, callback)
 // callback(err, pathList)
 Engine.prototype.list = function(filter, callback)
 {
-	var mm = minimatch.Minimatch(filter, {})
+	var mm = minimatch.Minimatch(filter, {dot: true})
 	var result = {}
 	for (var path in this.local.wip)
 	{
 		if (mm.match(path))
 		{
 			result[path] = this.local.wip[path]
+		}
+	}
+	
+	for (var path in this.local.cache)
+	{
+		if ((result[path] === undefined) && mm.match(path))
+		{
+			// find latest version
+			var latest = Math.max.apply(Math, Object.keys(this.local.cache[path]))
+			result[path] = this.local.cache[path][latest]
 		}
 	}
 	
@@ -452,6 +465,7 @@ Engine.prototype._checkAssetLocalContent = function(path)
 	var required = self.requiredVersions[path]
 	for (var version in required)
 	{
+		console.log("required: " + path + " at " + version)
 		var hash = required[version].hash
 		
 		// if hash is null, the asset was deleted
@@ -482,8 +496,23 @@ Engine.prototype._checkAssetLocalContent = function(path)
 						self.cache.upgradeTemporary(tempFilename, "cache", function(err)
 						{
 							if (err) throw err
+							
+							if (self.local.cache[path] === undefined)
+								self.local.cache[path] = {}
+							
+							self.local.cache[path][version] = required[version]
 						})
 					})
+				}
+				else
+				{
+					// already cached
+					if (self.local.cache[path] === undefined)
+						self.local.cache[path] = {}
+					
+					console.log("cached version " + version + " of asset " + path)
+					self.local.cache[path][version] = required[version]
+					console.log(self.local.cache)
 				}
 			})
 		}
@@ -575,6 +604,13 @@ Engine.prototype._uploadCallback = function(err, hash)
 						}
 						
 						// finally, update local metadata
+						for (var path in self.local.wip)
+						{
+							if (self.local.cache[path] === undefined)
+								self.local.cache[path] = {}
+							
+							self.local.cache[path][version] = self.local.wip[path]
+						}
 						self.local.wip = {}
 						self.cache.writeLocalMetadata(self.local, function(err)
 						{
@@ -618,7 +654,7 @@ Engine.prototype._processUploads = function()
 		// find a full path for this hash
 		self.cache.find(hash, function(location, filePath)
 		{
-			assert(location == "wip") // only uploads from the wip directory make sense
+			//assert(location == "wip") // only uploads from the wip directory make sense
 			
 			// start actual upload
 			self.storage.upload(hash, filePath, function(err)
