@@ -1,4 +1,10 @@
 build-*
-*.pyc
 .sconsign.dblite
 daemon/node_modules
+daemon/test/fixtures
+**.o
+**.a
+**.dll
+**.exe
+**.def
+**.res

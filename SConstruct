@@ -1,7 +1,7 @@
 import os
 
 # User input
-buildVariables = Variables("localconfig.py")
+#buildVariables = Variables("localconfig.py")
 #if os.name == "nt":
 #	buildVariables.Add(PathVariable("BINARYDEPS", "Folder containing Wendy binary dependencies (windows-only)", "../wendy-deps"))
 
@@ -19,30 +19,27 @@ buildDir = "build-" + buildName + "/"
 
 # Common base environment
 toolchain = ["default"]
-#if os.name == "nt":
-#	toolchain = ["mingw"]
-#baseEnvironment = Environment(tools = toolchain, BUILDDIR=buildDir, variables=buildVariables)
-baseEnvironment = Environment(tools = toolchain, BUILDDIR = buildDir)
+if os.name == "nt":
+	toolchain = ["mingw"]
 
-#if os.name == "nt":
-#	baseEnvironment["BINARYDEPS"] = os.path.abspath(baseEnvironment["BINARYDEPS"])
-#baseEnvironment["OBJPREFIX"] = "../$BUILDDIR/obj/"
-#baseEnvironment["SHOBJPREFIX"] = "../$BUILDDIR/obj/"
+baseEnvironment = Environment(tools = toolchain, BUILDDIR = buildDir)
+if baseEnvironment["CC"] == "cl":
+	baseEnvironment.Append(CPPFLAGS = ["/Z7", "/W2", "/wd4251", "/EHsc"])
+else:
+	baseEnvironment.Append(CPPFLAGS = ["-g", "-Wall", "-Werror"])
+
 Export("baseEnvironment")
 
 # Command line help
-Help(buildVariables.GenerateHelpText(baseEnvironment))
+#Help(buildVariables.GenerateHelpText(baseEnvironment))
 
-# Each SConscript return the deliverables to put in the dist/ folder
-# in the form of an item list: [ (path, SCons node), (path, SCons node), ... ]
-distItems = []
-#distItems += baseEnvironment.SConscript("daemon/SConscript", variant_dir="$BUILDDIR/daemon", duplicate=0)
-#distItems += baseEnvironment.SConscript("launcher/SConscript", variant_dir="$BUILDDIR/launcher", duplicate=1)
-distItems += baseEnvironment.SConscript("libwendy/SConscript")
-#distItems += baseEnvironment.SConscript("pywendy/SConscript", variant_dir="$BUILDDIR/pywendy", duplicate=0)
-#distItems += baseEnvironment.SConscript("wendyfs/SConscript", variant_dir="$BUILDDIR/wendyfs", duplicate=0)
+# Build win32 dependencies
+if os.name == "nt":
+	from subprocess import call
+	call("make -C dependencies/curl mingw32")
+	call("gcc -shared -Wall -o dependencies/cJSON/cJSON.dll dependencies/cJSON/cJSON.c")
+	baseEnvironment.Command("$BUILDDIR/bin/libcurl.dll", "dependencies/curl/lib/libcurl.dll", Copy("$TARGET", "$SOURCE"))
+	baseEnvironment.Command("$BUILDDIR/bin/cJSON.dll", "dependencies/cJSON/cJSON.dll", Copy("$TARGET", "$SOURCE"))
 
-# Package in dist/ folder
-distEnv = Environment(BUILDDIR=buildDir)
-for path, node in distItems:
-	distEnv.Command("$BUILDDIR/dist/" + path, node, Copy("$TARGET", "$SOURCE"))
+baseEnvironment.SConscript("libwendy/SConscript")
+baseEnvironment.SConscript("wendyfs/SConscript")
