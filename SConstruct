@@ -40,9 +40,8 @@ if os.name == "nt":
 	baseEnvironment.Command("$BUILDDIR/bin/libcurl.dll", "dependencies/curl/lib/libcurl.dll", Copy("$TARGET", "$SOURCE"))
 
 # cJSON
-cJSONObject = baseEnvironment.SharedObject("dependencies/cJSON/cJSON", "dependencies/cJSON/cJSON.c")
-cJSONLibrary = baseEnvironment.SharedLibrary("dependencies/cJSON/cJSON", cJSONObject)
-baseEnvironment.Command("$BUILDDIR/bin/" + baseEnvironment["SHLIBPREFIX"] + "cJSON" + baseEnvironment["SHLIBSUFFIX"], cJSONLibrary, Copy("$TARGET", "$SOURCE"))
+cJSONObject = baseEnvironment.SharedObject("$BUILDDIR/obj/cJSON/cJSON", "dependencies/cJSON/cJSON.c")
+cJSONLibrary = baseEnvironment.SharedLibrary("$BUILDDIR/bin/cJSON", cJSONObject)
 
 # wendy subsystems
 baseEnvironment.SConscript("libwendy/SConscript")

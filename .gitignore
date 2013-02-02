@@ -11,7 +11,3 @@ dependencies/curl/lib/libcurl.def
 dependencies/curl/lib/libcurl.dll
 dependencies/curl/lib/libcurl.res
 dependencies/curl/lib/libcurldll.a
-dependencies/cJSON/*cJSON.a
-dependencies/cJSON/*cJSON.o
-dependencies/cJSON/*cJSON.so
-dependencies/cJSON/*cJSON.dll
