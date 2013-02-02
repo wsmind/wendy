@@ -8,7 +8,6 @@ env.Append(CPPPATH = ["src"])
 env.Append(CPPDEFINES = ["BUILDING_WENDY"])
 
 if os.name == "nt":
-	env.Append(CPPPATH = ["../dependencies/cJSON"])
 	env.Append(CPPPATH = ["../dependencies/curl/include"])
 	env.Append(LIBPATH = ["../$BUILDDIR/bin"])
 	env.Append(CPPDEFINES = ["UNICODE", "_UNICODE"])
@@ -17,6 +16,7 @@ if os.name == "nt":
 if os.name == "posix":
 	env.Append(LIBS = ["pthread"])
 
+env.Append(CPPPATH = ["../dependencies/cJSON"])
 env.Append(LIBS = ["cJSON", "curl"])
 
 sources = env.Glob("src/wendy/*.cpp")

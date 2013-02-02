@@ -37,9 +37,13 @@ Export("baseEnvironment")
 if os.name == "nt":
 	from subprocess import call
 	call("make -C dependencies/curl mingw32")
-	call("gcc -shared -Wall -o dependencies/cJSON/cJSON.dll dependencies/cJSON/cJSON.c")
 	baseEnvironment.Command("$BUILDDIR/bin/libcurl.dll", "dependencies/curl/lib/libcurl.dll", Copy("$TARGET", "$SOURCE"))
-	baseEnvironment.Command("$BUILDDIR/bin/cJSON.dll", "dependencies/cJSON/cJSON.dll", Copy("$TARGET", "$SOURCE"))
 
+# cJSON
+cJSONObject = baseEnvironment.SharedObject("dependencies/cJSON/cJSON", "dependencies/cJSON/cJSON.c")
+cJSONLibrary = baseEnvironment.SharedLibrary("dependencies/cJSON/cJSON", cJSONObject)
+baseEnvironment.Command("$BUILDDIR/bin/" + baseEnvironment["SHLIBPREFIX"] + "cJSON" + baseEnvironment["SHLIBSUFFIX"], cJSONLibrary, Copy("$TARGET", "$SOURCE"))
+
+# wendy subsystems
 baseEnvironment.SConscript("libwendy/SConscript")
 baseEnvironment.SConscript("wendyfs/SConscript")
