@@ -29,6 +29,8 @@ var crypto = require("crypto")
 var minimatch = require("minimatch")
 var assert = require("assert")
 
+var ProcessingQueue = require("../bin/processingqueue").ProcessingQueue
+
 /**
  * \brief Cache constructor
  * \param path cache root on the filesystem (must be a directory)
@@ -36,6 +38,7 @@ var assert = require("assert")
 function Cache(root)
 {
 	this.root = root
+	this.ioQueue = new ProcessingQueue(1)
 }
 exports.Cache = Cache
 
@@ -277,45 +280,54 @@ Cache.prototype.renameVersion = function(currentVersionName, newVersionName, cal
 // callback(err, object)
 Cache.prototype._readLocalMetadata = function(callback)
 {
+	// queue accesses to the metadata file to avoid read or write conflicts
 	var self = this
-	var metadataPath = path.join(this.root, "local.json")
-	fs.exists(metadataPath, function(exists)
+	this.ioQueue.process(callback, function(callback)
 	{
-		if (exists)
+		var metadataPath = path.join(self.root, "local.json")
+		fs.exists(metadataPath, function(exists)
 		{
-			fs.readFile(metadataPath, function(err, data)
+			if (exists)
 			{
-				if (err)
+				fs.readFile(metadataPath, function(err, data)
 				{
-					callback(err)
-					return
-				}
-				
-				try
-				{
-					self.metadata = JSON.parse(data)
-					callback(null)
-				}
-				catch (err)
-				{
-					callback(err)
-				}
-			})
-		}
-		else
-		{
-			// no metadata, create a default object
-			self.metadata = {blobs: {}, assets: {}}
-			callback(null)
-		}
+					if (err)
+					{
+						callback(err)
+						return
+					}
+					
+					try
+					{
+						self.metadata = JSON.parse(data)
+						callback(null)
+					}
+					catch (err)
+					{
+						callback(err)
+					}
+				})
+			}
+			else
+			{
+				// no metadata, create a default object
+				self.metadata = {blobs: {}, assets: {}}
+				callback(null)
+			}
+		})
 	})
 }
 
 // callback(err)
 Cache.prototype._writeLocalMetadata = function(callback)
 {
-	var metadataPath = path.join(this.root, "local.json")
-	fs.writeFile(metadataPath, JSON.stringify(this.metadata), "utf8", callback)
+	// queue accesses to the metadata file to avoid read or write conflicts
+	var self = this
+	this.ioQueue.process(callback, function(callback)
+	{
+		var metadataPath = path.join(self.root, "local.json")
+		fs.writeFile(metadataPath, JSON.stringify(self.metadata), "utf8", callback)
+	})
 }
 
 Cache.prototype._recursiveMkdir = function(directory)
