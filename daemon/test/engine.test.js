@@ -248,7 +248,7 @@ describe("engine", function()
 		engine.stop(done)
 	})
 	
-	/*it("restarts", function(done)
+	it("restarts", function(done)
 	{
 		engine.start(done)
 	})
@@ -262,7 +262,35 @@ describe("engine", function()
 			
 			done()
 		})
-	})*/
+	})
+	
+	it("watches updates from other clients", function(done)
+	{
+		var newVersion = {
+			description: "this comes from the outside world",
+			author: "Mrs. Plopy",
+			assets: {
+				"/plop-copy": {hash: secondHash, size: 100}
+			}
+		}
+		metadb.save((new Date()).getTime().toString(), newVersion, function(err, result)
+		{
+			assert(!err)
+			
+			// wait for the update to be propagated
+			setTimeout(function()
+			{
+				// check that the new asset was received
+				engine.list("**", function(err, list)
+				{
+					assert(!err)
+					assert.deepEqual(list, {"/plop": {hash: secondHash, size: 100}, "/plop-copy": {hash: secondHash, size: 100}})
+					
+					done()
+				})
+			}, 1000)
+		})
+	})
 	
 	after(function(done)
 	{

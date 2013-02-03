@@ -339,12 +339,11 @@ Engine.prototype._startPollingChanges = function(callback)
 		
 		result.forEach(function(path, latestVersion)
 		{
-			console.log(path)
-			//self.assets[path] = latestVersion
-			if (!self.requiredVersions[path])
-				self.requiredVersions[path] = {}
+			//if (!self.requiredVersions[path])
+			//	self.requiredVersions[path] = {}
 			
 			var version = Object.keys(latestVersion)[0]
+			self.requiredVersions[path] = {}
 			self.requiredVersions[path][version] = latestVersion[version]
 			self._checkAssetLocalContent(path)
 		})
@@ -367,12 +366,12 @@ Engine.prototype._stopPollingChanges = function()
 
 Engine.prototype._onChange = function(change)
 {
-	var version = change._id
+	var version = change.doc._id
 	var assets = change.doc.assets
 	
 	for (var path in assets)
 	{
-		console.log("updated " + path)
+		this.requiredVersions[path] = {}
 		this.requiredVersions[path][version] = assets[path]
 		this._checkAssetLocalContent(path)
 	}
@@ -390,18 +389,17 @@ Engine.prototype._checkAssetLocalContent = function(path)
 	var required = self.requiredVersions[path]
 	for (var version in required)
 	{
-		console.log("required: " + path + " at " + version)
 		var hash = required[version].hash
 		
 		// if hash is null, the asset was deleted
 		if (hash)
 		{
 			// look for the version in the local cache
-			self.cache.find(hash, function(location)
+			self.cache.findBlob(hash, function(filePath, size)
 			{
-				if (location != "cache")
+				if (!filePath)
 				{
-					// the latest version was not found, start download
+					// the required version was not found, start download
 					var tempFilename = self.cache.createTemporaryFilename()
 					self.storage.download(hash, tempFilename, function(err)
 					{
@@ -418,69 +416,21 @@ Engine.prototype._checkAssetLocalContent = function(path)
 						}
 						
 						// download finished, save in cache
-						self.cache.upgradeTemporary(tempFilename, "cache", function(err)
+						self.cache.upgradeTemporary(tempFilename, path, version, function(err)
 						{
 							if (err) throw err
-							
-							if (self.local.cache[path] === undefined)
-								self.local.cache[path] = {}
-							
-							self.local.cache[path][version] = required[version]
 						})
 					})
 				}
 				else
 				{
-					// already cached
-					if (self.local.cache[path] === undefined)
-						self.local.cache[path] = {}
-					
-					console.log("cached version " + version + " of asset " + path)
-					self.local.cache[path][version] = required[version]
-					console.log(self.local.cache)
+					// blob already cached, declare the new version
+					self.cache.declareVersion(path, version, hash, function(err)
+					{
+						if (err) throw err
+					})
 				}
 			})
 		}
 	}
-	
-	/*var asset = this.assets[path]
-	var latest = asset[Object.keys(asset)[0]]
-	
-	// look for the latest version in the local cache
-	this.cache.find(latest.hash, function(location)
-	{
-		if (location != "cache")
-		{
-			// the latest version was not found, start download
-			self._download(latest.hash)
-		}
-	})*/
-	
-	/*asset.state = "outdated"
-	
-	// find last revision number
-	var revisions = asset.revisions
-	if (!revisions)
-		return
-	var lastRevision = Math.max.apply(Math, Object.keys(revisions))
-	
-	// check associated blob
-	var blob = revisions[lastRevision].blob
-	if ((blob != undefined) && (!(id in this.blobs) || (this.blobs[id].indexOf(blob) == -1)))
-	{
-		// this blob must be dowloaded
-		asset.state = "downloading"
-		revisions[lastRevision].state = "downloading"
-		this._download(id, blob)
-	}
-	else
-	{
-		// the asset is up to date
-		asset.state = "uptodate"
-		revisions[lastRevision].state = "cached"
-	}
-	
-	console.log("STATE of " + id + " -> " + asset.state)*/
-	
-	//this.emit("changed", path, latest)
 }
