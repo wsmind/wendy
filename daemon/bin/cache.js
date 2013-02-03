@@ -26,6 +26,7 @@
 var fs = require("fs")
 var path = require("path")
 var crypto = require("crypto")
+var minimatch = require("minimatch")
 var assert = require("assert")
 
 /**
@@ -51,39 +52,6 @@ Cache.prototype.initialize = function(callback)
 	this._readLocalMetadata(callback)
 }
 
-// callback(location, filePath) location will be either "cache", "wip", or null (if not found)
-Cache.prototype.find = function(hash, callback)
-{
-	var self = this
-	
-	// search in the cache first
-	var cachePath = path.join(self.root, "cache", hash)
-	fs.exists(cachePath, function(exists)
-	{
-		if (exists)
-		{
-			callback("cache", cachePath)
-		}
-		else
-		{
-			// not found in cache, try wip
-			var wipPath = path.join(self.root, "wip", hash)
-			fs.exists(wipPath, function(exists)
-			{
-				if (exists)
-				{
-					callback("wip", wipPath)
-				}
-				else
-				{
-					// not found
-					callback(null, null)
-				}
-			})
-		}
-	})
-}
-
 // callback(filePath, size)
 // will receive (null, null) if not found
 Cache.prototype.findBlob = function(hash, callback)
@@ -91,7 +59,7 @@ Cache.prototype.findBlob = function(hash, callback)
 	if (hash in this.metadata.blobs)
 	{
 		var blob = this.metadata.blobs[hash]
-		callback(hash, blob.size)
+		callback(path.join(this.root, "cache", hash), blob.size)
 	}
 	else
 	{
@@ -117,6 +85,23 @@ Cache.prototype.findAsset = function(name, callback)
 
 Cache.prototype.listAssets = function(pattern, callback)
 {
+	callback(null, minimatch.match(Object.keys(this.metadata.assets), pattern, {dot: true}))
+}
+
+Cache.prototype.listVersionAssets = function(version)
+{
+	var result = {}
+	for (var name in this.metadata.assets)
+	{
+		if (this.metadata.assets[name][version] !== undefined)
+		{
+			var hash = this.metadata.assets[name][version]
+			var blob = this.metadata.blobs[hash]
+			result[name] = {hash: hash, size: blob.size}
+		}
+	}
+	
+	return result
 }
 
 Cache.prototype.createTemporaryFilename = function()
@@ -268,6 +253,25 @@ Cache.prototype.deleteVersion = function(name, version, callback)
 			callback(null)
 		}
 	})
+}
+
+// rename a version (useful when a batch of assets from the same version
+// finished transferring)
+// callback(err)
+Cache.prototype.renameVersion = function(currentVersionName, newVersionName, callback)
+{
+	for (var name in this.metadata.assets)
+	{
+		var asset = this.metadata.assets[name]
+		if (currentVersionName in asset)
+		{
+			// transfer version info to new name
+			asset[newVersionName] = asset[currentVersionName]
+			delete(asset[currentVersionName])
+		}
+	}
+	
+	this._writeLocalMetadata(callback)
 }
 
 // callback(err, object)

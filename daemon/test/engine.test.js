@@ -28,8 +28,6 @@ var cradle = require("cradle")
 var fs = require("fs")
 var utils = require("./utils.js")
 
-return
-
 var metadb = null
 var DB_HOST = "localhost"
 var DB_PORT = 5984
@@ -212,7 +210,7 @@ describe("engine", function()
 			engine.readVersion("local", function(err, localVersion)
 			{
 				assert(!err)
-				//assert.deepEqual(localVersion.assets, {})
+				assert.deepEqual(localVersion.assets, {})
 				
 				engine.readVersion(sharedVersion, function(err, version)
 				{
@@ -249,6 +247,22 @@ describe("engine", function()
 	{
 		engine.stop(done)
 	})
+	
+	/*it("restarts", function(done)
+	{
+		engine.start(done)
+	})
+	
+	it("lists the asset after restart", function(done)
+	{
+		engine.list("**", function(err, list)
+		{
+			assert(!err)
+			assert.deepEqual(list, {"/plop": {hash: secondHash, size: 100}})
+			
+			done()
+		})
+	})*/
 	
 	after(function(done)
 	{

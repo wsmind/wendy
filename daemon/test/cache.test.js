@@ -46,39 +46,6 @@ describe("cache", function()
 		cache.initialize(done)
 	})
 	
-	/*describe("metadata", function()
-	{
-		var testMetadata = {
-			"12": {author: "swingy", date: 100, tag: "you're it"},
-			"25": {path: "this-is-25.txt"}
-		}
-		
-		it("are initially empty", function(done)
-		{
-			cache.readLocalMetadata(function(err, object)
-			{
-				assert(!err)
-				assert.deepEqual(object, {cache: {}, wip: {}})
-				done()
-			})
-		})
-		
-		it("saves successfully", function(done)
-		{
-			cache.writeLocalMetadata(testMetadata, done)
-		})
-		
-		it("reloads successfully", function(done)
-		{
-			cache.readLocalMetadata(function(err, object)
-			{
-				assert(!err)
-				assert.deepEqual(object, testMetadata)
-				done()
-			})
-		})
-	})*/
-	
 	it("adds content as temporary", function(done)
 	{
 		var filename = cache.createTemporaryFilename()

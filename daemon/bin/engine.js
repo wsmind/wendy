@@ -27,7 +27,6 @@ var assert = require("assert")
 var util = require("util")
 var events = require("events")
 var fs = require("fs")
-var minimatch = require("minimatch")
 
 function Engine(metadb, storage, cache)
 {
@@ -39,16 +38,6 @@ function Engine(metadb, storage, cache)
 	
 	// path -> {version -> {hash, size}}
 	this.requiredVersions = {}
-	
-	// waiting (not started) uploads
-	this.uploadQueue = []
-	
-	// currently uploading
-	this.currentUploads = []
-	this.MAX_UPLOADS = 4
-	
-	// currently sharing (includes multiple uploads)
-	this.currentShares = {}
 }
 util.inherits(Engine, events.EventEmitter)
 exports.Engine = Engine
@@ -58,15 +47,13 @@ Engine.prototype.start = function(callback)
 {
 	// first, read information about assets stored locally
 	var self = this
-	self.cache.readLocalMetadata(function(err, localMetadata)
+	self.cache.initialize(function(err)
 	{
 		if (err)
 		{
 			callback(err)
 			return
 		}
-		
-		self.local = localMetadata
 		
 		// start polling latest state continuously
 		self._startPollingChanges(callback)
@@ -84,46 +71,27 @@ Engine.prototype.stop = function(callback)
 // callback(err, stream)
 Engine.prototype.read = function(path, callback)
 {
-	var hash = null
-	
-	// check for a local version first
-	if (path in this.local.wip)
+	var self = this
+	self.cache.findAsset(path, function(asset)
 	{
-		hash = this.local.wip[path].hash
-	}
-	else
-	{
-		// if nothing wip, check cached revisions
-		var asset = this.local.cache[path]
-		
-		// check asset existence
-		if (!asset)
+		var hash = null
+		if ("local" in asset)
 		{
-			callback(new Error("Asset not found: '" + path + "'"))
-			return
+			// there is a local version
+			hash = asset["local"]
+		}
+		else
+		{
+			// find latest cached version
+			var latestVersion = Math.max.apply(Math, Object.keys(asset))
+			hash = asset[latestVersion]
 		}
 		
-		// find latest blob
-		var latest = Math.max.apply(Math, Object.keys(asset))
-		console.log(asset)
-		console.log(latest)
-		var version = asset[latest]
-		console.log(version)
-		var hash = version.hash
-	}
-	
-	// check that this blob is available
-	this.cache.find(hash, function(location, filePath)
-	{
-		if (!location)
+		self.cache.findBlob(hash, function(filePath, size)
 		{
-			callback(new Error("Data not available for asset '" + path + "'"))
-			return
-		}
-		
-		// blob successfully found
-		var stream = fs.createReadStream(filePath)
-		callback(null, stream)
+			var stream = fs.createReadStream(filePath)
+			callback(null, stream)
+		})
 	})
 }
 
@@ -165,7 +133,7 @@ Engine.prototype.save = function(path, stream, callback)
 	writeStream.on("close", function()
 	{
 		// temporary file written successfully; now try to make it persistent
-		self.cache.upgradeTemporary(tempFilename, "wip", function(err, hash, size)
+		self.cache.upgradeTemporary(tempFilename, path, "local", function(err, hash, size)
 		{
 			// check the file was moved correctly
 			if (err)
@@ -183,9 +151,6 @@ Engine.prototype.save = function(path, stream, callback)
 				return
 			}
 			
-			// tag the asset as modified locally
-			self._updateMetadata(path, hash, size)
-			
 			// success!
 			signalResult()
 		})
@@ -200,55 +165,108 @@ Engine.prototype.save = function(path, stream, callback)
 // callback(err, pathList)
 Engine.prototype.list = function(filter, callback)
 {
-	var mm = minimatch.Minimatch(filter, {dot: true})
 	var result = {}
-	for (var path in this.local.wip)
+	var self = this
+	this.cache.listAssets(filter, function(err, assets)
 	{
-		if (mm.match(path))
+		if (err)
 		{
-			result[path] = this.local.wip[path]
+			callback(err)
+			return
 		}
-	}
-	
-	for (var path in this.local.cache)
-	{
-		if ((result[path] === undefined) && mm.match(path))
+		
+		for (var i = 0; i < assets.length; i++)
 		{
-			// find latest version
-			var latest = Math.max.apply(Math, Object.keys(this.local.cache[path]))
-			result[path] = this.local.cache[path][latest]
+			self.cache.findAsset(assets[i], function(asset)
+			{
+				var hash = null
+				if ("local" in asset)
+				{
+					// there is a local version
+					hash = asset["local"]
+				}
+				else
+				{
+					// find latest cached version
+					var latestVersion = Math.max.apply(Math, Object.keys(asset))
+					hash = asset[latestVersion]
+				}
+				
+				self.cache.findBlob(hash, function(filePath, size)
+				{
+					result[assets[i]] = {hash: hash, size: size}
+				})
+			})
 		}
-	}
-	
-	callback(null, result)
+		
+		callback(null, result)
+	})
 }
 
 // commit everything to servers
 // callback(err, version) // version is a JS time value
 Engine.prototype.share = function(description, callback)
 {
-	var version = (new Date()).getTime()
+	var version = (new Date()).getTime().toString()
+	var self = this
 	
-	var shareDescription = {
-		hashes: [],
-		callback: callback,
-		meta: {
-			description: description,
-			author: "Mr Plop",
-			assets: this.local.wip
+	var localAssets = this.cache.listVersionAssets("local")
+	
+	// end of upload callback
+	var uploadCount = Object.keys(localAssets).length
+	var successCount = 0
+	var failureCount = 0
+	function uploadFinished(err)
+	{
+		if (err)
+			failureCount++
+		else
+			successCount++
+		
+		// check for end of all uploads
+		if (failureCount + successCount == uploadCount)
+		{
+			if (failureCount > 0)
+			{
+				// at least one upload failed
+				callback(new Error("Sharing the version failed: some uploads did not end successfully"))
+			}
+			else
+			{
+				// all data uploads are done, now upload metadata
+				var versionDocument = {
+					description: description,
+					author: "Mr Plop",
+					assets: localAssets
+				}
+				self.metadb.save(version, versionDocument, function(err, result)
+				{
+					if (err)
+					{
+						callback(err, version)
+						return
+					}
+					
+					// update local cache version information
+					self.cache.renameVersion("local", version, function(err)
+					{
+						callback(err, version)
+					})
+				})
+			}
 		}
 	}
 	
 	// upload all locally modified assets
-	for (var name in this.local.wip)
+	for (var name in localAssets)
 	{
-		var asset = this.local.wip[name]
-		this._upload(asset.hash)
-		shareDescription.hashes.push(asset.hash)
+		var asset = localAssets[name]
+		self.cache.findBlob(asset.hash, function(filePath, size)
+		{
+			// start actual upload
+			self.storage.upload(asset.hash, filePath, uploadFinished)
+		})
 	}
-	
-	// the share description is then handled in the upload callback
-	this.currentShares[version] = shareDescription
 }
 
 // callback(err, version)
@@ -259,7 +277,7 @@ Engine.prototype.readVersion = function(version, callback)
 		callback(null, {
 			author: "CurrentUser",
 			description: "The description does not exist",
-			assets: this.local.wip
+			assets: this.cache.listVersionAssets("local")
 		})
 	}
 	else
@@ -282,46 +300,7 @@ Engine.prototype.readVersion = function(version, callback)
 	}
 }
 
-Engine.prototype._updateMetadata = function(path, hash, size)
-{
-	// save new local revision
-	this.local.wip[path] = {hash: hash, size: size}
-	
-	// write metadata
-	this.cache.writeLocalMetadata(this.local, function(err)
-	{
-		if (err)
-		{
-			console.log("FATAL ERROR: unable to update metadata for asset '" + path + "': new hash should be '" + hash + "'")
-			throw err
-		}
-	})
-}
-
-/*Engine.prototype.dump = function(callback)
-{
-	for (var id in this.assets)
-	{
-		callback(id, this.assets[id])
-	}
-}
-
-Engine.prototype.create = function(path)
-{
-	var asset = {
-		revisions: {
-			"0": {
-				author: "Mr Blob",
-				path: path,
-				date: 42,
-			}
-		}
-	}
-	
-	this.storage.create(42, asset)
-}
-
-Engine.prototype.lock = function(id, application)
+/*Engine.prototype.lock = function(id, application)
 {
 	if (this.assets[id] == undefined)
 		return // this id does not exist
@@ -344,60 +323,6 @@ Engine.prototype.unlock = function(id)
 		return // locked by someone else
 	
 	this.storage.unlock(id)
-}
-
-// mode must be "r" or "w"
-// callback(err, file)
-Engine.prototype.open = function(id, mode, callback)
-{
-	assert((mode == "r") || (mode == "w"))
-	
-	if (mode == "r")
-	{
-		if (this.blobs[id] === undefined)
-		{
-			callback(new Error("No blob available for asset " + id))
-			return
-		}
-		
-		// when opening for reading, find the latest complete blob available
-		// for this asset and open it
-		var lastBlob = null
-		var revisions = this.assets[id].revisions
-		if (revisions === undefined)
-		{
-			callback(new Error("Asset " + id + " has no revisions"))
-			return
-		}
-		
-		var blobs = this.blobs[id]
-		for (var revisionId in revisions)
-		{
-			// check is this blob has finished downloading
-			var blob = revisions[revisionId].blob
-			if (blobs.indexOf(blob) != -1)
-				lastBlob = revisions[revisionId].blob
-		}
-		
-		if (lastBlob === null)
-		{
-			callback(new Error("No blob found in revisions (asset " + id + ")"))
-			return
-		}
-		
-		console.log("opening asset " + id + ", blob " + lastBlob)
-		
-		this.cache.open(id, lastBlob, mode, function(file)
-		{
-			callback(null, file)
-		})
-	}
-	else
-	{
-		// to open an asset for writing, the asset must be locked by the current
-		// user
-		assert(!"not implemented")
-	}
 }*/
 
 // Continuously check latest changes from meta db
@@ -558,122 +483,4 @@ Engine.prototype._checkAssetLocalContent = function(path)
 	console.log("STATE of " + id + " -> " + asset.state)*/
 	
 	//this.emit("changed", path, latest)
-}
-
-Engine.prototype._uploadCallback = function(err, hash)
-{
-	var self = this
-	
-	if (err)
-	{
-		console.log("upload of " + hash + " failed: " + err.message)
-		return
-	}
-	
-	// check current share operations
-	for (var version in self.currentShares)
-	{
-		var share = self.currentShares[version]
-		
-		// check finished upload
-		var hashIndex = share.hashes.indexOf(hash)
-		if (hashIndex != -1)
-		{
-			// remove from upload list
-			share.hashes.splice(hashIndex, 1)
-			
-			// move from wip to cache
-			self.cache.move(hash, "wip", "cache", function(err)
-			{
-				if (err)
-				{
-					share.callback(err, version)
-					return
-				}
-				
-				// check if everything was uploaded
-				if (share.hashes.length == 0)
-				{
-					// all data uploads are done, now upload metadata
-					self.metadb.save(version, share.meta, function(err, result)
-					{
-						if (err)
-						{
-							share.callback(err, version)
-							return
-						}
-						
-						// finally, update local metadata
-						for (var path in self.local.wip)
-						{
-							if (self.local.cache[path] === undefined)
-								self.local.cache[path] = {}
-							
-							self.local.cache[path][version] = self.local.wip[path]
-						}
-						self.local.wip = {}
-						self.cache.writeLocalMetadata(self.local, function(err)
-						{
-							share.callback(err, version)
-						})
-					})
-				}
-			})
-		}
-	}
-	
-	console.log("upload finished: " + hash)
-}
-
-Engine.prototype._upload = function(hash)
-{
-	// check if already planned for uploading
-	if (this.uploadQueue.indexOf(hash) != -1)
-		return
-	
-	// check if already uploading
-	if (this.currentUploads.indexOf(hash) != -1)
-		return
-	
-	// start actual upload
-	this.uploadQueue.push(hash)
-	this._processUploads()
-}
-
-Engine.prototype._processUploads = function()
-{
-	while ((this.uploadQueue.length > 0) && (this.currentUploads.length < this.MAX_UPLOADS))
-	{
-		var hash = this.uploadQueue.shift()
-		this.currentUploads.push(hash)
-		
-		console.log("starting upload: " + hash)
-		
-		var self = this
-		
-		// find a full path for this hash
-		self.cache.find(hash, function(location, filePath)
-		{
-			//assert(location == "wip") // only uploads from the wip directory make sense
-			
-			// start actual upload
-			self.storage.upload(hash, filePath, function(err)
-			{
-				// remove from current uploads
-				self.currentUploads.splice(self.currentUploads.indexOf(hash), 1)
-				
-				// start next uploads (if any)
-				self._processUploads()
-				
-				if (err)
-				{
-					self._uploadCallback(err, hash)
-					return
-				}
-				
-				// signal success
-				self._uploadCallback(null, hash)
-			})
-		})
-	}
 }
