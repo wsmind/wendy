@@ -35,15 +35,21 @@ var assert = require("assert")
 function Cache(root)
 {
 	this.root = root
-	
+}
+exports.Cache = Cache
+
+// callback(err)
+Cache.prototype.initialize = function(callback)
+{
 	// create cache directories if they don't exist
 	this._recursiveMkdir(path.join(this.root, "cache"))
 	this._recursiveMkdir(path.join(this.root, "temp"))
-	this._recursiveMkdir(path.join(this.root, "wip"))
 	
 	// TODO: flush temp directory
+	
+	// load local metadata
+	this._readLocalMetadata(callback)
 }
-exports.Cache = Cache
 
 // callback(location, filePath) location will be either "cache", "wip", or null (if not found)
 Cache.prototype.find = function(hash, callback)
@@ -78,17 +84,49 @@ Cache.prototype.find = function(hash, callback)
 	})
 }
 
+// callback(filePath, size)
+// will receive (null, null) if not found
+Cache.prototype.findBlob = function(hash, callback)
+{
+	if (hash in this.metadata.blobs)
+	{
+		var blob = this.metadata.blobs[hash]
+		callback(hash, blob.size)
+	}
+	else
+	{
+		callback(null, null)
+	}
+}
+
+// callback(asset)
+// asset = {version1: hash1, version2: hash2, ...}
+// callback will receive null if not found
+Cache.prototype.findAsset = function(name, callback)
+{
+	if (name in this.metadata.assets)
+	{
+		var asset = this.metadata.assets[name]
+		callback(asset)
+	}
+	else
+	{
+		callback(null)
+	}
+}
+
+Cache.prototype.listAssets = function(pattern, callback)
+{
+}
+
 Cache.prototype.createTemporaryFilename = function()
 {
 	return path.join(this.root, "temp", Math.floor(Math.random() * 1000000000000000).toString())
 }
 
-// destination must be "cache" or "wip"
 // callback(err, hash, size)
-Cache.prototype.upgradeTemporary = function(tempFilename, destination, callback)
+Cache.prototype.upgradeTemporary = function(tempFilename, name, version, callback)
 {
-	assert((destination == "cache") || (destination == "wip"))
-	
 	var self = this
 	
 	// compute hash (will become the file name)
@@ -110,38 +148,33 @@ Cache.prototype.upgradeTemporary = function(tempFilename, destination, callback)
 			}
 			
 			// move the file out of temp/
-			fs.rename(tempFilename, path.join(self.root, destination, hash), function(err)
+			fs.rename(tempFilename, path.join(self.root, "cache", hash), function(err)
 			{
 				if (err)
-					callback(err, hash)
-				else
-					callback(null, hash, stats.size)
+				{
+					callback(err)
+					return
+				}
+				
+				// update blob metadata
+				if (self.metadata.blobs[hash] === undefined)
+					self.metadata.blobs[hash] = {size: stats.size, refs: 0}
+				
+				self.metadata.blobs[hash].refs++;
+				
+				// update asset metadata
+				if (self.metadata.assets[name] === undefined)
+					self.metadata.assets[name] = {}
+				
+				self.metadata.assets[name][version] = hash
+				
+				// write new metadata
+				self._writeLocalMetadata(function(err)
+				{
+					callback(err, hash, stats.size)
+				})
 			})
 		})
-	})
-}
-
-// source and destination must be "cache" or "wip"
-// callback(err)
-Cache.prototype.move = function(hash, source, destination, callback)
-{
-	assert((source == "cache") || (source == "wip"))
-	assert((destination == "cache") || (destination == "wip"))
-	
-	var self = this
-	var sourcePath = path.join(self.root, source, hash)
-	var destinationPath = path.join(self.root, destination, hash)
-	
-	fs.exists(sourcePath, function(exists)
-	{
-		if (!exists)
-		{
-			callback(new Error("Source file does not exist: '" + sourcePath + "'"))
-			return
-		}
-		
-		// move the file
-		fs.rename(sourcePath, destinationPath, callback)
 	})
 }
 
@@ -158,9 +191,89 @@ Cache.prototype.deleteTemporary = function(tempFilename, callback)
 	})
 }
 
-// callback(err, object)
-Cache.prototype.readLocalMetadata = function(callback)
+// declare a new asset version using an existing hash
+// the hash MUST exist in the cache
+// callback(err)
+Cache.prototype.declareVersion = function(name, version, hash, callback)
 {
+	// update blob metadata
+	if (this.metadata.blobs[hash] === undefined)
+	{
+		callback(new Error("Cannot bind new asset metadata to non-existent hash"))
+		return
+	}
+	this.metadata.blobs[hash].refs++;
+	
+	// update asset metadata
+	if (this.metadata.assets[name] === undefined)
+		this.metadata.assets[name] = {}
+	
+	this.metadata.assets[name][version] = hash
+	
+	// write new metadata
+	this._writeLocalMetadata(callback)
+}
+
+// remove an asset version from the cache
+// if the referenced blob is not used by any other asset version, it will be destroyed
+// callback(err)
+Cache.prototype.deleteVersion = function(name, version, callback)
+{
+	// check asset name
+	if (this.metadata.assets[name] === undefined)
+	{
+		callback(new Error("Asset '" + name + "' not found in cache"))
+		return
+	}
+	
+	var asset = this.metadata.assets[name]
+	
+	// check version
+	if (asset[version] === undefined)
+	{
+		callback(new Error("Version " + version + "of asset '" + name + "' not found in cache"))
+		return
+	}
+	
+	var hash = asset[version]
+	delete(asset[version])
+	
+	// if no more versions for this asset, delete it
+	if (Object.keys(asset).length == 0)
+		delete(this.metadata.assets[name])
+	
+	// update blob reference count
+	this.metadata.blobs[hash].refs--;
+	
+	// if this blob is not used any more, destroy its metadata
+	if (this.metadata.blobs[hash].refs == 0)
+		delete(this.metadata.blobs[hash])
+	
+	var self = this
+	this._writeLocalMetadata(function(err)
+	{
+		if (err)
+		{
+			callback(err)
+			return
+		}
+		
+		// destroy blob if necessary
+		if (self.metadata.blobs[hash] === undefined)
+		{
+			fs.unlink(path.join(self.root, "cache", hash), callback)
+		}
+		else
+		{
+			callback(null)
+		}
+	})
+}
+
+// callback(err, object)
+Cache.prototype._readLocalMetadata = function(callback)
+{
+	var self = this
 	var metadataPath = path.join(this.root, "local.json")
 	fs.exists(metadataPath, function(exists)
 	{
@@ -170,31 +283,35 @@ Cache.prototype.readLocalMetadata = function(callback)
 			{
 				if (err)
 				{
-					callback(err, null)
+					callback(err)
+					return
 				}
-				else
+				
+				try
 				{
-					var metadata = JSON.parse(data)
-					callback(null, metadata)
+					self.metadata = JSON.parse(data)
+					callback(null)
+				}
+				catch (err)
+				{
+					callback(err)
 				}
 			})
 		}
 		else
 		{
-			// no metadata, return a default object
-			callback(null, {cache: {}, wip: {}})
+			// no metadata, create a default object
+			self.metadata = {blobs: {}, assets: {}}
+			callback(null)
 		}
 	})
 }
 
 // callback(err)
-Cache.prototype.writeLocalMetadata = function(metadata, callback)
+Cache.prototype._writeLocalMetadata = function(callback)
 {
 	var metadataPath = path.join(this.root, "local.json")
-	fs.writeFile(metadataPath, JSON.stringify(metadata), function(err)
-	{
-		callback(err)
-	})
+	fs.writeFile(metadataPath, JSON.stringify(this.metadata), "utf8", callback)
 }
 
 Cache.prototype._recursiveMkdir = function(directory)
@@ -224,10 +341,7 @@ Cache.prototype._computeHash = function(filename, callback)
 	})
 	
 	// handle errors
-	stream.on("error", function(err)
-	{
-		callback(err)
-	})
+	stream.on("error", callback)
 	
 	// hashing done
 	stream.on("close", function()

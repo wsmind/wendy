@@ -28,6 +28,8 @@ var cradle = require("cradle")
 var fs = require("fs")
 var utils = require("./utils.js")
 
+return
+
 var metadb = null
 var DB_HOST = "localhost"
 var DB_PORT = 5984
