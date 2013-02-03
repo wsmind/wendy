@@ -74,6 +74,12 @@ Engine.prototype.read = function(path, callback)
 	var self = this
 	self.cache.findAsset(path, function(asset)
 	{
+		if (!asset)
+		{
+			callback(new Error("Cannot read asset '" + path + "': path not found"))
+			return
+		}
+		
 		var hash = null
 		if ("local" in asset)
 		{
