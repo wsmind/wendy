@@ -29,7 +29,7 @@
 
 FileSystemNode::FileSystemNode(const bool directory, unsigned long long size)
 {
-	std::cout << "creating node (directory = '" << directory << "'" << std::endl;
+	//std::cout << "creating node (directory = '" << directory << "'" << std::endl;
 	this->directory = directory;
 	this->size = size;
 }

@@ -55,9 +55,10 @@ class File: public wendy::AssetWriter
 		bool write(unsigned long offset, const void *buffer, unsigned long length);
 		
 		const std::string &getPath() const;
-		unsigned long long getSize() const;
+		unsigned long long getSize();
 		
 	private:
+		void createCacheFile();
 		std::string makeTemporaryFilename() const;
 		
 		wendy::Client *client;
@@ -70,6 +71,10 @@ class File: public wendy::AssetWriter
 		// local temp file
 		std::string cacheFilename;
 		FILE *cacheFile;
+		
+		// operation counts
+		int readCount;
+		int writeCount;
 		
 		// writer for an actual disk file
 		class CacheFileWriter: public wendy::AssetWriter

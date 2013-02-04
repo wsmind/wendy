@@ -347,7 +347,9 @@ static int DOKAN_CALLBACK WendyFindFiles(LPCWSTR filename, PFillFindData fillFin
 			fullChildPath = path + "/" + files[i];
 		fs->stat(fullChildPath, &attributes);
 		entry.dwFileAttributes = attributes.folder ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
-		entry.nFileSizeLow = attributes.length; // TODO: use the 64 bits
+		entry.nFileSizeLow = (attributes.length & 0x00000000ffffffffUL) >> 0;
+		entry.nFileSizeHigh = (attributes.length & 0xffffffff00000000UL) >> 32;
+		entry.ftCreationTime = unixTimeToFileTime(attributes.date);
 		entry.ftLastWriteTime = unixTimeToFileTime(attributes.date);
 		
 		// send item back to caller
@@ -430,7 +432,7 @@ int main(int argc, char **argv)
 	options.ThreadCount = 0; // use default
 	std::wstring mountPoint = utf8ToWide(argv[1]);
 	options.MountPoint = mountPoint.c_str();
-	options.Options = DOKAN_OPTION_DEBUG | DOKAN_OPTION_STDERR | DOKAN_OPTION_KEEP_ALIVE;
+	options.Options = /*DOKAN_OPTION_DEBUG | DOKAN_OPTION_STDERR |*/ DOKAN_OPTION_KEEP_ALIVE;
 	
 	ZeroMemory(&operations, sizeof(DOKAN_OPERATIONS));
 	operations.CreateFile = WendyCreateFile;

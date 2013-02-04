@@ -50,10 +50,7 @@ FileSystem::FileSystem()
 	if (listState.isSuccess())
 	{
 		for (unsigned int i = 0; i < files.size(); i++)
-		{
-			std::cout << "Found file: " << files[i].path << std::endl;
 			this->root->insert(files[i].path.substr(1), false, files[i].size);
-		}
 	}
 }
 
@@ -94,6 +91,9 @@ bool FileSystem::unlink(const std::string &path)
 	
 	// TODO: this->project->deleteAsset(node->getId());
 	
+	// in the meantime, remove from local tree
+	this->root->remove(path);
+	
 	return true;
 }
 
@@ -104,14 +104,14 @@ File *FileSystem::open(const std::string &path, bool reading, bool writing, bool
 	// must open at least for one of the modes
 	assert(reading || writing);
 	
-	std::cout << "///////////////////// OOOPEEEEN: " << path << ", reading = " << reading << ", writing = " << writing << ", truncate = " << truncate << std::endl;
+	//std::cout << "///////////////////// OOOPEEEEN: " << path << ", reading = " << reading << ", writing = " << writing << ", truncate = " << truncate << std::endl;
 	
 	// check if file exists
 	FileSystemNode *node = this->root->find(path);
 	if (!node)
 	{
 		// new file!
-		std::cout << "Creating new node: " << path << std::endl;
+		//std::cout << "Creating new node: " << path << std::endl;
 		this->root->insert(path, false, 0);
 	}
 	
@@ -126,9 +126,10 @@ File *FileSystem::open(const std::string &path, bool reading, bool writing, bool
 
 bool FileSystem::close(File *file)
 {
-	// TEMP: update size in fs node
+	// TEMP: update size in fs node (if file was not deleted)
 	FileSystemNode *node = this->root->find(file->getPath());
-	node->setSize(file->getSize());
+	if (node)
+		node->setSize(file->getSize());
 	
 	bool result = file->close();
 	

@@ -41,6 +41,13 @@ File::File(wendy::Client *client, const std::string &path)
 	this->path = path;
 	
 	this->cacheFile = NULL;
+	
+	this->reading = false;
+	this->writing = false;
+	this->truncate = false;
+	
+	this->readCount = 0;
+	this->writeCount = 0;
 }
 
 File::~File()
@@ -52,26 +59,14 @@ void File::open(bool reading, bool writing, bool truncate)
 	this->reading = reading;
 	this->writing = writing;
 	this->truncate = truncate;
-	
-	// create temp cache file
-	this->cacheFilename = this->makeTemporaryFilename();
-	this->cacheFile = fopen(this->cacheFilename.c_str(), "w+b");
-	
-	if (this->cacheFile && !truncate)
-	{
-		// if not truncating, download the existing asset to temporary file
-		wendy::RequestState readState;
-		CacheFileWriter writer(this->cacheFile);
-		client->read(&readState, this->path, &writer);
-		client->waitRequest(&readState);
-	}
 }
 
 bool File::close()
 {
 	if (this->cacheFile)
 	{
-		if (this->writing)
+		// if the file was neither written to nor truncated, it was not actually modified
+		if (this->writing && ((this->writeCount > 0) || this->truncate))
 		{
 			// upload the modified file
 			wendy::RequestState saveState;
@@ -91,6 +86,11 @@ bool File::close()
 bool File::read(unsigned long offset, void *buffer, unsigned long length)
 {
 	std::cout << "reading at " << offset << "; length " << length << std::endl;
+	this->readCount++;
+	
+	if (!this->cacheFile)
+		this->createCacheFile();
+	
 	if (this->cacheFile)
 	{
 		fseek(this->cacheFile, offset, SEEK_SET);
@@ -105,6 +105,11 @@ bool File::read(unsigned long offset, void *buffer, unsigned long length)
 
 bool File::write(unsigned long offset, const void *buffer, unsigned long length)
 {
+	this->writeCount++;
+	
+	if (!this->cacheFile)
+		this->createCacheFile();
+	
 	if (this->cacheFile)
 	{
 		fseek(this->cacheFile, offset, SEEK_SET);
@@ -120,8 +125,11 @@ const std::string &File::getPath() const
 	return this->path;
 }
 
-unsigned long long File::getSize() const
+unsigned long long File::getSize()
 {
+	if (!this->cacheFile)
+		this->createCacheFile();
+	
 	if (this->cacheFile)
 	{
 		fseek(this->cacheFile, 0, SEEK_END);
@@ -130,6 +138,24 @@ unsigned long long File::getSize() const
 	}
 	
 	return 0;
+}
+
+void File::createCacheFile()
+{
+	assert(!this->cacheFile);
+	
+	// create temp cache file
+	this->cacheFilename = this->makeTemporaryFilename();
+	this->cacheFile = fopen(this->cacheFilename.c_str(), "w+b");
+	
+	if (this->cacheFile && !this->truncate)
+	{
+		// if not truncating, download the existing asset to temporary file
+		wendy::RequestState readState;
+		CacheFileWriter writer(this->cacheFile);
+		client->read(&readState, this->path, &writer);
+		client->waitRequest(&readState);
+	}
 }
 
 std::string File::makeTemporaryFilename() const
