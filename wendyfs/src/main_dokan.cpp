@@ -167,7 +167,7 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 		bool writing = false;
 		bool truncate = false;
 		
-		if (accessMode & FILE_GENERIC_READ) reading = true;
+		if (accessMode & (FILE_GENERIC_READ | FILE_GENERIC_EXECUTE)) reading = true;
 		if (accessMode &  FILE_GENERIC_WRITE) writing = true;
 		if ((creationDisposition == TRUNCATE_EXISTING) || (creationDisposition == CREATE_NEW) || (creationDisposition == CREATE_ALWAYS)) truncate = true;
 		
@@ -177,7 +177,7 @@ static int DOKAN_CALLBACK WendyCreateFile(LPCWSTR filename, DWORD accessMode, DW
 			return -ERROR_PATH_NOT_FOUND;
 		
 		info->Context = (ULONG64)file; // file descriptor
-		wprintf(L"CreateFile succeeded (handle = 0x%x\n", file);
+		wprintf(L"CreateFile succeeded (handle = 0x%x)\n", file);
 	}
 	
 	return 0;
