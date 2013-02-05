@@ -136,7 +136,7 @@ describe("engine", function()
 	{
 		var tempFilename = __dirname + "/fixtures/plop.read";
 		var fileStream = fs.createWriteStream(tempFilename)
-		engine.read("/plop", function(err, stream)
+		engine.read("/plop", null, null, function(err, stream)
 		{
 			assert(!err)
 			
@@ -182,7 +182,7 @@ describe("engine", function()
 	{
 		var tempFilename = __dirname + "/fixtures/plop2.read";
 		var fileStream = fs.createWriteStream(tempFilename)
-		engine.read("/plop", function(err, stream)
+		engine.read("/plop", null, null, function(err, stream)
 		{
 			assert(!err)
 			

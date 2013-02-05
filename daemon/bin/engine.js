@@ -68,8 +68,10 @@ Engine.prototype.stop = function(callback)
 	callback()
 }
 
+// if version is null, the latest available is selected
+// range (when not null) must be an HTTP range specifier with at most one range
 // callback(err, stream)
-Engine.prototype.read = function(path, callback)
+Engine.prototype.read = function(path, version, rangeHeader, callback)
 {
 	var self = this
 	self.cache.findAsset(path, function(asset)
@@ -81,6 +83,17 @@ Engine.prototype.read = function(path, callback)
 		}
 		
 		var hash = null
+		if (version)
+		{
+			// look for a specific version
+			if (asset[version] === undefined)
+			{
+				callback(new Error("No version '" + version + "' found for asset '" + path + "'"))
+				return
+			}
+			
+			hash = asset[version]
+		}
 		if ("local" in asset)
 		{
 			// there is a local version
@@ -95,7 +108,40 @@ Engine.prototype.read = function(path, callback)
 		
 		self.cache.findBlob(hash, function(filePath, size)
 		{
-			var stream = fs.createReadStream(filePath)
+			var range = null
+			
+			if (rangeHeader)
+			{
+				var ranges = require("range-parser")(size, rangeHeader)
+				
+				if (ranges == -1)
+				{
+					// 416
+					callback(new Error("Range not satisfiable"))
+					return
+				}
+				
+				if (ranges == -2)
+				{
+					// 400
+					callback(new Error("Bad request (invalid Range header)"))
+					return
+				}
+				
+				if (ranges.type != "bytes")
+				{
+					// 400
+					callback(new Error("Bad request (Range unit not supported, use bytes instead)"))
+					return
+				}
+				
+				// ignore all ranges but the first
+				if (ranges.length > 1)
+					console.log("warning: multiple byte ranges were specified in request, only the first will be used")
+				var range = ranges[0]
+			}
+			
+			var stream = fs.createReadStream(filePath, range)
 			callback(null, stream)
 		})
 	})
