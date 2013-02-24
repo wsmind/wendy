@@ -27,6 +27,7 @@
 #include <wendy/Client.hpp>
 
 #include <cstdio>
+#include <cstring>
 #include <cassert>
 #include <iostream>
 
@@ -186,4 +187,3 @@ void File::BufferWriter::writeAssetData(unsigned long long offset, const char *b
 	assert(offset + size <= this->length);
 	memcpy(this->buffer + offset, buffer, size);
 }
-
