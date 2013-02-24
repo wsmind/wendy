@@ -61,7 +61,7 @@ void File::open(bool reading, bool writing, bool truncate)
 	this->truncate = truncate;
 }
 
-bool File::close()
+bool File::close(unsigned long long *size)
 {
 	if (this->cacheFile)
 	{
@@ -73,6 +73,10 @@ bool File::close()
 			CacheFileReader reader(this->cacheFile);
 			client->save(&saveState, this->path, &reader);
 			client->waitRequest(&saveState);
+			
+			// update size
+			fseek(this->cacheFile, 0, SEEK_END);
+			*size = (unsigned long long)ftell(this->cacheFile);
 		}
 		
 		// delete temporary file
@@ -88,9 +92,6 @@ bool File::read(unsigned long offset, void *buffer, unsigned long length)
 	std::cout << "reading at " << offset << "; length " << length << std::endl;
 	this->readCount++;
 	
-	if (!this->cacheFile)
-		this->createCacheFile();
-	
 	if (this->cacheFile)
 	{
 		fseek(this->cacheFile, offset, SEEK_SET);
@@ -98,6 +99,16 @@ bool File::read(unsigned long offset, void *buffer, unsigned long length)
 		std::cout << "actually read: " << bytesRead << std::endl;
 		//assert(bytesRead == length);
 		return true;
+	}
+	else
+	{
+		// read just the requested buffer
+		wendy::RequestState readState;
+		BufferWriter writer((char *)buffer, length);
+		client->read(&readState, this->path, &writer, "", offset, offset + length - 1);
+		client->waitRequest(&readState);
+		
+		return readState.isSuccess();
 	}
 	
 	return false;
@@ -123,21 +134,6 @@ bool File::write(unsigned long offset, const void *buffer, unsigned long length)
 const std::string &File::getPath() const
 {
 	return this->path;
-}
-
-unsigned long long File::getSize()
-{
-	if (!this->cacheFile)
-		this->createCacheFile();
-	
-	if (this->cacheFile)
-	{
-		fseek(this->cacheFile, 0, SEEK_END);
-		long size = ftell(this->cacheFile);
-		return (unsigned long long)size;
-	}
-	
-	return 0;
 }
 
 void File::createCacheFile()
@@ -184,3 +180,10 @@ unsigned long long File::CacheFileReader::readAssetData(unsigned long long offse
 	fseek(this->file, offset, SEEK_SET);
 	return fread(buffer, 1, size, this->file);
 }
+
+void File::BufferWriter::writeAssetData(unsigned long long offset, const char *buffer, unsigned long long size)
+{
+	assert(offset + size <= this->length);
+	memcpy(this->buffer + offset, buffer, size);
+}
+

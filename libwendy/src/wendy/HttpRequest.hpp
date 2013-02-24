@@ -29,6 +29,7 @@
 #include <wendy/common.hpp>
 
 #include <string>
+#include <map>
 
 namespace wendy {
 
@@ -47,6 +48,9 @@ struct WENDYAPI HttpRequest
 	HttpReader *reader;
 	HttpWriter *writer;
 	
+	typedef std::map<std::string, std::string> HeaderMap;
+	HeaderMap headers;
+	
 	/// termination state, will be set to true when the request finishes
 	bool finished;
 	
@@ -56,6 +60,9 @@ struct WENDYAPI HttpRequest
 	
 	/// \internal curl handle associated to this request, will be setup by the http engine
 	void *curlHandle;
+	
+	/// \internal curl linked list of headers
+	void *curlHeaderList;
 	
 	/**
 	 * \brief Constructor
@@ -72,6 +79,7 @@ struct WENDYAPI HttpRequest
 		this->status = 0;
 		
 		this->curlHandle = NULL;
+		this->curlHeaderList = NULL;
 	}
 };
 

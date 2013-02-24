@@ -49,13 +49,12 @@ class File: public wendy::AssetWriter
 		~File();
 		
 		void open(bool reading, bool writing, bool truncate);
-		bool close();
+		bool close(unsigned long long *size);
 		
 		bool read(unsigned long offset, void *buffer, unsigned long length);
 		bool write(unsigned long offset, const void *buffer, unsigned long length);
 		
 		const std::string &getPath() const;
-		unsigned long long getSize();
 		
 	private:
 		void createCacheFile();
@@ -100,6 +99,20 @@ class File: public wendy::AssetWriter
 			
 			private:
 				FILE *file;
+		};
+		
+		// writer for an in-memory buffer
+		class BufferWriter: public wendy::AssetWriter
+		{
+			public:
+				BufferWriter(char *buffer, unsigned long length): buffer(buffer), length(length) {}
+				virtual ~BufferWriter() {}
+				
+				virtual void writeAssetData(unsigned long long offset, const char *buffer, unsigned long long size);
+			
+			private:
+				char *buffer;
+				unsigned long length;
 		};
 };
 

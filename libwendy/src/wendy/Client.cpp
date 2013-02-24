@@ -70,9 +70,9 @@ void Client::list(RequestState *state, const std::string &filter, PathList *path
 	this->requests.push_back(descriptor);
 }
 
-void Client::read(RequestState *state, const std::string &path, AssetWriter *writer)
+void Client::read(RequestState *state, const std::string &path, AssetWriter *writer, const std::string &version, unsigned long long rangeStart, unsigned long long rangeEnd)
 {
-	Request *request = new ReadRequest(this->httpEngine, path, writer);
+	Request *request = new ReadRequest(this->httpEngine, path, writer, version, rangeStart, rangeEnd);
 	
 	RequestDescriptor descriptor;
 	descriptor.request = request;

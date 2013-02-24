@@ -29,11 +29,12 @@
 #include <wendy/HttpEngine.hpp>
 #include <wendy/RequestState.hpp>
 
+#include <sstream>
 #include <cassert>
 
 namespace wendy {
 
-ReadRequest::ReadRequest(HttpEngine *httpEngine, const std::string &path, AssetWriter *writer)
+ReadRequest::ReadRequest(HttpEngine *httpEngine, const std::string &path, AssetWriter *writer, const std::string &version, unsigned long long rangeStart, unsigned long long rangeEnd)
 {
 	this->offset = 0;
 	this->writer = writer;
@@ -42,6 +43,14 @@ ReadRequest::ReadRequest(HttpEngine *httpEngine, const std::string &path, AssetW
 	this->request.path = "/data/" + path;
 	this->request.timeoutMilliseconds = 10000;
 	this->request.writer = this;
+	
+	// add range header if necessary
+	if (rangeEnd > 0)
+	{
+		std::stringstream rangeDefinition;
+		rangeDefinition << "bytes=" << rangeStart << "-" << rangeEnd;
+		this->request.headers["Range"] = rangeDefinition.str();
+	}
 	
 	httpEngine->startRequest(&this->request);
 }

@@ -128,12 +128,15 @@ bool FileSystem::close(File *file)
 {
 	// TEMP: update size in fs node (if file was not deleted)
 	FileSystemNode *node = this->root->find(file->getPath());
+	unsigned long long size;
 	if (node)
-		node->setSize(file->getSize());
+		size = node->getSize();
 	
-	bool result = file->close();
-	
+	bool result = file->close(&size);
 	delete file;
+	
+	if (node)
+		node->setSize(size);
 	
 	return result;
 }

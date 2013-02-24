@@ -85,7 +85,7 @@ class WENDYAPI Client
 		
 		void list(RequestState *state, const std::string &filter, PathList *paths);
 		
-		void read(RequestState *state, const std::string &path, AssetWriter *writer);
+		void read(RequestState *state, const std::string &path, AssetWriter *writer, const std::string &version = "" /* unused for now */, unsigned long long rangeStart = 0, unsigned long long rangeEnd = 0);
 		void save(RequestState *state, const std::string &path, AssetReader *reader);
 		
 	private:

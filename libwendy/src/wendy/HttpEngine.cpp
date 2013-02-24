@@ -134,6 +134,15 @@ void HttpEngine::startRequest(HttpRequest *request)
 	curl_easy_setopt(request->curlHandle, CURLOPT_WRITEFUNCTION, HttpEngine::writeCallback);
 	curl_easy_setopt(request->curlHandle, CURLOPT_WRITEDATA, request);
 	
+	// build header linked list
+	HttpRequest::HeaderMap::iterator it;
+	for (it = request->headers.begin(); it != request->headers.end(); it++)
+	{
+		std::string headerLine = it->first + ": " + it->second;
+		request->curlHeaderList = curl_slist_append((curl_slist *)request->curlHeaderList, headerLine.c_str());
+	}
+	curl_easy_setopt(request->curlHandle, CURLOPT_HTTPHEADER, (curl_slist *)request->curlHeaderList);
+	
 	// start executing the new request
 	curl_multi_add_handle(this->curlMulti, request->curlHandle);
 }
@@ -180,6 +189,11 @@ void HttpEngine::pollCurlMessages()
 			
 			// detach the finished request
 			curl_multi_remove_handle(this->curlMulti, request->curlHandle);
+			request->curlHandle = NULL;
+			
+			// destroy header linked list
+			curl_slist_free_all((curl_slist *)request->curlHeaderList);
+			request->curlHeaderList = NULL;
 		}
 	}
 }

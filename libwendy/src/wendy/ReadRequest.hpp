@@ -45,7 +45,7 @@ class HttpEngine;
 class WENDYAPI ReadRequest: public Request, public HttpWriter
 {
 	public:
-		ReadRequest(HttpEngine *httpEngine, const std::string &path, AssetWriter *writer);
+		ReadRequest(HttpEngine *httpEngine, const std::string &path, AssetWriter *writer, const std::string &version = "", unsigned long long rangeStart = 0, unsigned long long rangeEnd = 0);
 		virtual ~ReadRequest();
 		
 		virtual void update(RequestState *state);

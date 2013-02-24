@@ -81,6 +81,7 @@ int main()
 	wendy::HttpRequest request2;
 	request2.method = "PUT";
 	request2.path = "/plop/http-test";
+	request2.headers["Content-Type"] = "application/json";
 	request2.timeoutMilliseconds = 5000;
 	request2.reader = reader;
 	httpEngine->startRequest(&request2);
